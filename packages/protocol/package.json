@@ -1,0 +1,15 @@
+{
+  "name": "@oantuti/protocol",
+  "version": "1.0.0",
+  "description": "Protobuf v3 binary serialization, bitmask compression and replay format for OanTuTi Arena",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@oantuti/engine": "*",
+    "protobufjs": "^7.4.0"
+  }
+}

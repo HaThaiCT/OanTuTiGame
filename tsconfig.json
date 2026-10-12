@@ -8,5 +8,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["tests/**/*", "docs/specs/**/*"]
+  "include": [
+    "tests/**/*",
+    "docs/specs/**/*",
+    "packages/*/src/**/*",
+    "packages/*/tests/**/*",
+    "bots/**/*"
+  ]
 }

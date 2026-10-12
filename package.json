@@ -3,16 +3,24 @@
   "version": "1.0.0",
   "description": "Specification package and automated schema validation harness for OanTuTi Arena Battlecode platform",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:specs": "vitest run tests/specs-validation.test.ts",
-    "test:proto": "vitest run tests/proto-compile.test.ts"
+    "test:proto": "vitest run tests/proto-compile.test.ts",
+    "test:engine": "vitest run packages/engine",
+    "test:runner": "vitest run packages/runner",
+    "test:protocol": "vitest run packages/protocol",
+    "match:play": "tsx packages/runner/bin/run-match.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "ajv": "^8.17.1",
     "protobufjs": "^7.4.0",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "tsx": "^4.19.2"
   }
 }
