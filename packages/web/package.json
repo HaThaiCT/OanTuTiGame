@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@oantuti/engine": "*",
     "@oantuti/protocol": "*",
     "lucide-react": "^0.468.0",

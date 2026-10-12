@@ -5,6 +5,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyWebsocket from '@fastify/websocket';
+import * as fs from 'fs';
 import * as path from 'path';
 import { Database } from './db.js';
 import { MatchService } from './match-service.js';
@@ -117,10 +118,21 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       filePath?: string;
     };
   }>('/api/bots', async (req, reply) => {
-    const { name, language, sourceCode, filePath } = req.body;
+    const { name, language, sourceCode } = req.body;
     if (!name || !language || !sourceCode) {
       reply.status(400);
       return { error: 'Missing required bot fields (name, language, sourceCode)' };
+    }
+
+    let resolvedFilePath = req.body.filePath;
+    if (!resolvedFilePath && sourceCode) {
+      const botsDir = path.resolve(process.cwd(), 'storage/bots');
+      if (!fs.existsSync(botsDir)) fs.mkdirSync(botsDir, { recursive: true });
+      const ext = language === 'PYTHON' ? 'py' : language === 'CPP' ? 'cpp' : 'ts';
+      const safeName = name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      const filename = `${safeName}_${Date.now()}.${ext}`;
+      resolvedFilePath = path.join(botsDir, filename);
+      fs.writeFileSync(resolvedFilePath, sourceCode);
     }
 
     try {
@@ -129,7 +141,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
         name,
         language,
         sourceCode,
-        filePath,
+        filePath: resolvedFilePath,
       });
       return { bot };
     } catch (err) {

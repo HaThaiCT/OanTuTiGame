@@ -6,9 +6,12 @@ import { PieceCounter } from './components/PieceCounter.js';
 import { TurnLogs } from './components/TurnLogs.js';
 import { CanvasViewport } from './components/CanvasViewport.js';
 import { NewMatchModal } from './components/NewMatchModal.js';
+import { BotEditor } from './components/BotEditor.js';
+import { LeaderboardView } from './components/LeaderboardView.js';
 import { LoadedReplay, parseReplayBinary } from './replay/player.js';
 import { generateDefaultMatch } from './replay/mock-generator.js';
 import { subscribeLiveMatch } from './api/client.js';
+import { Code2, ScrollText, Trophy } from 'lucide-react';
 export const App: React.FC = () => {
   const [replay, setReplay] = React.useState<LoadedReplay>(() => generateDefaultMatch());
   const [currentTurn, setCurrentTurn] = React.useState<number>(0);
@@ -16,6 +19,7 @@ export const App: React.FC = () => {
   const [playbackSpeed, setPlaybackSpeed] = React.useState<number>(1);
   const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false);
   const [isLiveStream, setIsLiveStream] = React.useState<boolean>(false);
+  const [rightTab, setRightTab] = React.useState<'EDITOR' | 'LOGS' | 'LEADERBOARD'>('LOGS');
   const liveSubRef = React.useRef<{ disconnect: () => void } | null>(null);
   // Derive valid tiles set from bitmask
   const validTilesSet = React.useMemo(() => {
@@ -178,29 +182,128 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Right: Heuristic Stats & Turn Logs Panel */}
+        {/* Right: Tabbed Control Panel (Bot IDE / Match Logs / ELO Leaderboard) */}
         <div style={{
-          width: '380px',
+          width: '460px',
           display: 'flex',
           flexDirection: 'column',
-          padding: '16px',
-          gap: '16px',
+          padding: '12px',
+          gap: '12px',
           backgroundColor: '#0b0f19',
           overflow: 'hidden',
         }}>
-          <PieceCounter
-            pieces={currentSnapshot.pieces}
-            whiteBotName={replay.init.whiteBotName}
-            blackBotName={replay.init.blackBotName}
-          />
+          {/* Tabs Navigation */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            backgroundColor: '#141d2d',
+            padding: '4px',
+            borderRadius: '8px',
+            border: '1px solid #1e293b',
+          }}>
+            <button
+              onClick={() => setRightTab('LOGS')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '6px 10px',
+                backgroundColor: rightTab === 'LOGS' ? '#0284c7' : 'transparent',
+                color: rightTab === 'LOGS' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <ScrollText size={14} />
+              <span>Match Logs</span>
+            </button>
 
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <TurnLogs
-              snapshots={replay.snapshots}
-              currentTurn={currentTurn}
-              onSelectTurn={handleSeekTo}
-            />
+            <button
+              onClick={() => setRightTab('EDITOR')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '6px 10px',
+                backgroundColor: rightTab === 'EDITOR' ? '#0284c7' : 'transparent',
+                color: rightTab === 'EDITOR' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Code2 size={14} />
+              <span>Bot IDE</span>
+            </button>
+
+            <button
+              onClick={() => setRightTab('LEADERBOARD')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '6px 10px',
+                backgroundColor: rightTab === 'LEADERBOARD' ? '#0284c7' : 'transparent',
+                color: rightTab === 'LEADERBOARD' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Trophy size={14} />
+              <span>Leaderboard</span>
+            </button>
           </div>
+
+          {/* Tab Content */}
+          {rightTab === 'EDITOR' && (
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <BotEditor onMatchStarted={handleMatchStarted} />
+            </div>
+          )}
+
+          {rightTab === 'LOGS' && (
+            <>
+              <PieceCounter
+                pieces={currentSnapshot.pieces}
+                whiteBotName={replay.init.whiteBotName}
+                blackBotName={replay.init.blackBotName}
+              />
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <TurnLogs
+                  snapshots={replay.snapshots}
+                  currentTurn={currentTurn}
+                  onSelectTurn={handleSeekTo}
+                />
+              </div>
+            </>
+          )}
+
+          {rightTab === 'LEADERBOARD' && (
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <LeaderboardView
+                onChallengeBot={() => {
+                  setIsModalOpen(true);
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
