@@ -13,7 +13,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 if (process.argv[1]?.endsWith('src/index.ts') || process.argv[1]?.endsWith('dist/index.js')) {
-  createApp()
+  createApp({ dbLocation: process.env.DB_LOCATION })
     .then(async ({ app }) => {
       await app.listen({ port: PORT, host: HOST });
       process.stdout.write(`\n=======================================================\n`);

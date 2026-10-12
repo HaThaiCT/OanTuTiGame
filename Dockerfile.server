@@ -1,0 +1,35 @@
+FROM node:24-alpine
+
+# Python and C++ runtimes are required by the starter bots.
+RUN apk add --no-cache python3 g++
+
+WORKDIR /app
+
+# Copy monorepo configuration
+COPY package*.json tsconfig.json ./
+COPY packages/engine/package.json ./packages/engine/
+COPY packages/protocol/package.json ./packages/protocol/
+COPY packages/runner/package.json ./packages/runner/
+COPY packages/server/package.json ./packages/server/
+COPY packages/web/package.json ./packages/web/
+
+RUN npm ci
+
+# Copy full repository source code
+COPY --chown=node:node packages/ ./packages/
+COPY --chown=node:node docs/specs/ ./docs/specs/
+COPY --chown=node:node bots/ ./bots/
+COPY --chown=node:node sdk/ ./sdk/
+
+# Create persistent storage directories
+RUN mkdir -p /app/storage/replays /app/storage/bots && chown -R node:node /app/storage
+
+ENV PORT=3001
+ENV HOST=0.0.0.0
+ENV NODE_ENV=production
+ENV DB_LOCATION=/app/storage/arena.sqlite
+
+USER node
+EXPOSE 3001
+
+CMD ["node", "--import", "tsx", "packages/server/src/index.ts"]

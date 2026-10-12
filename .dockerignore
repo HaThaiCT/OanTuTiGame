@@ -1,0 +1,16 @@
+.git
+.superpowers
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/*.oantuti
+**/*.sqlite
+**/*.sqlite-*
+**/*.log
+.env
+.env.*
+storage
+sdk/cpp/starter_bot
+**/*.exe
+**/*.out
