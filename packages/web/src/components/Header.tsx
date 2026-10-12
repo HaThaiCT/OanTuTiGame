@@ -1,14 +1,18 @@
 import React from 'react';
-import { Trophy, Swords, Clock, MapPin, Upload } from 'lucide-react';
+import { Trophy, Swords, Clock, MapPin, Upload, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
 import { PlayerSide, WinReason } from '@oantuti/engine';
 import { LoadedReplay } from '../replay/player.js';
-
+import { AccountPanel } from './AccountPanel.js';
 interface HeaderProps {
   readonly replay: LoadedReplay;
   readonly currentTurn: number;
   readonly isLive?: boolean;
+  readonly isMuted?: boolean;
+  readonly isTheaterMode?: boolean;
   readonly onUploadReplay: (buffer: Uint8Array) => void;
   readonly onOpenNewMatch: () => void;
+  readonly onToggleMute?: () => void;
+  readonly onToggleTheater?: () => void;
 }
 
 const WIN_REASON_LABELS: Record<number, string> = {
@@ -26,8 +30,12 @@ export const Header: React.FC<HeaderProps> = ({
   replay,
   currentTurn,
   isLive,
+  isMuted = false,
+  isTheaterMode = false,
   onUploadReplay,
   onOpenNewMatch,
+  onToggleMute,
+  onToggleTheater,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -59,10 +67,10 @@ export const Header: React.FC<HeaderProps> = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '12px 24px',
-      backgroundColor: '#0f172a',
-      borderBottom: '1px solid #1e293b',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+      padding: '10px 20px',
+      backgroundColor: '#060a12',
+      borderBottom: '1px solid #16243b',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.7), 0 0 25px rgba(6, 182, 212, 0.1)',
     }}>
       {/* Brand & Match Details */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -104,8 +112,46 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Outcome Banner, Live Status, New Match & Replay Loader */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Outcome Banner, Live Status, Controls & Replay Loader */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {onToggleMute && (
+          <button
+            onClick={onToggleMute}
+            title={isMuted ? 'Unmute Sound FX (M)' : 'Mute Sound FX (M)'}
+            style={{
+              backgroundColor: isMuted ? 'rgba(239, 68, 68, 0.15)' : '#0f172a',
+              color: isMuted ? '#f87171' : '#38bdf8',
+              border: isMuted ? '1px solid #ef4444' : '1px solid #1e293b',
+              borderRadius: '8px',
+              padding: '7px 10px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+          </button>
+        )}
+
+        {onToggleTheater && (
+          <button
+            onClick={onToggleTheater}
+            title={isTheaterMode ? 'Exit Theater Mode (F)' : 'Enter Theater Mode (F)'}
+            style={{
+              backgroundColor: isTheaterMode ? '#0284c7' : '#0f172a',
+              color: isTheaterMode ? '#ffffff' : '#94a3b8',
+              border: isTheaterMode ? '1px solid #0284c7' : '1px solid #1e293b',
+              borderRadius: '8px',
+              padding: '7px 10px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {isTheaterMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          </button>
+        )}
+
         {isLive && (
           <div style={{
             display: 'flex',
@@ -199,6 +245,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Upload size={15} />
           <span>Load .oantuti Replay</span>
         </button>
+        <AccountPanel />
       </div>
     </header>
   );
