@@ -204,3 +204,55 @@ Nếu máy báo `docker: unknown command: docker compose`, cần cài Docker Com
 Cần xác thực/phân quyền, HTTPS ở reverse proxy ngoài, giới hạn tài nguyên và sandbox riêng cho bot không tin cậy. API cho phép đăng ký mã nguồn/file path và chạy tiến trình; chỉ mở cho người dùng đáng tin cậy. Compose không mount Docker socket, không dùng privileged mode và không tự fallback thành một sandbox an toàn.
 
 `npm ci` trong image hiện báo 8 dependency vulnerabilities (2 low, 3 moderate, 1 high, 2 critical). Chưa thực hiện dependency upgrade hay Security Pentest; không xem build thành công là chứng nhận bảo mật.
+
+## 10. GitHub Actions CI/CD
+
+Workflow: `.github/workflows/ci.yml`.
+
+| Sự kiện | Kiểm tra | Publish image |
+| --- | --- | --- |
+| Pull request | `npm ci`, toàn bộ tests, typecheck/build Web, Compose config, build server/web image | Không |
+| Push vào `main` | Như pull request | Không |
+| Chạy thủ công qua Actions | Như pull request | Không |
+| Push tag `vX.Y.Z` hoặc `vX.Y.Z-rc.1` | Như pull request; validate tag | GHCR, sau khi job verify thành công |
+
+Pipeline dùng Ubuntu 24.04, Node.js 24, Python 3.12 và G++ của runner. Hai image build riêng bằng matrix, target `linux/amd64`. Không tạo release tag, tự deploy, chạy Security Pentest hoặc tự nâng cấp dependencies. Không có tag `latest` tự động.
+
+Các action được pin theo commit SHA. Token mặc định chỉ đọc repository; chỉ job `release` có `packages: write`. Job này chỉ chạy khi push tag, sau khi `verify` và cả hai Docker builds thành công. PR dùng `pull_request`, không dùng `pull_request_target`; job build PR không có quyền publish.
+
+### Phát hành image
+
+Sau khi workflow đã được đưa lên GitHub, maintainer chọn commit cần phát hành và push tag phiên bản chưa dùng:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+Đây là thao tác phát hành, không phải lệnh kiểm tra local. Workflow không tự thực hiện thao tác này.
+
+Với repository `HaThaiCT/OanTuTiGame`, các image được đặt tên:
+
+```text
+ghcr.io/hathaict/oantutigame-server:v1.0.0
+ghcr.io/hathaict/oantutigame-web:v1.0.0
+```
+
+Cả hai có thêm tag `sha-<full-commit-sha>` để xác định bản build. Tên owner/repository được chuyển sang chữ thường khi tạo tên image. Nếu fork repository, tên image tự thay theo owner/repository mới.
+
+Đăng nhập registry dùng `GITHUB_TOKEN` do GitHub cấp, không cần thêm PAT/secret cho workflow. Chính sách organization/repository phải cho phép GitHub Actions ghi Packages. Package visibility không được workflow thay đổi; image private yêu cầu người tải có quyền đọc package. Bảo vệ quyền tạo/cập nhật release tag bằng repository rulesets nếu cần.
+
+Theo dõi tab **Actions → CI and container release**. Workflow tạo status checks; nó không tự bật branch protection. Nếu muốn bắt buộc checks trước khi merge, cấu hình rule cho `main` trong GitHub Settings sau khi workflow chạy lần đầu.
+
+Kiểm tra local tương ứng:
+
+```bash
+npm ci
+npm test
+npm run build --workspace=@oantuti/web
+docker compose config --quiet
+docker build -f Dockerfile.server -t oantuti-server:ci .
+docker build -f Dockerfile.web -t oantuti-web:ci .
+```
+
+CI đã được kiểm tra local bằng actionlint, `npm ci`, 74 workspace tests, build Web, Compose config và build cả hai Docker image. Script tạo tên image/tag đã được chạy với branch, tag release, prerelease và tag không hợp lệ. Chạy trên GitHub-hosted runner và publish GHCR chỉ được xác nhận sau khi workflow được push và có một run thực tế; không xem kiểm tra local là bằng chứng đã publish.
