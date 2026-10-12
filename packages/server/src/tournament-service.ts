@@ -25,6 +25,77 @@ export interface TournamentDetails {
   readonly matches: (MatchRow & { white_bot_name: string; black_bot_name: string })[];
 }
 
+export interface SwissPairingResult {
+  pairings: Array<{ whiteBotId: string; blackBotId: string }>;
+  byeBotId?: string;
+}
+
+export function generateSwissPairings(
+  standings: StandingEntry[],
+  previousPairs: ReadonlySet<string>,
+  byeHistory: ReadonlySet<string> = new Set<string>()
+): SwissPairingResult {
+  const sorted = [...standings].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    return b.elo - a.elo;
+  });
+
+  let byeBotId: string | undefined;
+  const pool = [...sorted];
+
+  if (pool.length % 2 === 1) {
+    let byeIndex = -1;
+    for (let i = pool.length - 1; i >= 0; i--) {
+      if (!byeHistory.has(pool[i].botId)) {
+        byeIndex = i;
+        break;
+      }
+    }
+    if (byeIndex === -1) {
+      byeIndex = pool.length - 1;
+    }
+    byeBotId = pool[byeIndex].botId;
+    pool.splice(byeIndex, 1);
+  }
+
+  function findMatching(remaining: StandingEntry[]): Array<{ whiteBotId: string; blackBotId: string }> | null {
+    if (remaining.length === 0) return [];
+
+    const first = remaining[0];
+    for (let i = 1; i < remaining.length; i++) {
+      const candidate = remaining[i];
+      const key1 = `${first.botId}:${candidate.botId}`;
+      const key2 = `${candidate.botId}:${first.botId}`;
+
+      if (!previousPairs.has(key1) && !previousPairs.has(key2)) {
+        const nextRemaining = remaining.filter((_, idx) => idx !== 0 && idx !== i);
+        const subResult = findMatching(nextRemaining);
+        if (subResult !== null) {
+          return [{ whiteBotId: first.botId, blackBotId: candidate.botId }, ...subResult];
+        }
+      }
+    }
+
+    return null;
+  }
+
+  const matched = findMatching(pool);
+  const pairings: Array<{ whiteBotId: string; blackBotId: string }> = [];
+
+  if (matched !== null) {
+    pairings.push(...matched);
+  } else {
+    for (let i = 0; i < pool.length; i += 2) {
+      if (i + 1 < pool.length) {
+        pairings.push({ whiteBotId: pool[i].botId, blackBotId: pool[i + 1].botId });
+      }
+    }
+  }
+
+  return { pairings, byeBotId };
+}
+
 export class TournamentService extends EventEmitter {
   private readonly db: Database;
   private readonly matchService: MatchService;
@@ -36,6 +107,7 @@ export class TournamentService extends EventEmitter {
   }
 
   async createTournament(options: {
+    creatorId: string;
     name: string;
     format?: 'ROUND_ROBIN' | 'SWISS';
     mapId: string;
@@ -60,6 +132,7 @@ export class TournamentService extends EventEmitter {
     });
 
     const tournament = this.db.createTournament({
+      creatorId: options.creatorId,
       name,
       format,
       status: 'PENDING',
@@ -72,7 +145,7 @@ export class TournamentService extends EventEmitter {
     });
 
     // Run tournament execution in background
-    this.runTournament(tournament.id, bots, mapId, maxTurns, doubleRound).catch((err) => {
+    this.runTournament(tournament.id, bots, mapId, maxTurns, doubleRound, format).catch((err) => {
       this.db.updateTournamentStatus(tournament.id, 'CANCELLED');
       this.emit('tournament:error', { tournamentId: tournament.id, error: err });
     });
@@ -85,25 +158,10 @@ export class TournamentService extends EventEmitter {
     bots: { id: string; name: string; language: string }[],
     mapId: string,
     maxTurns: number,
-    doubleRound: boolean
+    doubleRound: boolean,
+    format: 'ROUND_ROBIN' | 'SWISS'
   ): Promise<void> {
     this.db.updateTournamentStatus(tournamentId, 'RUNNING');
-
-    // Generate pairings
-    interface Pairing {
-      whiteBotId: string;
-      blackBotId: string;
-    }
-    const pairings: Pairing[] = [];
-
-    for (let i = 0; i < bots.length; i++) {
-      for (let j = i + 1; j < bots.length; j++) {
-        pairings.push({ whiteBotId: bots[i].id, blackBotId: bots[j].id });
-        if (doubleRound) {
-          pairings.push({ whiteBotId: bots[j].id, blackBotId: bots[i].id });
-        }
-      }
-    }
 
     // Initialize standings
     const standingsMap = new Map<string, StandingEntry>();
@@ -122,45 +180,116 @@ export class TournamentService extends EventEmitter {
       });
     }
 
-    // Execute matches sequentially to guarantee clean CPU allocation
-    for (const pairing of pairings) {
-      const { matchId } = await this.matchService.startMatch({
-        tournamentId,
-        mapId,
-        whiteBotId: pairing.whiteBotId,
-        blackBotId: pairing.blackBotId,
-        maxTurns,
-      });
+    if (format === 'SWISS') {
+      const totalRounds = Math.max(1, Math.min(bots.length - 1, Math.ceil(Math.log2(bots.length))));
+      const previousPairs = new Set<string>();
+      const byeHistory = new Set<string>();
 
-      const result = await this.matchService.waitForMatch(matchId);
+      for (let r = 1; r <= totalRounds; r++) {
+        const currentStandings = Array.from(standingsMap.values()).sort((a, b) => b.points - a.points || b.wins - a.wins);
+        const { pairings, byeBotId } = generateSwissPairings(currentStandings, previousPairs, byeHistory);
 
-      const whiteEntry = standingsMap.get(pairing.whiteBotId)!;
-      const blackEntry = standingsMap.get(pairing.blackBotId)!;
+        if (byeBotId) {
+          const byeEntry = standingsMap.get(byeBotId)!;
+          byeEntry.matchesPlayed++;
+          byeEntry.wins++;
+          byeEntry.points += 3;
+          byeHistory.add(byeBotId);
+        }
 
-      whiteEntry.matchesPlayed++;
-      blackEntry.matchesPlayed++;
+        for (const pairing of pairings) {
+          previousPairs.add(`${pairing.whiteBotId}:${pairing.blackBotId}`);
+          previousPairs.add(`${pairing.blackBotId}:${pairing.whiteBotId}`);
 
-      if (result.winner === 1) { // WHITE
-        whiteEntry.wins++;
-        whiteEntry.points += 3;
-        blackEntry.losses++;
-      } else if (result.winner === 2) { // BLACK
-        blackEntry.wins++;
-        blackEntry.points += 3;
-        whiteEntry.losses++;
-      } else { // DRAW
-        whiteEntry.draws++;
-        whiteEntry.points += 1;
-        blackEntry.draws++;
-        blackEntry.points += 1;
+          const { matchId } = await this.matchService.startMatch({
+            tournamentId,
+            mapId,
+            whiteBotId: pairing.whiteBotId,
+            blackBotId: pairing.blackBotId,
+            maxTurns,
+          });
+
+          const result = await this.matchService.waitForMatch(matchId);
+          const whiteEntry = standingsMap.get(pairing.whiteBotId)!;
+          const blackEntry = standingsMap.get(pairing.blackBotId)!;
+
+          whiteEntry.matchesPlayed++;
+          blackEntry.matchesPlayed++;
+
+          if (result.winner === 1) {
+            whiteEntry.wins++;
+            whiteEntry.points += 3;
+            blackEntry.losses++;
+          } else if (result.winner === 2) {
+            blackEntry.wins++;
+            blackEntry.points += 3;
+            whiteEntry.losses++;
+          } else {
+            whiteEntry.draws++;
+            whiteEntry.points += 1;
+            blackEntry.draws++;
+            blackEntry.points += 1;
+          }
+
+          const updatedBots = this.db.listBots();
+          whiteEntry.elo = updatedBots.find((x) => x.id === pairing.whiteBotId)?.elo ?? whiteEntry.elo;
+          blackEntry.elo = updatedBots.find((x) => x.id === pairing.blackBotId)?.elo ?? blackEntry.elo;
+        }
+      }
+    } else {
+      // ROUND_ROBIN
+      interface Pairing {
+        whiteBotId: string;
+        blackBotId: string;
+      }
+      const pairings: Pairing[] = [];
+
+      for (let i = 0; i < bots.length; i++) {
+        for (let j = i + 1; j < bots.length; j++) {
+          pairings.push({ whiteBotId: bots[i].id, blackBotId: bots[j].id });
+          if (doubleRound) {
+            pairings.push({ whiteBotId: bots[j].id, blackBotId: bots[i].id });
+          }
+        }
       }
 
-      // Update ELO snapshot in standings
-      const updatedBots = this.db.listBots();
-      whiteEntry.elo = updatedBots.find((x) => x.id === pairing.whiteBotId)?.elo ?? whiteEntry.elo;
-      blackEntry.elo = updatedBots.find((x) => x.id === pairing.blackBotId)?.elo ?? blackEntry.elo;
-    }
+      for (const pairing of pairings) {
+        const { matchId } = await this.matchService.startMatch({
+          tournamentId,
+          mapId,
+          whiteBotId: pairing.whiteBotId,
+          blackBotId: pairing.blackBotId,
+          maxTurns,
+        });
 
+        const result = await this.matchService.waitForMatch(matchId);
+
+        const whiteEntry = standingsMap.get(pairing.whiteBotId)!;
+        const blackEntry = standingsMap.get(pairing.blackBotId)!;
+
+        whiteEntry.matchesPlayed++;
+        blackEntry.matchesPlayed++;
+
+        if (result.winner === 1) {
+          whiteEntry.wins++;
+          whiteEntry.points += 3;
+          blackEntry.losses++;
+        } else if (result.winner === 2) {
+          blackEntry.wins++;
+          blackEntry.points += 3;
+          whiteEntry.losses++;
+        } else {
+          whiteEntry.draws++;
+          whiteEntry.points += 1;
+          blackEntry.draws++;
+          blackEntry.points += 1;
+        }
+
+        const updatedBots = this.db.listBots();
+        whiteEntry.elo = updatedBots.find((x) => x.id === pairing.whiteBotId)?.elo ?? whiteEntry.elo;
+        blackEntry.elo = updatedBots.find((x) => x.id === pairing.blackBotId)?.elo ?? blackEntry.elo;
+      }
+    }
     // Finalize standings
     const sortedStandings = Array.from(standingsMap.values()).sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
