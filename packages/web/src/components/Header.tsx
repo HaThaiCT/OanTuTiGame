@@ -6,7 +6,9 @@ import { LoadedReplay } from '../replay/player.js';
 interface HeaderProps {
   readonly replay: LoadedReplay;
   readonly currentTurn: number;
+  readonly isLive?: boolean;
   readonly onUploadReplay: (buffer: Uint8Array) => void;
+  readonly onOpenNewMatch: () => void;
 }
 
 const WIN_REASON_LABELS: Record<number, string> = {
@@ -20,7 +22,13 @@ const WIN_REASON_LABELS: Record<number, string> = {
   [WinReason.PROTOCOL_VIOLATION]: 'Protocol Violation',
 };
 
-export const Header: React.FC<HeaderProps> = ({ replay, currentTurn, onUploadReplay }) => {
+export const Header: React.FC<HeaderProps> = ({
+  replay,
+  currentTurn,
+  isLive,
+  onUploadReplay,
+  onOpenNewMatch,
+}) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,8 +104,52 @@ export const Header: React.FC<HeaderProps> = ({ replay, currentTurn, onUploadRep
         </div>
       </div>
 
-      {/* Outcome Banner & Replay Loader */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* Outcome Banner, Live Status, New Match & Replay Loader */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {isLive && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 10px',
+            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            border: '1px solid #ef4444',
+            borderRadius: '20px',
+            fontSize: '11px',
+            fontWeight: 800,
+            color: '#ef4444',
+          }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#ef4444',
+              boxShadow: '0 0 8px #ef4444',
+            }} />
+            <span>LIVE STREAM</span>
+          </div>
+        )}
+
+        <button
+          onClick={onOpenNewMatch}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#0284c7',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 14px',
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)',
+          }}
+        >
+          <Swords size={15} />
+          <span>New Match</span>
+        </button>
         <div style={{
           display: 'flex',
           alignItems: 'center',

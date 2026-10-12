@@ -5,15 +5,18 @@ import { Timeline } from './components/Timeline.js';
 import { PieceCounter } from './components/PieceCounter.js';
 import { TurnLogs } from './components/TurnLogs.js';
 import { CanvasViewport } from './components/CanvasViewport.js';
+import { NewMatchModal } from './components/NewMatchModal.js';
 import { LoadedReplay, parseReplayBinary } from './replay/player.js';
 import { generateDefaultMatch } from './replay/mock-generator.js';
-
+import { subscribeLiveMatch } from './api/client.js';
 export const App: React.FC = () => {
   const [replay, setReplay] = React.useState<LoadedReplay>(() => generateDefaultMatch());
   const [currentTurn, setCurrentTurn] = React.useState<number>(0);
   const [isPlaying, setIsPlaying] = React.useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = React.useState<number>(1);
-
+  const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false);
+  const [isLiveStream, setIsLiveStream] = React.useState<boolean>(false);
+  const liveSubRef = React.useRef<{ disconnect: () => void } | null>(null);
   // Derive valid tiles set from bitmask
   const validTilesSet = React.useMemo(() => {
     const coords = decodeValidTilesBitmask(
@@ -83,6 +86,41 @@ export const App: React.FC = () => {
     setCurrentTurn(Math.max(0, Math.min(totalTurns, turn)));
   };
 
+  const handleMatchStarted = (matchId: string) => {
+    // Disconnect prior stream
+    liveSubRef.current?.disconnect();
+
+    setIsLiveStream(true);
+    setIsPlaying(false);
+
+    const sub = subscribeLiveMatch(matchId, {
+      onInit: (_init, initialReplay) => {
+        setReplay(initialReplay);
+        setCurrentTurn(0);
+      },
+      onDelta: (_delta, _snapshot, updatedReplay) => {
+        setReplay({ ...updatedReplay });
+        setCurrentTurn(updatedReplay.snapshots.length - 1);
+      },
+      onEnd: (_end, finishedReplay) => {
+        setReplay({ ...finishedReplay });
+        setCurrentTurn(finishedReplay.snapshots.length - 1);
+        setIsLiveStream(false);
+      },
+      onError: (err) => {
+        console.error('Live stream error:', err);
+        setIsLiveStream(false);
+      },
+    });
+
+    liveSubRef.current = sub;
+  };
+
+  React.useEffect(() => {
+    return () => {
+      liveSubRef.current?.disconnect();
+    };
+  }, []);
   return (
     <div style={{
       display: 'flex',
@@ -96,9 +134,10 @@ export const App: React.FC = () => {
       <Header
         replay={replay}
         currentTurn={currentTurn}
+        isLive={isLiveStream}
         onUploadReplay={handleUploadReplay}
+        onOpenNewMatch={() => setIsModalOpen(true)}
       />
-
       {/* Main Workspace */}
       <div style={{
         display: 'flex',
@@ -164,6 +203,13 @@ export const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* New Match Modal */}
+      <NewMatchModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onMatchStarted={handleMatchStarted}
+      />
     </div>
   );
 };
