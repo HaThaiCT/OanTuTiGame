@@ -43,6 +43,17 @@ export interface LeaderboardEloRow {
   readonly peak_elo: number;
   readonly updated_at: string;
 }
+export interface TournamentRow {
+  readonly id: string;
+  readonly creator_id: string;
+  readonly name: string;
+  readonly format: 'SWISS' | 'ROUND_ROBIN' | 'SINGLE_ELIMINATION' | 'DOUBLE_ELIMINATION';
+  readonly status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
+  readonly config_json: string;
+  readonly started_at?: string;
+  readonly finished_at?: string;
+  readonly created_at: string;
+}
 
 export interface MatchRow {
   readonly id: string;
@@ -375,6 +386,55 @@ export class Database {
       WHERE bot_id = ?
     `);
     stmt.run(newElo, peakElo, isWin, isLoss, isDraw, botId);
+  }
+
+  createTournament(tournament: {
+    id?: string;
+    creatorId?: string;
+    name: string;
+    format: 'SWISS' | 'ROUND_ROBIN' | 'SINGLE_ELIMINATION' | 'DOUBLE_ELIMINATION';
+    configJson?: string;
+    status?: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
+  }): TournamentRow {
+    const id = tournament.id ?? `tour_${Date.now()}_${crypto.randomUUID().slice(0, 4)}`;
+    const creatorId = tournament.creatorId ?? 'usr_system';
+    const status = tournament.status ?? 'PENDING';
+    const stmt = this.db.prepare(`
+      INSERT INTO tournaments (id, creator_id, name, format, status, config_json, started_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    `);
+    stmt.run(id, creatorId, tournament.name, tournament.format, status, tournament.configJson ?? '{}');
+    return this.getTournamentById(id)!;
+  }
+
+  getTournamentById(id: string): TournamentRow | undefined {
+    const stmt = this.db.prepare('SELECT * FROM tournaments WHERE id = ?');
+    return stmt.get(id) as TournamentRow | undefined;
+  }
+
+  listTournaments(): TournamentRow[] {
+    const stmt = this.db.prepare('SELECT * FROM tournaments ORDER BY created_at DESC');
+    return stmt.all() as TournamentRow[];
+  }
+
+  updateTournamentStatus(id: string, status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED'): void {
+    const isEnd = status === 'COMPLETED' || status === 'CANCELLED';
+    const stmt = this.db.prepare(`
+      UPDATE tournaments
+      SET status = ?, finished_at = CASE WHEN ? THEN datetime('now') ELSE finished_at END
+      WHERE id = ?
+    `);
+    stmt.run(status, isEnd ? 1 : 0, id);
+  }
+
+  updateTournamentConfig(id: string, configJson: string): void {
+    const stmt = this.db.prepare('UPDATE tournaments SET config_json = ? WHERE id = ?');
+    stmt.run(configJson, id);
+  }
+
+  getMatchesByTournamentId(tournamentId: string): MatchRow[] {
+    const stmt = this.db.prepare('SELECT * FROM matches WHERE tournament_id = ? ORDER BY started_at ASC');
+    return stmt.all(tournamentId) as MatchRow[];
   }
 
   close(): void {

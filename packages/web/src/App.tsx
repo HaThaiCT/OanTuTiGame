@@ -6,6 +6,7 @@ import { PieceCounter } from './components/PieceCounter.js';
 import { TurnLogs } from './components/TurnLogs.js';
 import { CanvasViewport } from './components/CanvasViewport.js';
 import { NewMatchModal } from './components/NewMatchModal.js';
+import { TournamentModal } from './components/TournamentModal.js';
 import { BotEditor } from './components/BotEditor.js';
 import { LeaderboardView } from './components/LeaderboardView.js';
 import { LoadedReplay, parseReplayBinary } from './replay/player.js';
@@ -18,6 +19,7 @@ export const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = React.useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = React.useState<number>(1);
   const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false);
+  const [isTourModalOpen, setIsTourModalOpen] = React.useState<boolean>(false);
   const [isLiveStream, setIsLiveStream] = React.useState<boolean>(false);
   const [rightTab, setRightTab] = React.useState<'EDITOR' | 'LOGS' | 'LEADERBOARD'>('LOGS');
   const liveSubRef = React.useRef<{ disconnect: () => void } | null>(null);
@@ -96,6 +98,21 @@ export const App: React.FC = () => {
     setCurrentTurn(Math.max(0, Math.min(totalTurns, turn)));
   };
 
+  const handlePlaySpecificMatch = async (matchId: string) => {
+    try {
+      const res = await fetch(`/api/matches/${matchId}/replay`);
+      if (res.ok) {
+        const arrayBuf = await res.arrayBuffer();
+        handleUploadReplay(new Uint8Array(arrayBuf));
+        setRightTab('LOGS');
+      } else {
+        handleMatchStarted(matchId);
+      }
+    } catch {
+      handleMatchStarted(matchId);
+    }
+  };
+
   const handleMatchStarted = (matchId: string) => {
     // Disconnect prior stream
     liveSubRef.current?.disconnect();
@@ -103,7 +120,6 @@ export const App: React.FC = () => {
     setIsLiveStream(true);
     setCurrentTurn(0);
     setIsPlaying(true);
-
     const sub = subscribeLiveMatch(matchId, {
       onInit: (_init, initialReplay) => {
         setReplay(initialReplay);
@@ -311,9 +327,9 @@ export const App: React.FC = () => {
           {rightTab === 'LEADERBOARD' && (
             <div style={{ flex: 1, minHeight: 0 }}>
               <LeaderboardView
-                onChallengeBot={() => {
-                  setIsModalOpen(true);
-                }}
+                onChallengeBot={() => setIsModalOpen(true)}
+                onOpenCreateTournament={() => setIsTourModalOpen(true)}
+                onPlayMatch={handlePlaySpecificMatch}
               />
             </div>
           )}
@@ -325,6 +341,15 @@ export const App: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onMatchStarted={handleMatchStarted}
+      />
+
+      {/* Tournament Modal */}
+      <TournamentModal
+        isOpen={isTourModalOpen}
+        onClose={() => setIsTourModalOpen(false)}
+        onTournamentStarted={(_tourId) => {
+          setRightTab('LEADERBOARD');
+        }}
       />
     </div>
   );

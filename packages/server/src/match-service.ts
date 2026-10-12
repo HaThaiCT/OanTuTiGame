@@ -103,6 +103,7 @@ export class MatchService extends EventEmitter {
     whiteBotId: string;
     blackBotId: string;
     maxTurns?: number;
+    tournamentId?: string;
   }): Promise<{ matchId: string; activeState: ActiveMatchState }> {
     const whiteBot = this.db.getBotById(params.whiteBotId);
     const blackBot = this.db.getBotById(params.blackBotId);
@@ -115,6 +116,7 @@ export class MatchService extends EventEmitter {
 
     const mapDescriptor = this.getMapDescriptor(params.mapId);
     const matchRow = this.db.createMatch({
+      tournamentId: params.tournamentId,
       mapId: params.mapId,
       whiteBotId: whiteBot.id,
       blackBotId: blackBot.id,
@@ -276,5 +278,49 @@ export class MatchService extends EventEmitter {
     })();
 
     return { matchId, activeState };
+  }
+
+  waitForMatch(matchId: string): Promise<MatchResult> {
+    const active = this.activeMatches.get(matchId);
+    if (!active) {
+      const row = this.db.getMatchById(matchId);
+      if (row && row.finished_at) {
+        return Promise.resolve({
+          matchId: row.id,
+          winner: row.winner_side === 'WHITE' ? PlayerSide.WHITE : row.winner_side === 'BLACK' ? PlayerSide.BLACK : undefined,
+          winReason: WinReason.WIN_REASON_UNSPECIFIED,
+          totalTurns: row.total_turns,
+          whitePiecesRemaining: 0,
+          blackPiecesRemaining: 0,
+          turns: [],
+          whiteStderr: '',
+          blackStderr: '',
+        });
+      }
+      return Promise.reject(new Error(`Match ${matchId} not found`));
+    }
+
+    if (active.isFinished && active.result) {
+      return Promise.resolve(active.result);
+    }
+
+    return new Promise<MatchResult>((resolve, reject) => {
+      const onEnd = (event: { matchId: string; result: MatchResult }) => {
+        if (event.matchId === matchId) {
+          this.off('match:end', onEnd);
+          this.off('match:error', onError);
+          resolve(event.result);
+        }
+      };
+      const onError = (event: { matchId: string; error: unknown }) => {
+        if (event.matchId === matchId) {
+          this.off('match:end', onEnd);
+          this.off('match:error', onError);
+          reject(event.error);
+        }
+      };
+      this.on('match:end', onEnd);
+      this.on('match:error', onError);
+    });
   }
 }

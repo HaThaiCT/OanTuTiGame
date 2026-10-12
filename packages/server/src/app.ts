@@ -10,6 +10,7 @@ import * as path from 'path';
 import { Database } from './db.js';
 import { MatchService } from './match-service.js';
 import { WebSocketHub } from './ws-hub.js';
+import { TournamentService } from './tournament-service.js';
 
 export interface ServerOptions {
   readonly dbLocation?: string;
@@ -22,12 +23,14 @@ export interface AppContext {
   readonly db: Database;
   readonly matchService: MatchService;
   readonly wsHub: WebSocketHub;
+  readonly tournamentService: TournamentService;
 }
 
 export async function createApp(options?: ServerOptions): Promise<AppContext> {
   const db = new Database(options?.dbLocation ?? ':memory:');
   const matchService = new MatchService(db, options?.mapsDir, options?.replaysDir);
   const wsHub = new WebSocketHub(matchService, db);
+  const tournamentService = new TournamentService(db, matchService);
 
   // Seed default AI bots if missing
   // Seed default AI bots across supported languages
@@ -211,6 +214,53 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     return { leaderboard: db.getLeaderboard() };
   });
 
+  // Tournaments
+  app.get('/api/tournaments', async () => {
+    return { tournaments: tournamentService.listTournaments() };
+  });
+
+  app.post<{
+    Body: {
+      name: string;
+      format?: 'ROUND_ROBIN' | 'SWISS';
+      mapId: string;
+      botIds: string[];
+      maxTurns?: number;
+      doubleRound?: boolean;
+    };
+  }>('/api/tournaments', async (req, reply) => {
+    const { name, format, mapId, botIds, maxTurns, doubleRound } = req.body;
+    if (!name || !mapId || !Array.isArray(botIds) || botIds.length < 2) {
+      reply.status(400);
+      return { error: 'Missing required tournament fields (name, mapId, botIds with at least 2 bots)' };
+    }
+
+    try {
+      const tournament = await tournamentService.createTournament({
+        name,
+        format,
+        mapId,
+        botIds,
+        maxTurns,
+        doubleRound,
+      });
+      return { tournament };
+    } catch (err) {
+      reply.status(400);
+      return { error: (err as Error).message };
+    }
+  });
+
+  app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {
+    try {
+      const details = tournamentService.getTournamentDetails(req.params.id);
+      return details;
+    } catch {
+      reply.status(404);
+      return { error: `Tournament "${req.params.id}" not found` };
+    }
+  });
+
   // Binary WebSocket Streaming Route
   app.get<{ Params: { matchId: string } }>(
     '/ws/matches/:matchId',
@@ -221,5 +271,5 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     }
   );
 
-  return { app, db, matchService, wsHub };
+  return { app, db, matchService, wsHub, tournamentService };
 }

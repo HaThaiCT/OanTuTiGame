@@ -65,6 +65,81 @@ export async function createMatch(
   return res.json();
 }
 
+export interface TournamentSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly format: string;
+  readonly status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
+  readonly created_at: string;
+  readonly started_at?: string;
+  readonly finished_at?: string;
+}
+
+export interface TournamentStanding {
+  readonly botId: string;
+  readonly botName: string;
+  readonly language: string;
+  readonly matchesPlayed: number;
+  readonly wins: number;
+  readonly losses: number;
+  readonly draws: number;
+  readonly points: number;
+  readonly elo: number;
+}
+
+export interface TournamentMatch {
+  readonly id: string;
+  readonly map_id: string;
+  readonly white_bot_id: string;
+  readonly black_bot_id: string;
+  readonly white_bot_name: string;
+  readonly black_bot_name: string;
+  readonly winner_side?: 'WHITE' | 'BLACK' | 'DRAW';
+  readonly win_reason?: string;
+  readonly total_turns: number;
+  readonly finished_at?: string;
+}
+
+export interface TournamentDetailsResponse {
+  readonly tournament: TournamentSummary;
+  readonly standings: TournamentStanding[];
+  readonly matches: TournamentMatch[];
+}
+
+export async function fetchTournaments(): Promise<TournamentSummary[]> {
+  const res = await fetch('/api/tournaments');
+  if (!res.ok) throw new Error(`Failed to fetch tournaments: ${res.statusText}`);
+  const data = await res.json();
+  return data.tournaments;
+}
+
+export async function fetchTournamentDetails(id: string): Promise<TournamentDetailsResponse> {
+  const res = await fetch(`/api/tournaments/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch tournament: ${res.statusText}`);
+  return res.json();
+}
+
+export async function createTournament(params: {
+  name: string;
+  format?: 'ROUND_ROBIN' | 'SWISS';
+  mapId: string;
+  botIds: string[];
+  maxTurns?: number;
+  doubleRound?: boolean;
+}): Promise<TournamentSummary> {
+  const res = await fetch('/api/tournaments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || 'Failed to create tournament');
+  }
+  const data = await res.json();
+  return data.tournament;
+}
+
 export interface LiveMatchCallbacks {
   onInit: (init: MatchInitFrameMessage, replay: LoadedReplay) => void;
   onDelta: (delta: TurnDeltaFrameMessage, snapshot: ReplayTurnSnapshot, replay: LoadedReplay) => void;
