@@ -100,8 +100,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     let animId: number;
 
     const render = (time: number) => {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
+      try {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
         // Handle High-DPI canvas
         const rect = container.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
@@ -160,11 +161,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           screenShakeOffset,
         };
 
-        renderCanvasFrame(ctx, transform, renderState);
-        ctx.restore();
+          renderCanvasFrame(ctx, transform, renderState);
+          ctx.restore();
+        }
+      } catch (err) {
+        console.error('Canvas frame render error:', err);
+      } finally {
+        animId = requestAnimationFrame(render);
       }
-
-      animId = requestAnimationFrame(render);
     };
 
     animId = requestAnimationFrame(render);

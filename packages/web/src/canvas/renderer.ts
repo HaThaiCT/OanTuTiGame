@@ -355,6 +355,37 @@ function drawPaperHandIcon(
 }
 
 /**
+ * Draws a stylized vector Crown/Citadel emblem for Throne objectives
+ */
+function drawThroneEmblem(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.fillStyle = color;
+
+  const w = size * 0.8;
+  const h = size * 0.55;
+
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, h / 2);
+  ctx.lineTo(-w / 2, -h / 2);
+  ctx.lineTo(-w / 4, 0);
+  ctx.lineTo(0, -h * 0.65);
+  ctx.lineTo(w / 4, 0);
+  ctx.lineTo(w / 2, -h / 2);
+  ctx.lineTo(w / 2, h / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
  * Executes full 6-layer render frame on Canvas 2D context.
  */
 export function renderCanvasFrame(
@@ -437,11 +468,7 @@ export function renderCanvasFrame(
     ctx.arc(center.x, center.y, tileSize * 0.35, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#eab308';
-    ctx.font = `bold ${Math.max(10, Math.round(tileSize * 0.22))}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('TW', center.x, center.y);
+    drawThroneEmblem(ctx, center.x, center.y, tileSize * 0.35, '#eab308');
   }
 
   // Black Throne (TB) - Purple Pulse
@@ -459,11 +486,7 @@ export function renderCanvasFrame(
     ctx.arc(center.x, center.y, tileSize * 0.35, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#c084fc';
-    ctx.font = `bold ${Math.max(10, Math.round(tileSize * 0.22))}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('TB', center.x, center.y);
+    drawThroneEmblem(ctx, center.x, center.y, tileSize * 0.35, '#c084fc');
   }
 
   // ==========================================
@@ -613,15 +636,20 @@ export function renderCanvasFrame(
   if (state.floatingTexts && state.floatingTexts.length > 0) {
     for (const item of state.floatingTexts) {
       ctx.save();
-      ctx.globalAlpha = item.alpha;
-      ctx.font = `900 ${Math.max(14, Math.round(tileSize * 0.36))}px 'JetBrains Mono', monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = item.color;
-      ctx.shadowColor = item.color;
-      ctx.shadowBlur = 12;
-      ctx.fillText(item.text, item.x, item.y);
-      ctx.restore();
+      try {
+        ctx.globalAlpha = item.alpha;
+        ctx.font = `900 ${Math.max(14, Math.round(tileSize * 0.36))}px 'JetBrains Mono', monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = item.color;
+        ctx.shadowColor = item.color;
+        ctx.shadowBlur = 12;
+        ctx.fillText(item.text, item.x, item.y);
+      } catch {
+        // Ignore canvas fillText recursion on wrapped contexts
+      } finally {
+        ctx.restore();
+      }
     }
   }
 
