@@ -157,11 +157,24 @@ async function executeTurnWithBudget(botProcess: ChildProcess, turnPayload: stri
       }
     }, 105); // 100ms + 5ms grace
 
-    // Đọc 1 dòng từ STDOUT
-    const onLineReceived = (line: string) => {
+    // Bộ đệm tích lũy dòng (Line Buffer) xử lý triệt để việc phân mảnh byte (Stream Chunk Fragmentation)
+    let lineBuffer = '';
+
+    const onDataChunk = (chunk: Buffer) => {
+      lineBuffer += chunk.toString('utf-8');
+      const newlineIndex = lineBuffer.indexOf('\n');
+      if (newlineIndex === -1) {
+        return; // Chưa nhận đủ 1 dòng hoàn chỉnh, tiếp tục đợi chunk kế
+      }
+
+      // Đã nhận trọn vẹn ít nhất 1 dòng
+      const rawLine = lineBuffer.slice(0, newlineIndex).trim();
+      lineBuffer = lineBuffer.slice(newlineIndex + 1);
+
       if (isHandled) return;
       const elapsedNs = process.hrtime.bigint() - startTime;
       clearTimeout(timeoutHandle);
+      botProcess.stdout.removeListener('data', onDataChunk);
       isHandled = true;
 
       if (elapsedNs > TURN_BUDGET_NS + GRACE_PERIOD_NS) {
@@ -171,7 +184,7 @@ async function executeTurnWithBudget(botProcess: ChildProcess, turnPayload: stri
       }
 
       try {
-        const action = JSON.parse(line.trim());
+        const action = JSON.parse(rawLine);
         resolve({ action, timeConsumedNs: elapsedNs });
       } catch (err) {
         botProcess.kill('SIGKILL');
@@ -179,7 +192,7 @@ async function executeTurnWithBudget(botProcess: ChildProcess, turnPayload: stri
       }
     };
 
-    botProcess.stdout.once('data', onLineReceived);
+    botProcess.stdout.on('data', onDataChunk);
     // Ghi payload vào STDIN và xả stream
     botProcess.stdin.write(turnPayload + '\n');
   });

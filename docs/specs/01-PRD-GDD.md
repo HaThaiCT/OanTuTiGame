@@ -167,10 +167,10 @@ flowchart TD
 - **Giới hạn số lượt (Max Turns):** Mặc định $N_{\text{max}} = 300$ lượt đi (150 lượt cho mỗi bên).
 - Khi chạm ngưỡng $N_{\text{max}}$, nếu chưa có bên nào đạt điều kiện thắng tuyệt đối, hệ thống kích hoạt thuật toán phân định thắng thua theo thứ tự:
   1. **Tổng quân số còn sống:** Bên nào có tổng số quân còn sống nhiều hơn $\implies$ Thắng.
-  2. **Tổng giá trị quân cờ (Material Score):** Nếu tổng quân bằng nhau, tính điểm giá trị quân:
-     $$\text{Score}(P) = 3 \cdot |R| + 3 \cdot |S| + 3 \cdot |P|$$
-     (hoặc tính theo trọng số khoảng cách đến ô chốt đối phương: $\sum \frac{1}{d(p, T_{\text{enemy}}) + 1}$).
-  3. Nếu mọi chỉ số vẫn hoàn toàn bằng nhau: Xử **Hòa Trận (Draw)**.
+  2. **Chỉ số áp sát cứ điểm (Throne Proximity Score):** Nếu tổng quân số bằng nhau, phân định bằng tổng điểm áp sát ô chốt đối phương:
+     $$\text{ProximityScore}(P) = \sum_{p \in \text{pieces}(P), \text{is\_alive}(p)} \frac{10}{d_\infty(p, T_{\text{enemy}}) + 1}$$
+     Trong đó $d_\infty(p, T_{\text{enemy}}) = \max(|x_p - x_T|, |y_p - y_T|)$ là khoảng cách Chebyshev đến ô chốt đối phương. Bên nào có tổng điểm tiếp cận cao hơn sẽ thắng.
+  3. Nếu cả tổng quân và điểm áp sát vẫn hoàn toàn bằng nhau: Xử **Hòa Trận (Draw)**.
 
 ---
 

@@ -164,7 +164,7 @@ CREATE TABLE matches (
     winner_side VARCHAR(10) CHECK (winner_side IN ('WHITE', 'BLACK', 'DRAW')),
     win_reason VARCHAR(30) CHECK (win_reason IN (
         'EXTINCTION', 'THRONE_BREACH', 'STALEMATE', 
-        'TIMEOUT', 'ILLEGAL_MOVE', 'CRASH_FORFEIT', 'MAX_TURNS_DRAW'
+        'TIMEOUT', 'ILLEGAL_MOVE', 'CRASH_FORFEIT', 'MAX_TURNS_DRAW', 'PROTOCOL_VIOLATION'
     )),
     total_turns INT NOT NULL DEFAULT 0,
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -180,6 +180,90 @@ CREATE TABLE replays (
     file_size_bytes INT NOT NULL,
     checksum_sha256 VARCHAR(64) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+### 2.2. Lược Đồ DDL Tương Thích Cho SQLite 3 (Local Dev & Test Mode)
+
+```sql
+-- 1. Bảng USERS
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'MODERATOR')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 2. Bảng BOTS
+CREATE TABLE bots (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    language TEXT NOT NULL CHECK (language IN ('PYTHON', 'TYPESCRIPT', 'JAVASCRIPT', 'CPP', 'JAVA', 'GO')),
+    source_code TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, name)
+);
+
+-- 3. Bảng LEADERBOARD_ELO
+CREATE TABLE leaderboard_elo (
+    id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL UNIQUE REFERENCES bots(id) ON DELETE CASCADE,
+    rating_elo INTEGER NOT NULL DEFAULT 1200,
+    matches_played INTEGER NOT NULL DEFAULT 0,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    draws INTEGER NOT NULL DEFAULT 0,
+    peak_elo INTEGER NOT NULL DEFAULT 1200,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 4. Bảng TOURNAMENTS
+CREATE TABLE tournaments (
+    id TEXT PRIMARY KEY,
+    creator_id TEXT NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    format TEXT NOT NULL CHECK (format IN ('SWISS', 'ROUND_ROBIN', 'SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION')),
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'RUNNING', 'COMPLETED', 'CANCELLED')),
+    config_json TEXT NOT NULL DEFAULT '{}',
+    started_at TEXT,
+    finished_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 5. Bảng MATCHES
+CREATE TABLE matches (
+    id TEXT PRIMARY KEY,
+    tournament_id TEXT REFERENCES tournaments(id) ON DELETE SET NULL,
+    map_id TEXT NOT NULL,
+    white_bot_id TEXT NOT NULL REFERENCES bots(id),
+    black_bot_id TEXT NOT NULL REFERENCES bots(id),
+    winner_bot_id TEXT REFERENCES bots(id),
+    winner_side TEXT CHECK (winner_side IN ('WHITE', 'BLACK', 'DRAW')),
+    win_reason TEXT CHECK (win_reason IN (
+        'EXTINCTION', 'THRONE_BREACH', 'STALEMATE', 
+        'TIMEOUT', 'ILLEGAL_MOVE', 'CRASH_FORFEIT', 'MAX_TURNS_DRAW', 'PROTOCOL_VIOLATION'
+    )),
+    total_turns INTEGER NOT NULL DEFAULT 0,
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    finished_at TEXT
+);
+
+-- 6. Bảng REPLAYS
+CREATE TABLE replays (
+    id TEXT PRIMARY KEY,
+    match_id TEXT NOT NULL UNIQUE REFERENCES matches(id) ON DELETE CASCADE,
+    storage_type TEXT NOT NULL DEFAULT 'DISK' CHECK (storage_type IN ('DISK', 'S3')),
+    file_path TEXT NOT NULL,
+    file_size_bytes INTEGER NOT NULL,
+    checksum_sha256 TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 

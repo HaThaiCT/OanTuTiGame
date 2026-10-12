@@ -94,6 +94,7 @@ enum WinReason {
   ILLEGAL_MOVE = 5;      // Thực hiện nước đi không hợp lệ
   CRASH_FORFEIT = 6;     // Bot ném exception, crash hoặc OOM
   MAX_TURNS_DRAW = 7;    // Hòa do chạm ngưỡng số lượt tối đa (300)
+  PROTOCOL_VIOLATION = 8;// Vi phạm giao thức STDIO NDJSON hoặc format dữ liệu
 }
 
 message Coord {
@@ -205,6 +206,8 @@ Tất cả các trận đấu được hệ thống tự động ghi lại và �
 |               MatchInitFrame Protobuf Payload                 |
 |                              ...                              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|            TotalDeltaCount (4 Bytes uint32, Big-Endian)       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |       DeltaLen1 (2B uint16)   |  TurnDeltaFrame 1 Payload ... |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |       DeltaLen2 (2B uint16)   |  TurnDeltaFrame 2 Payload ... |
@@ -222,10 +225,13 @@ Tất cả các trận đấu được hệ thống tự động ghi lại và �
 2. **Init Frame Block:**
    - 4 bytes uint32: Chiều dài byte của `MatchInitFrame`.
    - Payload Protobuf của `MatchInitFrame`.
-3. **Turn Delta Stream (N blocks):**
-   - 2 bytes uint16: Chiều dài byte của `TurnDeltaFrame` hiện tại (vì frame delta luôn $\le 200$ bytes nên uint16 là tối ưu tuyệt đối).
+3. **TotalDeltaCount (4 bytes uint32, Big-Endian):**
+   - Số lượng chính xác các frame biến động lượt đi (`N_deltas`) trong tệp.
+   - *Lợi ích:* Trình phân tích cú pháp (Parser) biết chính xác số lượng block Delta cần đọc tuần tự, loại bỏ hoàn toàn sự nhập nhằng giữa độ dài 2-byte DeltaLen và 4-byte EndFrameLen.
+4. **Turn Delta Stream (N_deltas blocks):**
+   - 2 bytes uint16: Chiều dài byte của `TurnDeltaFrame` hiện tại.
    - Payload Protobuf của `TurnDeltaFrame`.
-4. **Footer Block:**
+5. **Footer Block:**
    - 4 bytes uint32: Chiều dài byte của `MatchEndFrame`.
    - Payload Protobuf của `MatchEndFrame`.
 

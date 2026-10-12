@@ -27,6 +27,7 @@ enum WinReason {
   ILLEGAL_MOVE = 5;      // Thực hiện nước đi sai luật hoặc sai định dạng
   CRASH_FORFEIT = 6;     // Bot ném exception, crash hoặc vượt quá quota RAM
   MAX_TURNS_DRAW = 7;    // Hòa do chạm ngưỡng số lượt tối đa (300 turns)
+  PROTOCOL_VIOLATION = 8;// Vi phạm giao thức STDIO NDJSON hoặc format dữ liệu
 }
 
 // Tọa độ 2D trên đồ thị lưới tổng quát

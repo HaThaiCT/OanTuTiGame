@@ -61,7 +61,7 @@ Cho trước kích thước khung hình Canvas vật lý $(W_{\text{canvas}}, H_
    $$\text{offsetY} = \frac{H_{\text{canvas}} - H_{\text{board}} \cdot s}{2}$$
 
 3. **Ánh Xạ Tọa Độ Logic $(x, y) \in V$ Sang Tọa Độ Pixel Màn Hình $(X, Y)$:**
-   Trong hệ tọa độ game, gốc $(0, 0)$ nằm ở góc dưới-trái (hoặc trên-trái):
+   Hệ tọa độ game và Canvas chuẩn hóa đặt gốc $(0, 0)$ tại góc trên-trái (Top-Left Origin): trục $x$ tăng dần từ trái sang phải ($0 \to W_{\text{board}}-1$), trục $y$ tăng dần từ trên xuống dưới ($0 \to H_{\text{board}}-1$). Hàng $y = 0$ là cứ điểm xuất phát của phe Trắng ($T_W$), hàng $y = H_{\text{board}}-1$ là cứ điểm của phe Đen ($T_B$).
    $$X(x) = \text{offsetX} + x \cdot s$$
    $$Y(y) = \text{offsetY} + y \cdot s$$
    Tâm của ô cờ $(x, y)$ tại pixel:
