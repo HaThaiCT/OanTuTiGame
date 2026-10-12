@@ -123,6 +123,19 @@ export const TYPESCRIPT_BOT_TEMPLATE = `import * as readline from 'readline';
 const RPS_BEATS: Record<string, string> = {
   ROCK: 'SCISSORS',
   SCISSORS: 'PAPER',
+  PAPER: 'ROCK',
+};
+
+const KING_DIRECTIONS = [
+  [-1, -1], [0, -1], [1, -1],
+  [-1,  0],          [1,  0],
+  [-1,  1], [0,  1], [1,  1],
+];
+
+function chebyshevDistance(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+}
+
 interface PieceData {
   id: number;
   owner: string;
@@ -225,4 +238,80 @@ rl.on('line', (line) => {
     );
   }
 });
+`;
+
+export const CPP_BOT_TEMPLATE = `// =======================================================
+// OanTuTi Arena — C++20 Competitive Bot
+// Budget: 1,000ms for INIT | 100ms for TURN
+// =======================================================
+
+#include "oantuti.hpp"
+
+class MyArenaBot : public oantuti::Bot {
+private:
+    oantuti::Coord enemy_throne_{0, 0};
+
+public:
+    void on_init(const oantuti::InitContext& ctx) override {
+        enemy_throne_ = ctx.enemy_throne();
+    }
+
+    std::optional<oantuti::MoveAction> on_turn(const oantuti::TurnContext& ctx) override {
+        auto legal_moves = ctx.get_legal_moves();
+        if (legal_moves.empty()) {
+            return std::nullopt;
+        }
+
+        std::map<std::pair<int, int>, const oantuti::Piece*> grid;
+        for (const auto& p : ctx.pieces) {
+            if (p.is_alive) grid[{p.x, p.y}] = &p;
+        }
+
+        std::optional<oantuti::MoveAction> best_move = legal_moves[0];
+        int best_score = -999999;
+
+        for (const auto& move : legal_moves) {
+            const auto* mover = [&]() -> const oantuti::Piece* {
+                for (const auto& p : ctx.my_pieces()) {
+                    if (p.id == move.piece_id) return &p;
+                }
+                return nullptr;
+            }();
+
+            if (!mover) continue;
+
+            int score = 0;
+
+            // 1. Immediate Throne Breach
+            if (move.target == enemy_throne_) {
+                score += 100000;
+            }
+
+            // 2. Capture
+            auto it = grid.find({move.target.x, move.target.y});
+            if (it != grid.end() && it->second->owner != ctx.my_side) {
+                score += 5000;
+            }
+
+            // 3. Distance Delta towards enemy throne
+            int cur_dist = oantuti::chebyshev_distance(mover->pos(), enemy_throne_);
+            int new_dist = oantuti::chebyshev_distance(move.target, enemy_throne_);
+            int dist_delta = cur_dist - new_dist;
+            score += dist_delta * 100 - new_dist;
+
+            if (score > best_score) {
+                best_score = score;
+                best_move = move;
+            }
+        }
+
+        return best_move;
+    }
+};
+
+int main() {
+    MyArenaBot bot;
+    bot.run();
+    return 0;
+}
 `;

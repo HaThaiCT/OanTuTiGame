@@ -5,118 +5,113 @@ const MonacoEditor = (
   'default' in MonacoPackage ? MonacoPackage.default : MonacoPackage
 ) as React.ComponentType<EditorProps>;
 import { Play, Save, RotateCcw, Bot, Swords, Loader2, CheckCircle2 } from 'lucide-react';
-import { PYTHON_BOT_TEMPLATE, TYPESCRIPT_BOT_TEMPLATE } from '../editor/templates.js';
-import { fetchBots, fetchMaps, createMatch, BotSummary, MapSummary } from '../api/client.js';
+import { PYTHON_BOT_TEMPLATE, TYPESCRIPT_BOT_TEMPLATE, CPP_BOT_TEMPLATE } from '../editor/templates.js';
+import { fetchBots, fetchMaps, fetchOwnedBots, fetchBot, fetchBotVersions, saveBot, deleteBot, createTestMatch, BotSummary, MapSummary, BotDetail, BotVersion, BotLanguage } from '../api/client.js';
+import { useSession } from '../session.js';
 
-interface BotEditorProps {
-  readonly onMatchStarted: (matchId: string) => void;
-}
-
+interface BotEditorProps { readonly onMatchStarted: (matchId: string) => void }
+const fieldStyle: React.CSSProperties = {background: '#0f172a', color: '#f8fafc', border: '1px solid #334155', borderRadius: 6, padding: '6px 8px', fontSize: 11};
 export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
-  const [language, setLanguage] = React.useState<'PYTHON' | 'TYPESCRIPT'>('PYTHON');
-  const [botName, setBotName] = React.useState<string>('MyPythonBot');
-  const [code, setCode] = React.useState<string>(PYTHON_BOT_TEMPLATE);
+  const {user, loading: sessionLoading} = useSession();
+  const [language, setLanguage] = React.useState<BotLanguage>('PYTHON');
+  const [botName, setBotName] = React.useState('MyPythonBot');
+  const [drafts, setDrafts] = React.useState<Record<BotLanguage, string>>({PYTHON: PYTHON_BOT_TEMPLATE, TYPESCRIPT: TYPESCRIPT_BOT_TEMPLATE, CPP: CPP_BOT_TEMPLATE});
+  const code = drafts[language];
+  const setCode = (value: string) => {setDrafts(previous => ({...previous, [language]: value})); setIsSaved(false); setDirty(true);};
   const [opponents, setOpponents] = React.useState<BotSummary[]>([]);
+  const [owned, setOwned] = React.useState<BotSummary[]>([]);
   const [maps, setMaps] = React.useState<MapSummary[]>([]);
-  const [selectedOpponentId, setSelectedOpponentId] = React.useState<string>('');
-  const [selectedMapId, setSelectedMapId] = React.useState<string>('sample-donut');
-  const [isRunning, setIsRunning] = React.useState<boolean>(false);
-  const [isSaved, setIsSaved] = React.useState<boolean>(false);
+  const [selectedOpponentId, setSelectedOpponentId] = React.useState('');
+  const [selectedMapId, setSelectedMapId] = React.useState('');
+  const [selectedBot, setSelectedBot] = React.useState<BotDetail | null>(null);
+  const [versions, setVersions] = React.useState<BotVersion[]>([]);
+  const [historyVersion, setHistoryVersion] = React.useState('');
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [dirty, setDirty] = React.useState(false);
+  const [isSaved, setIsSaved] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
-
+  const mounted = React.useRef(true);
+  React.useEffect(() => {mounted.current = true; return () => {mounted.current = false;};}, []);
+  const showError = (error: unknown) => {if (mounted.current) {setIsSaved(false); setStatusMessage(error instanceof Error ? error.message : 'Request failed');}};
+  const refreshMetadata = async () => {
+    const [all, mine] = await Promise.all([fetchBots(), fetchOwnedBots()]);
+    if (!mounted.current) return;
+    setOpponents(all); setOwned(mine);
+    setSelectedOpponentId(current => all.some(bot => bot.id === current) ? current : all[0]?.id ?? '');
+  };
   React.useEffect(() => {
-    Promise.all([fetchBots(), fetchMaps()])
-      .then(([bList, mList]) => {
-        setOpponents(bList);
-        setMaps(mList);
-
-        const greedy = bList.find((b) => b.name === 'GreedyBot');
-        if (greedy) setSelectedOpponentId(greedy.id);
-        else if (bList.length > 0) setSelectedOpponentId(bList[0].id);
-
-        if (mList.length > 0) setSelectedMapId(mList[0].id);
-      })
-      .catch((err) => {
-        console.error('Failed to load bots or maps:', err);
-      });
-  }, []);
-
-  const handleLanguageChange = (newLang: 'PYTHON' | 'TYPESCRIPT') => {
-    setLanguage(newLang);
-    if (newLang === 'PYTHON') {
-      setBotName('MyPythonBot');
-      setCode(PYTHON_BOT_TEMPLATE);
-    } else {
-      setBotName('MyTsBot');
-      setCode(TYPESCRIPT_BOT_TEMPLATE);
-    }
+    let active = true;
+    Promise.all([fetchBots(), fetchMaps(), user ? fetchOwnedBots() : Promise.resolve([])])
+      .then(([bots, loadedMaps, mine]) => {
+        if (!active) return;
+        setOpponents(bots); setMaps(loadedMaps); setOwned(mine);
+        setSelectedOpponentId(bots.find(bot => bot.name === 'GreedyBot')?.id ?? bots[0]?.id ?? '');
+        setSelectedMapId(loadedMaps[0]?.id ?? '');
+      }).catch(error => {if (active) showError(error);});
+    return () => {active = false;};
+  }, [user?.id]);
+  const canReplace = () => !dirty || window.confirm('Replace your unsaved bot draft?');
+  const applySource = (source: {name: string; language: BotLanguage; sourceCode: string}) => {
+    setBotName(source.name); setLanguage(source.language);
+    setDrafts({PYTHON: PYTHON_BOT_TEMPLATE, TYPESCRIPT: TYPESCRIPT_BOT_TEMPLATE, CPP: CPP_BOT_TEMPLATE, [source.language]: source.sourceCode});
     setIsSaved(false);
   };
-
-  const handleResetTemplate = () => {
-    if (confirm('Reset code to starter template? Your edits will be replaced.')) {
-      setCode(language === 'PYTHON' ? PYTHON_BOT_TEMPLATE : TYPESCRIPT_BOT_TEMPLATE);
-      setIsSaved(false);
+  const handleSelectBot = async (id: string) => {
+    if (!canReplace()) return;
+    if (!id) {
+      setSelectedBot(null); setVersions([]); setHistoryVersion(''); setLanguage('PYTHON'); setBotName('MyPythonBot');
+      setDrafts({PYTHON: PYTHON_BOT_TEMPLATE, TYPESCRIPT: TYPESCRIPT_BOT_TEMPLATE, CPP: CPP_BOT_TEMPLATE}); setDirty(false); setIsSaved(false); setStatusMessage(null); return;
     }
+    setBusy(true); setStatusMessage(null);
+    try {
+      const [bot, history] = await Promise.all([fetchBot(id), fetchBotVersions(id)]);
+      if (!mounted.current) return;
+      setSelectedBot(bot); setVersions(history); setHistoryVersion(String(bot.version)); applySource(bot); setDirty(false);
+    } catch (error) {showError(error);} finally {if (mounted.current) setBusy(false);}
   };
-
-  const registerBotOnServer = async (): Promise<string> => {
-    const res = await fetch('/api/bots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: `${botName}_${Date.now().toString().slice(-4)}`,
-        language,
-        sourceCode: code,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || 'Failed to save bot');
-    }
-
-    const data = await res.json();
-    return data.bot.id;
+  const handleHistory = (value: string) => {
+    const version = versions.find(item => String(item.version) === value);
+    if (!version || !canReplace()) return;
+    applySource(version); setHistoryVersion(value); setDirty(true);
+    setStatusMessage('Historical source loaded. Save creates a new version.');
   };
-
+  const handleLanguageChange = (value: BotLanguage) => {setLanguage(value); setDirty(true); setIsSaved(false);};
+  const handleResetTemplate = () => {if (window.confirm('Reset code to starter template? Your edits will be replaced.')) setCode(language === 'PYTHON' ? PYTHON_BOT_TEMPLATE : language === 'CPP' ? CPP_BOT_TEMPLATE : TYPESCRIPT_BOT_TEMPLATE);};
   const handleSaveBot = async () => {
-    setStatusMessage('Saving bot to server...');
+    if (!user) {setStatusMessage('Sign in to save bots.'); return;}
+    setBusy(true); setIsSaved(false); setStatusMessage('Saving bot…');
     try {
-      await registerBotOnServer();
-      setIsSaved(true);
-      setStatusMessage('Bot saved successfully to server registry!');
-      setTimeout(() => setStatusMessage(null), 3000);
-    } catch (err) {
-      setStatusMessage(`Save failed: ${(err as Error).message}`);
-    }
+      const bot = await saveBot({name: botName, language, sourceCode: code}, selectedBot ?? undefined);
+      if (!mounted.current) return;
+      setSelectedBot(bot); setDirty(false); setHistoryVersion(String(bot.version));
+      const history = await fetchBotVersions(bot.id);
+      if (!mounted.current) return;
+      setVersions(history); await refreshMetadata();
+      if (mounted.current) {setIsSaved(true); setStatusMessage('Saved ' + bot.name + ' · version ' + bot.version);}
+    } catch (error) {showError(error);} finally {if (mounted.current) setBusy(false);}
   };
-
+  const handleDelete = async () => {
+    if (!selectedBot || !window.confirm('Delete bot "' + selectedBot.name + '"? Existing match history is retained.')) return;
+    setBusy(true); setIsSaved(false); setStatusMessage(null);
+    try {
+      await deleteBot(selectedBot.id);
+      if (!mounted.current) return;
+      setDirty(false); setSelectedBot(null); setVersions([]); setHistoryVersion('');
+      setBotName('MyPythonBot'); setLanguage('PYTHON'); setDrafts({PYTHON: PYTHON_BOT_TEMPLATE, TYPESCRIPT: TYPESCRIPT_BOT_TEMPLATE, CPP: CPP_BOT_TEMPLATE});
+      await refreshMetadata(); if (mounted.current) setStatusMessage('Bot deleted. Match history retained.');
+    } catch (error) {showError(error);} finally {if (mounted.current) setBusy(false);}
+  };
   const handleRunMatch = async () => {
-    if (!selectedOpponentId) {
-      alert('Please select an opponent bot.');
-      return;
-    }
-
-    setIsRunning(true);
-    setStatusMessage('Compiling & starting match...');
-
+    if (!user) {setStatusMessage('Sign in to run test matches.'); return;}
+    setIsRunning(true); setIsSaved(false); setStatusMessage('Compiling & starting test…');
     try {
-      // 1. Register ephemeral/current version of bot
-      const myBotId = await registerBotOnServer();
-
-      // 2. Launch match against selected opponent
-      const { matchId } = await createMatch(selectedMapId, myBotId, selectedOpponentId, 300);
-
-      setStatusMessage('Match launched! Streaming to canvas...');
-      onMatchStarted(matchId);
-    } catch (err) {
-      alert(`Failed to launch match: ${(err as Error).message}`);
-      setStatusMessage(null);
-    } finally {
-      setIsRunning(false);
-    }
+      const {matchId} = await createTestMatch({mapId: selectedMapId, opponentBotId: selectedOpponentId, language, sourceCode: code, maxTurns: 300});
+      if (!mounted.current) return;
+      setStatusMessage('Test launched! Streaming to canvas…'); onMatchStarted(matchId);
+    } catch (error) {showError(error);} finally {if (mounted.current) setIsRunning(false);}
   };
+
 
   return (
     <div style={{
@@ -128,6 +123,15 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
       border: '1px solid #1e293b',
       overflow: 'hidden',
     }}>
+      <div style={{display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 14px', background: '#141d2d'}}>
+        <select aria-label="Owned bot" value={selectedBot?.id ?? ''} disabled={!user || busy || isRunning} onChange={event => void handleSelectBot(event.target.value)} style={{...fieldStyle, flex: 1}}>
+          <option value="">New Bot</option>{owned.map(bot => <option key={bot.id} value={bot.id}>{bot.name} · v{bot.version}</option>)}
+        </select>
+        <button disabled={busy || isRunning} onClick={() => void handleSelectBot('')} style={fieldStyle}>New Bot</button>
+        {selectedBot && <><select aria-label="Bot history" value={historyVersion} disabled={busy || isRunning} onChange={event => handleHistory(event.target.value)} style={fieldStyle}>
+          {versions.map(version => <option key={version.version} value={String(version.version)}>Version {version.version}</option>)}
+        </select><button disabled={busy || isRunning} onClick={handleDelete} style={{...fieldStyle, color: '#fca5a5'}}>Delete</button></>}
+      </div>
       {/* Top Bar: Language & Controls */}
       <div style={{
         padding: '10px 14px',
@@ -143,7 +147,9 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
           <input
             type="text"
             value={botName}
-            onChange={(e) => setBotName(e.target.value)}
+            aria-label="Bot name"
+            disabled={busy}
+            onChange={(e) => {setBotName(e.target.value); setDirty(true); setIsSaved(false);}}
             placeholder="Bot Name"
             style={{
               backgroundColor: '#0f172a',
@@ -160,6 +166,7 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
           {/* Language Switcher */}
           <div style={{ display: 'flex', backgroundColor: '#0f172a', borderRadius: '6px', padding: '2px', border: '1px solid #334155' }}>
             <button
+              disabled={busy}
               onClick={() => handleLanguageChange('PYTHON')}
               style={{
                 backgroundColor: language === 'PYTHON' ? '#0284c7' : 'transparent',
@@ -175,6 +182,7 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
               Python
             </button>
             <button
+              disabled={busy}
               onClick={() => handleLanguageChange('TYPESCRIPT')}
               style={{
                 backgroundColor: language === 'TYPESCRIPT' ? '#0284c7' : 'transparent',
@@ -189,11 +197,28 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
             >
               TypeScript
             </button>
+            <button
+              disabled={busy}
+              onClick={() => handleLanguageChange('CPP')}
+              style={{
+                backgroundColor: language === 'CPP' ? '#0284c7' : 'transparent',
+                color: language === 'CPP' ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '3px 8px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              C++
+            </button>
           </div>
         </div>
 
         <button
           onClick={handleResetTemplate}
+          disabled={busy}
           title="Reset to Template"
           style={{
             background: 'none',
@@ -216,10 +241,11 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
         <MonacoEditor
           height="100%"
           theme="vs-dark"
-          language={language === 'PYTHON' ? 'python' : 'typescript'}
+          language={language === 'PYTHON' ? 'python' : language === 'CPP' ? 'cpp' : 'typescript'}
           value={code}
           onChange={(val: string | undefined) => setCode(val || '')}
           options={{
+            readOnly: busy,
             minimap: { enabled: false },
             fontSize: 12,
             fontFamily: "'JetBrains Mono', monospace",
@@ -240,8 +266,12 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
         flexDirection: 'column',
         gap: '8px',
       }}>
+        {!user && <div style={{fontSize: 11, color: '#fbbf24'}}>{sessionLoading ? 'Checking session…' : 'Sign in using the account menu to save bots or run tests. Anonymous editing is available.'}</div>}
+        <label style={{fontSize: 11, color: '#94a3b8'}}>Map <select aria-label="Test map" value={selectedMapId} onChange={event => setSelectedMapId(event.target.value)} style={fieldStyle}>
+          {!maps.length && <option value="">No maps available</option>}{maps.map(map => <option key={map.id} value={map.id}>{map.name} ({map.width}×{map.height})</option>)}
+        </select></label>
         {statusMessage && (
-          <div style={{
+          <div role="status" style={{
             fontSize: '11px',
             color: isSaved ? '#4ade80' : '#38bdf8',
             display: 'flex',
@@ -258,6 +288,7 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
             <Swords size={14} color="#f43f5e" />
             <select
+              aria-label="Test opponent"
               value={selectedOpponentId}
               onChange={(e) => setSelectedOpponentId(e.target.value)}
               style={{
@@ -282,7 +313,8 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <button
               onClick={handleSaveBot}
-              title="Save to server registry"
+              disabled={!user || sessionLoading || busy || isRunning || !botName.trim()}
+              title="Save owned bot version"
               style={{
                 backgroundColor: '#1e293b',
                 color: '#94a3b8',
@@ -303,7 +335,7 @@ export const BotEditor: React.FC<BotEditorProps> = ({ onMatchStarted }) => {
 
             <button
               onClick={handleRunMatch}
-              disabled={isRunning}
+              disabled={!user || sessionLoading || busy || isRunning || !selectedOpponentId || !selectedMapId}
               style={{
                 backgroundColor: '#0284c7',
                 color: '#ffffff',

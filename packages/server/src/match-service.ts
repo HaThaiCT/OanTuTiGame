@@ -13,7 +13,7 @@ import {
   WinReason,
   parsePieceType,
   parsePlayerSide,
-  playerSideToString,
+  validateMapTopology,
 } from '@oantuti/engine';
 import { MatchOrchestrator, TurnRecord, MatchResult } from '@oantuti/runner';
 import {
@@ -28,7 +28,7 @@ import {
   MatchEndFrameMessage,
   WebSocketMessageType,
 } from '@oantuti/protocol';
-import { Database, MatchRow } from './db.js';
+import { Database } from './db.js';
 
 export interface ActiveMatchState {
   readonly matchId: string;
@@ -41,6 +41,7 @@ export interface ActiveMatchState {
   replayBinary?: Uint8Array;
   isFinished: boolean;
   result?: MatchResult;
+  error?: Error;
 }
 
 export class MatchService extends EventEmitter {
@@ -110,25 +111,82 @@ export class MatchService extends EventEmitter {
   }): Promise<{ matchId: string; activeState: ActiveMatchState }> {
     const whiteBot = this.db.getBotById(params.whiteBotId);
     const blackBot = this.db.getBotById(params.blackBotId);
-
-    if (!whiteBot) throw new Error(`White bot "${params.whiteBotId}" not found`);
-    if (!blackBot) throw new Error(`Black bot "${params.blackBotId}" not found`);
-
-    const whitePath = whiteBot.file_path ?? 'bots/greedy-bot.ts';
-    const blackPath = blackBot.file_path ?? 'bots/random-bot.ts';
-
+    if (!whiteBot?.is_active || !whiteBot.file_path) throw new Error('White bot is unavailable');
+    if (!blackBot?.is_active || !blackBot.file_path) throw new Error('Black bot is unavailable');
     const mapDescriptor = this.getMapDescriptor(params.mapId);
+    const validation = validateMapTopology(mapDescriptor);
+    if (!validation.valid) throw new Error(validation.errors.join('; '));
     const matchRow = this.db.createMatch({
       tournamentId: params.tournamentId,
       mapId: params.mapId,
       whiteBotId: whiteBot.id,
       blackBotId: blackBot.id,
     });
+    return this.launchMatch({
+      matchId: matchRow.id,
+      mapDescriptor,
+      maxTurns: params.maxTurns ?? 300,
+      whiteName: whiteBot.name,
+      blackName: blackBot.name,
+      whitePath: whiteBot.file_path,
+      blackPath: blackBot.file_path,
+      persistResult: (result, replayBinary) => {
+        const winnerSide = result.winner === PlayerSide.WHITE ? 'WHITE' : result.winner === PlayerSide.BLACK ? 'BLACK' : 'DRAW';
+        const winnerBotId = result.winner === PlayerSide.WHITE ? whiteBot.id : result.winner === PlayerSide.BLACK ? blackBot.id : undefined;
+        const replayFilePath = path.join(this.replaysDir, result.matchId + '.oantuti');
+        fs.writeFileSync(replayFilePath, replayBinary);
+        this.db.updateMatchResult(result.matchId, { winnerBotId, winnerSide, winReason: WinReason[result.winReason], totalTurns: result.totalTurns });
+        this.db.saveReplay({ matchId: result.matchId, filePath: replayFilePath, fileSizeBytes: replayBinary.length, checksumSha256: crypto.createHash('sha256').update(replayBinary).digest('hex'), replayData: replayBinary });
+      },
+    });
+  }
 
-    const matchId = matchRow.id;
-    const maxTurns = params.maxTurns ?? 300;
+  async startTestMatch(params: {
+    mapId: string;
+    opponentBotId: string;
+    language: 'PYTHON' | 'TYPESCRIPT' | 'CPP';
+    sourceCode: string;
+    maxTurns?: number;
+  }): Promise<{ matchId: string; activeState: ActiveMatchState }> {
+    const opponent = this.db.getBotById(params.opponentBotId);
+    if (!opponent?.is_active || !opponent.file_path) throw new Error('Opponent bot is unavailable');
+    if (!params.sourceCode.trim()) throw new Error('Source code is required');
+    const mapDescriptor = this.getMapDescriptor(params.mapId);
+    const validation = validateMapTopology(mapDescriptor);
+    if (!validation.valid) throw new Error(validation.errors.join('; '));
+    const directory = fs.mkdtempSync(path.join(this.replaysDir, '.draft-'));
+    try {
+      const fileName = params.language === 'PYTHON' ? 'bot.py' : params.language === 'CPP' ? 'bot.cpp' : 'bot.ts';
+      const sourcePath = path.join(directory, fileName);
+      fs.writeFileSync(sourcePath, params.sourceCode, {flag:'wx'});
+      return this.launchMatch({
+        matchId: 'test_' + crypto.randomUUID(),
+        mapDescriptor,
+        maxTurns: params.maxTurns ?? 300,
+        whiteName: 'Editor draft (unranked)',
+        blackName: opponent.name,
+        whitePath: sourcePath,
+        blackPath: opponent.file_path,
+        cleanup: () => fs.rmSync(directory, {recursive:true,force:true}),
+      });
+    } catch (error) {
+      fs.rmSync(directory, {recursive:true,force:true});
+      throw error;
+    }
+  }
 
-    // Build MatchInitFrame
+  private launchMatch(options: {
+    matchId: string;
+    mapDescriptor: MapDescriptor;
+    maxTurns: number;
+    whiteName: string;
+    blackName: string;
+    whitePath: string;
+    blackPath: string;
+    persistResult?: (result: MatchResult, replay: Uint8Array) => void;
+    cleanup?: () => void;
+  }): { matchId: string; activeState: ActiveMatchState } {
+    const {matchId,mapDescriptor,maxTurns,whiteName,blackName,whitePath,blackPath} = options;
     const bitmask = encodeValidTilesBitmask(
       mapDescriptor.width,
       mapDescriptor.height,
@@ -154,8 +212,8 @@ export class MatchService extends EventEmitter {
       })),
       maxTurns,
       turnTimeLimitMs: 100,
-      whiteBotName: whiteBot.name,
-      blackBotName: blackBot.name,
+      whiteBotName: whiteName,
+      blackBotName: blackName,
     };
 
     const initProtobuf = encodeMatchInitFrame(initFrameMsg);
@@ -164,8 +222,8 @@ export class MatchService extends EventEmitter {
     const activeState: ActiveMatchState = {
       matchId,
       mapDescriptor,
-      whiteBotName: whiteBot.name,
-      blackBotName: blackBot.name,
+      whiteBotName: whiteName,
+      blackBotName: blackName,
       initFrameBytes,
       deltaFrameBytes: [],
       isFinished: false,
@@ -181,7 +239,7 @@ export class MatchService extends EventEmitter {
       whiteBotConfig: { path: whitePath },
       blackBotConfig: { path: blackPath },
       maxTurns,
-      onTurn: (record: TurnRecord) => {
+      onTurn: (record: TurnRecord, nextState) => {
         const deltaMsg: TurnDeltaFrameMessage = {
           turnNumber: record.turnNumber,
           activePlayer: record.player,
@@ -201,7 +259,9 @@ export class MatchService extends EventEmitter {
               }
             : undefined,
           timeConsumedNs: BigInt(Math.round(record.durationMs * 1_000_000)),
-          isGameOver: false,
+          isGameOver: nextState.isGameOver,
+          winner: nextState.winner,
+          winReason: nextState.winReason,
         };
 
         deltaMsgs.push(deltaMsg);
@@ -221,20 +281,6 @@ export class MatchService extends EventEmitter {
         activeState.result = result;
         activeState.isFinished = true;
 
-        const winnerSide =
-          result.winner === PlayerSide.WHITE
-            ? 'WHITE'
-            : result.winner === PlayerSide.BLACK
-            ? 'BLACK'
-            : 'DRAW';
-
-        const winnerBotId =
-          result.winner === PlayerSide.WHITE
-            ? whiteBot.id
-            : result.winner === PlayerSide.BLACK
-            ? blackBot.id
-            : undefined;
-
         const endFrameMsg: MatchEndFrameMessage = {
           matchId,
           winner: result.winner,
@@ -252,31 +298,15 @@ export class MatchService extends EventEmitter {
         const replayBinary = packReplay(initFrameMsg, deltaMsgs, endFrameMsg);
         activeState.replayBinary = replayBinary;
 
-        // Save replay to disk & DB
-        const replayFileName = `${matchId}.oantuti`;
-        const replayFilePath = path.join(this.replaysDir, replayFileName);
-        fs.writeFileSync(replayFilePath, replayBinary);
-
-        const checksum = crypto.createHash('sha256').update(replayBinary).digest('hex');
-
-        this.db.updateMatchResult(matchId, {
-          winnerBotId,
-          winnerSide,
-          winReason: WinReason[result.winReason] ?? String(result.winReason),
-          totalTurns: result.totalTurns,
-        });
-
-        this.db.saveReplay({
-          matchId,
-          filePath: replayFilePath,
-          fileSizeBytes: replayBinary.length,
-          checksumSha256: checksum,
-          replayData: replayBinary,
-        });
+        options.persistResult?.(result, replayBinary);
 
         this.emit('match:end', { matchId, frame: endFrameBytes, result });
-      } catch (err) {
-        this.emit('match:error', { matchId, error: err });
+      } catch (error) {
+        activeState.error = error instanceof Error ? error : new Error(String(error));
+        activeState.isFinished = true;
+        this.emit('match:error', { matchId, error: activeState.error });
+      } finally {
+        options.cleanup?.();
       }
     })();
 
@@ -285,23 +315,8 @@ export class MatchService extends EventEmitter {
 
   waitForMatch(matchId: string): Promise<MatchResult> {
     const active = this.activeMatches.get(matchId);
-    if (!active) {
-      const row = this.db.getMatchById(matchId);
-      if (row && row.finished_at) {
-        return Promise.resolve({
-          matchId: row.id,
-          winner: row.winner_side === 'WHITE' ? PlayerSide.WHITE : row.winner_side === 'BLACK' ? PlayerSide.BLACK : undefined,
-          winReason: WinReason.WIN_REASON_UNSPECIFIED,
-          totalTurns: row.total_turns,
-          whitePiecesRemaining: 0,
-          blackPiecesRemaining: 0,
-          turns: [],
-          whiteStderr: '',
-          blackStderr: '',
-        });
-      }
-      return Promise.reject(new Error(`Match ${matchId} not found`));
-    }
+    if (!active) return Promise.reject(new Error(`Active match ${matchId} not found`));
+    if (active.error) return Promise.reject(active.error);
 
     if (active.isFinished && active.result) {
       return Promise.resolve(active.result);

@@ -91,7 +91,8 @@ export function resolveBotCommand(botPath: string): { command: string; args: str
       !fs.existsSync(binPath) ||
       fs.statSync(resolvedPath).mtimeMs > fs.statSync(binPath).mtimeMs;
     if (needsCompile) {
-      execFileSync('g++', ['-std=c++20', '-O3', '-I', path.dirname(resolvedPath), resolvedPath, '-o', binPath]);
+      const sdkCppDir = path.resolve(process.cwd(), 'sdk/cpp');
+      execFileSync('g++', ['-std=c++20', '-O3', '-I', path.dirname(resolvedPath), '-I', sdkCppDir, resolvedPath, '-o', binPath]);
     }
     return { command: binPath, args: [] };
   }

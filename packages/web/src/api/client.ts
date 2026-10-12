@@ -31,7 +31,44 @@ export interface BotSummary {
   readonly name: string;
   readonly language: string;
   readonly elo: number;
+  readonly version: number;
+  readonly user_id: string;
 }
+export type BotLanguage = 'PYTHON' | 'TYPESCRIPT' | 'CPP';
+export interface PublicUser { id: string; username: string; email: string; role: string }
+export interface BotDetail { id: string; name: string; language: BotLanguage; sourceCode: string; version: number; userId: string; isActive: boolean }
+export interface BotVersion { version: number; name: string; language: BotLanguage; sourceCode: string; createdAt: string }
+export interface BotInput { name: string; language: BotLanguage; sourceCode: string }
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
+export const SESSION_INVALIDATED = 'oantuti:session-invalidated';
+async function requireSuccess(res: Response): Promise<void> {
+  if (res.ok) return;
+  if (res.status === 401) window.dispatchEvent(new Event(SESSION_INVALIDATED));
+  const body: unknown = await res.json().catch(() => null);
+  const message = body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
+    ? body.error : `Request failed (${res.status} ${res.statusText})`;
+  throw new ApiError(message, res.status);
+}
+async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  const res = await fetch(path, { method, credentials: 'same-origin',
+    ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
+  await requireSuccess(res);
+  return res.status === 204 ? undefined as T : res.json();
+}
+export const fetchSession = () => request<{user: PublicUser | null}>('/api/auth/me');
+export const login = (username: string, password: string) => request<{user: PublicUser}>('/api/auth/login', 'POST', {username, password});
+export const register = (username: string, email: string, password: string) => request<{user: PublicUser}>('/api/auth/register', 'POST', {username, email, password});
+export const logout = () => request<void>('/api/auth/logout', 'POST', {});
+export const fetchOwnedBots = async () => (await request<{bots: BotSummary[]}>('/api/bots?mine=1')).bots;
+export const fetchBot = async (id: string) => (await request<{bot: BotDetail}>('/api/bots/' + encodeURIComponent(id))).bot;
+export const fetchBotVersions = async (id: string) => (await request<{versions: BotVersion[]}>('/api/bots/' + encodeURIComponent(id) + '/versions')).versions;
+export const saveBot = async (input: BotInput, existing?: {id: string; version: number}) =>
+  (await request<{bot: BotDetail}>(existing ? '/api/bots/' + encodeURIComponent(existing.id) : '/api/bots', existing ? 'PUT' : 'POST', {...input, ...(existing ? {version: existing.version} : {})})).bot;
+export const deleteBot = (id: string) => request<void>('/api/bots/' + encodeURIComponent(id), 'DELETE');
+export const createTestMatch = (input: {mapId: string; opponentBotId: string; language: BotLanguage; sourceCode: string; maxTurns?: number}) =>
+  request<{matchId: string; status: 'RUNNING'}>('/api/matches/test', 'POST', input);
 
 export async function fetchMaps(): Promise<MapSummary[]> {
   const res = await fetch('/api/maps');
@@ -58,10 +95,7 @@ export async function createMatch(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mapId, whiteBotId, blackBotId, maxTurns }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || 'Failed to create match');
-  }
+  await requireSuccess(res);
   return res.json();
 }
 
@@ -132,10 +166,7 @@ export async function createTournament(params: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || 'Failed to create tournament');
-  }
+  await requireSuccess(res);
   const data = await res.json();
   return data.tournament;
 }
