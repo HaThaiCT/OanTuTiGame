@@ -31,6 +31,16 @@ export interface Particle {
   maxLife: number;
 }
 
+export interface FloatingCombatText {
+  text: string;
+  x: number;
+  y: number;
+  color: string;
+  alpha: number;
+  life: number;
+  maxLife: number;
+}
+
 export interface RenderState {
   readonly width: number;
   readonly height: number;
@@ -49,8 +59,9 @@ export interface RenderState {
   readonly hoveredCoord?: Coord;
   readonly animTimeMs: number;
   readonly particles: Particle[];
+  readonly floatingTexts?: readonly FloatingCombatText[];
+  readonly screenShakeOffset?: { readonly x: number; readonly y: number };
 }
-
 export function createCaptureParticles(
   centerScreenX: number,
   centerScreenY: number,
@@ -76,6 +87,54 @@ export function createCaptureParticles(
   }
 
   return particles;
+}
+
+export function createFloatingText(
+  list: FloatingCombatText[],
+  text: string,
+  screenX: number,
+  screenY: number,
+  color: string = '#f43f5e'
+): void {
+  list.push({
+    text,
+    x: screenX,
+    y: screenY,
+    color,
+    alpha: 1,
+    life: 0,
+    maxLife: 45, // ~750ms at 60fps
+  });
+}
+
+export function updateFloatingTexts(list: FloatingCombatText[]): void {
+  for (let i = list.length - 1; i >= 0; i--) {
+    const item = list[i];
+    item.y -= 1.2;
+    item.life++;
+    item.alpha = Math.max(0, 1 - item.life / item.maxLife);
+    if (item.life >= item.maxLife) {
+      list.splice(i, 1);
+    }
+  }
+}
+
+export function calculateScreenShakeOffset(
+  currentTimeMs: number,
+  shakeStartTimeMs: number,
+  durationMs: number = 220,
+  maxIntensity: number = 4
+): { x: number; y: number } {
+  const elapsed = currentTimeMs - shakeStartTimeMs;
+  if (elapsed >= durationMs || elapsed < 0) {
+    return { x: 0, y: 0 };
+  }
+  const decay = 1 - elapsed / durationMs;
+  const intensity = maxIntensity * decay;
+  const angle = (currentTimeMs * 0.05) % (Math.PI * 2);
+  const x = Math.sin(angle * 7) * intensity;
+  const y = Math.cos(angle * 11) * intensity;
+  return { x, y };
 }
 
 export function updateParticles(particles: Particle[]): void {
@@ -306,8 +365,14 @@ export function renderCanvasFrame(
   const { canvasWidth, canvasHeight, tileSize } = transform;
 
   // Clear full canvas
-  ctx.fillStyle = '#0f172a';
+  // Clear full canvas with Cyberpunk Dark Obsidian
+  ctx.fillStyle = '#060a12';
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  ctx.save();
+  if (state.screenShakeOffset && (state.screenShakeOffset.x !== 0 || state.screenShakeOffset.y !== 0)) {
+    ctx.translate(state.screenShakeOffset.x, state.screenShakeOffset.y);
+  }
 
   // ==========================================
   // Layer 1: Background & Void Layer
@@ -541,4 +606,24 @@ export function renderCanvasFrame(
     ctx.fill();
   }
   ctx.globalAlpha = 1.0;
+
+  // ==========================================
+  // Layer 7: Floating Combat Texts
+  // ==========================================
+  if (state.floatingTexts && state.floatingTexts.length > 0) {
+    for (const item of state.floatingTexts) {
+      ctx.save();
+      ctx.globalAlpha = item.alpha;
+      ctx.font = `900 ${Math.max(14, Math.round(tileSize * 0.36))}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = item.color;
+      ctx.shadowColor = item.color;
+      ctx.shadowBlur = 12;
+      ctx.fillText(item.text, item.x, item.y);
+      ctx.restore();
+    }
+  }
+
+  ctx.restore(); // Restore screen-shake translation
 }
