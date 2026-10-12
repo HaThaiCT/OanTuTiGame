@@ -3,3 +3,6 @@ node_modules/
 dist/
 .DS_Store
 *.oantuti
+sdk/cpp/starter_bot
+*.exe
+*.out

@@ -29,6 +29,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   const wsHub = new WebSocketHub(matchService, db);
 
   // Seed default AI bots if missing
+  // Seed default AI bots across supported languages
   const defaultBots = [
     {
       name: 'GreedyBot',
@@ -41,6 +42,24 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       language: 'TYPESCRIPT' as const,
       filePath: path.resolve(process.cwd(), 'bots/random-bot.ts'),
       sourceCode: '// Random Uniform Move Bot',
+    },
+    {
+      name: 'PythonStarterBot',
+      language: 'PYTHON' as const,
+      filePath: path.resolve(process.cwd(), 'sdk/python/starter_bot.py'),
+      sourceCode: '# Python 3 Starter Bot',
+    },
+    {
+      name: 'TsStarterBot',
+      language: 'TYPESCRIPT' as const,
+      filePath: path.resolve(process.cwd(), 'sdk/typescript/starter_bot.ts'),
+      sourceCode: '// TypeScript Starter Bot',
+    },
+    {
+      name: 'CppStarterBot',
+      language: 'CPP' as const,
+      filePath: path.resolve(process.cwd(), 'sdk/cpp/starter_bot.cpp'),
+      sourceCode: '// C++20 Starter Bot',
     },
   ];
 

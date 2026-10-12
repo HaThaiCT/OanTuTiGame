@@ -3,7 +3,7 @@
  * High-precision timing via process.hrtime.bigint() and strict protocol validation.
  */
 
-import { ChildProcess, spawn, SpawnOptions } from 'child_process';
+import { ChildProcess, spawn, SpawnOptions, execFileSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { WinReason } from '@oantuti/engine';
@@ -83,6 +83,17 @@ export function resolveBotCommand(botPath: string): { command: string; args: str
 
   if (resolvedPath.endsWith('.py')) {
     return { command: 'python3', args: [resolvedPath] };
+  }
+
+  if (resolvedPath.endsWith('.cpp')) {
+    const binPath = resolvedPath.replace(/\.cpp$/, '');
+    const needsCompile =
+      !fs.existsSync(binPath) ||
+      fs.statSync(resolvedPath).mtimeMs > fs.statSync(binPath).mtimeMs;
+    if (needsCompile) {
+      execFileSync('g++', ['-std=c++20', '-O3', '-I', path.dirname(resolvedPath), resolvedPath, '-o', binPath]);
+    }
+    return { command: binPath, args: [] };
   }
 
   return { command: resolvedPath, args: [] };
