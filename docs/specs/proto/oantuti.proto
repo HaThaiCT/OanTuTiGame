@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package oantuti;
+
+// Chủng loại quân cờ theo quy tắc Oẳn Tù Tì
+enum PieceType {
+  PIECE_TYPE_UNSPECIFIED = 0;
+  ROCK = 1;     // Búa (thắng Kéo, thua Bao, cản Búa)
+  SCISSORS = 2; // Kéo (thắng Bao, thua Búa, cản Kéo)
+  PAPER = 3;    // Bao (thắng Búa, thua Kéo, cản Bao)
+}
+
+// Phe thi đấu
+enum PlayerSide {
+  PLAYER_UNSPECIFIED = 0;
+  WHITE = 1; // Phe Trắng (đi trước ở turn lẻ)
+  BLACK = 2; // Phe Đen (đi sau ở turn chẵn)
+}
+
+// Lý do kết thúc trận đấu
+enum WinReason {
+  WIN_REASON_UNSPECIFIED = 0;
+  EXTINCTION = 1;        // Ăn sạch toàn bộ 1 trong 3 loại quân của đối phương
+  THRONE_BREACH = 2;     // Chiếm ô chốt Hoàng Tòa của đối phương
+  STALEMATE = 3;         // Đối phương không còn nước đi hợp lệ
+  TIMEOUT = 4;           // Quá thời gian quy định (>100ms)
+  ILLEGAL_MOVE = 5;      // Thực hiện nước đi sai luật hoặc sai định dạng
+  CRASH_FORFEIT = 6;     // Bot ném exception, crash hoặc vượt quá quota RAM
+  MAX_TURNS_DRAW = 7;    // Hòa do chạm ngưỡng số lượt tối đa (300 turns)
+}
+
+// Tọa độ 2D trên đồ thị lưới tổng quát
+message Coord {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+// Cấu hình bản đồ đồ thị lưới tổng quát G = (V, E)
+message MapLayout {
+  int32 width = 1;                  // Chiều rộng bounding box (W)
+  int32 height = 2;                 // Chiều cao bounding box (H)
+  // Bitmask mảng 1 chiều lưu các ô hợp lệ V (1: ô đi được, 0: vực thẳm / chướng ngại vật)
+  // Kích thước = ceil(width * height / 8) bytes
+  // Bit index = y * width + x
+  bytes valid_tiles_bitmask = 3;
+  Coord white_throne = 4;           // Tọa độ ô chốt phe Trắng (T_W)
+  Coord black_throne = 5;           // Tọa độ ô chốt phe Đen (T_B)
+  string map_name = 6;              // Tên định danh của bản đồ
+}
+
+// Thông tin chi tiết một quân cờ
+message Piece {
+  int32 id = 1;                     // Định danh duy nhất toàn trận
+  PlayerSide owner = 2;             // Phe sở hữu (WHITE / BLACK)
+  PieceType type = 3;               // Chủng loại (ROCK / SCISSORS / PAPER)
+  Coord pos = 4;                    // Tọa độ hiện tại (x, y)
+  bool is_alive = 5;                // Trạng thái sống (true) hay đã bị ăn (false)
+}
+
+// Nước đi của một quân cờ trong lượt
+message MoveAction {
+  int32 piece_id = 1;               // ID quân cờ được di chuyển
+  Coord target_pos = 2;             // Ô đích đến (1 trong 8 hướng lân cận)
+}
+
+// Sự kiện ăn quân phát sinh trong lượt
+message CaptureEvent {
+  int32 attacker_id = 1;            // ID quân tấn công
+  int32 victim_id = 2;              // ID quân bị ăn
+  PieceType victim_type = 3;        // Chủng loại quân bị ăn
+  Coord pos = 4;                    // Tọa độ xảy ra va chạm ăn quân
+}
+
+// Frame 1: Khởi tạo trận đấu (Full Initial State Snapshot)
+message MatchInitFrame {
+  string match_id = 1;              // Mã định danh trận đấu
+  MapLayout map = 2;                // Thông tin bản đồ và bitmask ô hợp lệ
+  repeated Piece pieces = 3;        // Toàn bộ các quân cờ khởi đầu
+  int32 max_turns = 4;              // Số lượt tối đa (mặc định 300)
+  int32 turn_time_limit_ms = 5;     // Giới hạn thời gian mỗi lượt (mặc định 100ms)
+  string white_bot_name = 6;        // Tên bot phe Trắng
+  string black_bot_name = 7;        // Tên bot phe Đen
+}
+
+// Frame 2: Cập nhật biến động từng lượt (Turn Delta Frame siêu nhẹ <= 200 bytes)
+message TurnDeltaFrame {
+  int32 turn_number = 1;            // Số thứ tự lượt đi hiện tại (1..300)
+  PlayerSide active_player = 2;     // Phe vừa thực hiện nước đi
+  MoveAction action = 3;            // Nước đi vừa thực hiện
+  CaptureEvent capture = 4;         // Sự kiện ăn quân (nếu có)
+  int64 time_consumed_ns = 5;       // Thời gian tính toán của Bot đo bằng nanoseconds
+  bool is_game_over = 6;            // Cờ báo kết thúc trận đấu
+  PlayerSide winner = 7;            // Phe thắng (nếu is_game_over = true)
+  WinReason win_reason = 8;         // Lý do thắng cuộc
+}
+
+// Frame 3: Kết thúc trận đấu (Match Summary)
+message MatchEndFrame {
+  string match_id = 1;              // Mã trận đấu
+  PlayerSide winner = 2;            // Phe thắng cuộc
+  WinReason reason = 3;             // Lý do kết thúc
+  int32 total_turns = 4;            // Tổng số lượt đã diễn ra
+  int32 white_remaining_pieces = 5; // Số quân còn sống của Trắng
+  int32 black_remaining_pieces = 6; // Số quân còn sống của Đen
+}
+
+// Wrapper Envelope truyền qua WebSocket Binary Frame
+message WebSocketEnvelope {
+  enum MessageType {
+    MSG_INIT = 0;                   // Khởi tạo trận đấu (payload: MatchInitFrame)
+    MSG_DELTA = 1;                  // Biến động lượt đi (payload: TurnDeltaFrame)
+    MSG_END = 2;                    // Kết thúc trận đấu (payload: MatchEndFrame)
+    MSG_ERROR = 3;                  // Thông báo lỗi từ server
+    MSG_PING = 4;                   // Heartbeat ping
+    MSG_PONG = 5;                   // Heartbeat pong
+  }
+  MessageType type = 1;
+  bytes payload = 2;
+}

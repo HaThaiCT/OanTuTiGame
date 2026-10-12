@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OanTuTiMapDescriptor",
+  "description": "JSON Schema đặc tả bản đồ đồ thị lưới tọa độ tổng quát G=(V, E) cho OanTuTi Arena",
+  "type": "object",
+  "required": [
+    "mapName",
+    "width",
+    "height",
+    "validTiles",
+    "whiteThrone",
+    "blackThrone",
+    "startingPieces"
+  ],
+  "properties": {
+    "mapName": {
+      "type": "string",
+      "description": "Tên định danh của bản đồ"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 64,
+      "description": "Chiều rộng bounding box của bàn cờ"
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 64,
+      "description": "Chiều cao bounding box của bàn cờ"
+    },
+    "validTiles": {
+      "type": "array",
+      "description": "Tập hợp các ô hợp lệ V dưới dạng danh sách tọa độ [x, y]",
+      "items": {
+        "type": "array",
+        "items": { "type": "integer" },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "minItems": 9
+    },
+    "whiteThrone": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Tọa độ ô chốt Hoàng Tòa của phe Trắng [x, y]"
+    },
+    "blackThrone": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Tọa độ ô chốt Hoàng Tòa của phe Đen [x, y]"
+    },
+    "startingPieces": {
+      "type": "array",
+      "description": "Danh sách các quân cờ xuất phát trên bàn",
+      "items": {
+        "type": "object",
+        "required": ["id", "owner", "type", "pos"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "owner": { "type": "string", "enum": ["WHITE", "BLACK"] },
+          "type": { "type": "string", "enum": ["ROCK", "SCISSORS", "PAPER"] },
+          "pos": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "minItems": 2
+    }
+  },
+  "additionalProperties": false
+}
