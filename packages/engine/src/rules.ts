@@ -191,6 +191,13 @@ function checkThroneBreach(state: GameState): { winner?: PlayerSide } {
  * Priority 4: Max Turns limit
  */
 export function evaluateVictory(state: GameState): VictoryResult {
+  if (state.isGameOver) {
+    return {
+      isGameOver: true,
+      winner: state.winner,
+      winReason: state.winReason,
+    };
+  }
   // Priority 1: Species Extinction
   const { extinctPlayer } = checkSpeciesExtinction(state);
   if (extinctPlayer !== undefined) {
