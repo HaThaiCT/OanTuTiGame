@@ -12,7 +12,12 @@ import {
   Particle,
   updateParticles,
   createCaptureParticles,
+  FloatingCombatText,
+  createFloatingText,
+  updateFloatingTexts,
+  calculateScreenShakeOffset,
 } from '../canvas/renderer.js';
+import { soundManager } from '../audio/sound-effects.js';
 
 interface CanvasViewportProps {
   readonly boardWidth: number;
@@ -43,6 +48,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const particlesRef = React.useRef<Particle[]>([]);
+  const floatingTextsRef = React.useRef<FloatingCombatText[]>([]);
+  const shakeStartTimeRef = React.useRef<number>(0);
   const prevLastMoveRef = React.useRef(lastMove);
   const moveAnimRef = React.useRef<{
     pieceId: number;
@@ -55,7 +62,6 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const [hoveredCoord, setHoveredCoord] = React.useState<Coord | undefined>();
   const [selectedPieceId, setSelectedPieceId] = React.useState<number | undefined>();
   const transformRef = React.useRef<ViewportTransform | null>(null);
-
   // Spawn capture particles and start move animation if new lastMove
   React.useEffect(() => {
     if (lastMove && lastMove !== prevLastMoveRef.current) {
@@ -67,14 +73,21 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         duration: 280,
       };
 
-      if (lastMove.isCapture && transformRef.current) {
-        const transform = transformRef.current;
-        const center = {
-          x: transform.offsetX + (lastMove.to.x + 0.5) * transform.tileSize,
-          y: transform.offsetY + (lastMove.to.y + 0.5) * transform.tileSize,
-        };
-        const newParticles = createCaptureParticles(center.x, center.y);
-        particlesRef.current.push(...newParticles);
+      if (lastMove.isCapture) {
+        soundManager.playCapture();
+        shakeStartTimeRef.current = performance.now();
+        if (transformRef.current) {
+          const transform = transformRef.current;
+          const center = {
+            x: transform.offsetX + (lastMove.to.x + 0.5) * transform.tileSize,
+            y: transform.offsetY + (lastMove.to.y + 0.5) * transform.tileSize,
+          };
+          const newParticles = createCaptureParticles(center.x, center.y);
+          particlesRef.current.push(...newParticles);
+          createFloatingText(floatingTextsRef.current, 'KILL!', center.x, center.y - 10, '#ef4444');
+        }
+      } else {
+        soundManager.playMove();
       }
     }
     prevLastMoveRef.current = lastMove;
@@ -114,6 +127,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         transformRef.current = transform;
 
         updateParticles(particlesRef.current);
+        updateFloatingTexts(floatingTextsRef.current);
+        const screenShakeOffset = calculateScreenShakeOffset(time, shakeStartTimeRef.current, 240, 5);
 
         const animatedPieces = pieces.map((p) => {
           if (moveAnimRef.current && p.id === moveAnimRef.current.pieceId) {
@@ -141,6 +156,8 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           hoveredCoord,
           animTimeMs: time,
           particles: particlesRef.current,
+          floatingTexts: floatingTextsRef.current,
+          screenShakeOffset,
         };
 
         renderCanvasFrame(ctx, transform, renderState);

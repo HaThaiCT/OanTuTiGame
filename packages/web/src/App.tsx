@@ -13,7 +13,13 @@ import { LoadedReplay, parseReplayBinary } from './replay/player.js';
 import { generateDefaultMatch } from './replay/mock-generator.js';
 import { subscribeLiveMatch } from './api/client.js';
 import { Code2, ScrollText, Trophy } from 'lucide-react';
+import { useSession } from './session.js';
+import confetti from 'canvas-confetti';
+import { soundManager } from './audio/sound-effects.js';
+import { VersusOverlay } from './components/VersusOverlay.js';
+import { useKeyboardControls } from './hooks/useKeyboardControls.js';
 export const App: React.FC = () => {
+  const {user} = useSession();
   const [replay, setReplay] = React.useState<LoadedReplay>(() => generateDefaultMatch());
   const [currentTurn, setCurrentTurn] = React.useState<number>(0);
   const [isPlaying, setIsPlaying] = React.useState<boolean>(false);
@@ -22,7 +28,15 @@ export const App: React.FC = () => {
   const [isTourModalOpen, setIsTourModalOpen] = React.useState<boolean>(false);
   const [isLiveStream, setIsLiveStream] = React.useState<boolean>(false);
   const [rightTab, setRightTab] = React.useState<'EDITOR' | 'LOGS' | 'LEADERBOARD'>('LOGS');
+  const [isMuted, setIsMuted] = React.useState<boolean>(() => soundManager.isMuted());
+  const [isTheaterMode, setIsTheaterMode] = React.useState<boolean>(false);
+  const [versusOverlayData, setVersusOverlayData] = React.useState<{
+    whiteBotName: string;
+    blackBotName: string;
+    mapName?: string;
+  } | null>(null);
   const liveSubRef = React.useRef<{ disconnect: () => void } | null>(null);
+  const lastCelebratedTurnRef = React.useRef<number>(-1);
   // Derive valid tiles set from bitmask
   const validTilesSet = React.useMemo(() => {
     const coords = decodeValidTilesBitmask(
@@ -43,6 +57,53 @@ export const App: React.FC = () => {
   const replayRef = React.useRef(replay);
   replayRef.current = replay;
 
+  // Victory / Draw audio & confetti celebration trigger
+  React.useEffect(() => {
+    if (currentTurn >= totalTurns && totalTurns > 0) {
+      if (lastCelebratedTurnRef.current !== currentTurn) {
+        lastCelebratedTurnRef.current = currentTurn;
+        if (currentSnapshot.winner !== undefined) {
+          soundManager.playVictory();
+          try {
+            confetti({
+              particleCount: 110,
+              spread: 75,
+              origin: { y: 0.6 },
+            });
+          } catch {
+            // Ignore if in test env
+          }
+        } else if (currentSnapshot.isGameOver) {
+          soundManager.playDraw();
+        }
+      }
+    } else {
+      lastCelebratedTurnRef.current = -1;
+    }
+  }, [currentTurn, totalTurns, currentSnapshot]);
+
+  // Keyboard shortcuts
+  useKeyboardControls({
+    onPlayPause: () => {
+      soundManager.playClick();
+      handlePlayPause();
+    },
+    onStepPrev: () => {
+      soundManager.playClick();
+      handleStepPrev();
+    },
+    onStepNext: () => {
+      soundManager.playClick();
+      handleStepNext();
+    },
+    onToggleMute: () => {
+      setIsMuted(soundManager.toggleMute());
+    },
+    onToggleTheater: () => {
+      soundManager.playClick();
+      setIsTheaterMode((prev) => !prev);
+    },
+  });
   // Playback timer loop: drives step-by-step match projection
   React.useEffect(() => {
     if (!isPlaying) return;
@@ -119,22 +180,27 @@ export const App: React.FC = () => {
 
     setIsLiveStream(true);
     setCurrentTurn(0);
-    setIsPlaying(true);
+    setIsPlaying(false);
+
     const sub = subscribeLiveMatch(matchId, {
-      onInit: (_init, initialReplay) => {
+      onInit: (init, initialReplay) => {
         setReplay(initialReplay);
         setCurrentTurn(0);
-        setIsPlaying(true);
+        setVersusOverlayData({
+          whiteBotName: init.whiteBotName || 'White Bot',
+          blackBotName: init.blackBotName || 'Black Bot',
+          mapName: init.map.mapName,
+        });
       },
       onDelta: (_delta, _snapshot, updatedReplay) => {
         setReplay({ ...updatedReplay });
-        // Maintain smooth step-by-step playback without jumping straight to the end
-        setIsPlaying(true);
+        if (!versusOverlayData) {
+          setIsPlaying(true);
+        }
       },
       onEnd: (_end, finishedReplay) => {
         setReplay({ ...finishedReplay });
         setIsLiveStream(false);
-        // Allow playback to proceed smoothly until the final turn snapshot
       },
       onError: (err) => {
         console.error('Live stream error:', err);
@@ -164,8 +230,12 @@ export const App: React.FC = () => {
         replay={replay}
         currentTurn={currentTurn}
         isLive={isLiveStream}
+        isMuted={isMuted}
+        isTheaterMode={isTheaterMode}
         onUploadReplay={handleUploadReplay}
         onOpenNewMatch={() => setIsModalOpen(true)}
+        onToggleMute={() => setIsMuted(soundManager.toggleMute())}
+        onToggleTheater={() => setIsTheaterMode((prev) => !prev)}
       />
       {/* Main Workspace */}
       <div style={{
@@ -183,6 +253,17 @@ export const App: React.FC = () => {
           borderRight: '1px solid #1e293b',
         }}>
           <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+            {versusOverlayData && (
+              <VersusOverlay
+                whiteBotName={versusOverlayData.whiteBotName}
+                blackBotName={versusOverlayData.blackBotName}
+                mapName={versusOverlayData.mapName}
+                onDismiss={() => {
+                  setVersusOverlayData(null);
+                  setIsPlaying(true);
+                }}
+              />
+            )}
             <CanvasViewport
               boardWidth={replay.init.map.width}
               boardHeight={replay.init.map.height}
@@ -208,15 +289,16 @@ export const App: React.FC = () => {
         </div>
 
         {/* Right: Tabbed Control Panel (Bot IDE / Match Logs / ELO Leaderboard) */}
-        <div style={{
-          width: '460px',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '12px',
-          gap: '12px',
-          backgroundColor: '#0b0f19',
-          overflow: 'hidden',
-        }}>
+        {!isTheaterMode && (
+          <div style={{
+            width: '460px',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '12px',
+            gap: '12px',
+            backgroundColor: '#0b0f19',
+            overflow: 'hidden',
+          }}>
           {/* Tabs Navigation */}
           <div style={{
             display: 'flex',
@@ -297,11 +379,9 @@ export const App: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          {rightTab === 'EDITOR' && (
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <BotEditor onMatchStarted={handleMatchStarted} />
-            </div>
-          )}
+          <div style={{ flex: 1, minHeight: 0, display: rightTab === 'EDITOR' ? 'block' : 'none' }}>
+            <BotEditor key={user?.id ?? 'anonymous'} onMatchStarted={handleMatchStarted} />
+          </div>
 
           {rightTab === 'LOGS' && (
             <>
@@ -333,7 +413,8 @@ export const App: React.FC = () => {
               />
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* New Match Modal */}
