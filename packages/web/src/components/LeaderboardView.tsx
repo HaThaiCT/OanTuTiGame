@@ -6,6 +6,7 @@ import {
   TournamentSummary,
   TournamentDetailsResponse,
 } from '../api/client.js';
+import { ChampionOverlay } from './ChampionOverlay.js';
 
 export interface LeaderboardEntry {
   readonly id: string;
@@ -37,6 +38,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   const [selectedTourId, setSelectedTourId] = React.useState<string | null>(null);
   const [tourDetails, setTourDetails] = React.useState<TournamentDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [projectedMatchIndex, setProjectedMatchIndex] = React.useState<number>(0);
+  const [showChampionCeremony, setShowChampionCeremony] = React.useState<boolean>(false);
 
   const fetchData = React.useCallback(() => {
     setIsLoading(true);
@@ -349,6 +352,92 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   {/* Expanded Tournament Details (Standings & Fixtures) */}
                   {isSelected && tourDetails && (
                     <div style={{ padding: '12px', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {/* Operator Broadcast Control Deck */}
+                      <div style={{
+                        backgroundColor: '#0b111e',
+                        border: '1px solid #eab308',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        boxShadow: '0 0 15px rgba(234, 179, 8, 0.15)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: '#eab308',
+                              boxShadow: '0 0 8px #eab308',
+                            }} />
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#f8fafc' }}>
+                              ĐIỀU PHỐI TRÌNH CHIẾU GIẢI ĐẤU
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#eab308', fontWeight: 700 }}>
+                            {projectedMatchIndex < tourDetails.matches.length
+                              ? `Trận ${projectedMatchIndex + 1} / ${tourDetails.matches.length}`
+                              : 'Đã chiếu hết các trận'}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => {
+                              if (!tourDetails || tourDetails.matches.length === 0) return;
+                              const nextIdx = projectedMatchIndex < tourDetails.matches.length ? projectedMatchIndex : 0;
+                              const match = tourDetails.matches[nextIdx];
+                              onPlayMatch(match.id);
+                              setProjectedMatchIndex((nextIdx + 1) % tourDetails.matches.length);
+                            }}
+                            disabled={tourDetails.matches.length === 0}
+                            style={{
+                              flex: 1,
+                              backgroundColor: '#eab308',
+                              color: '#0f172a',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '8px 12px',
+                              fontWeight: 800,
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 10px rgba(234, 179, 8, 0.4)',
+                            }}
+                          >
+                            <Play size={14} fill="#0f172a" />
+                            <span>Trận đấu tiếp theo (Next Match)</span>
+                          </button>
+
+                          {isCompleted && tourDetails.standings.length > 0 && (
+                            <button
+                              onClick={() => setShowChampionCeremony(true)}
+                              style={{
+                                backgroundColor: '#0284c7',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '8px 12px',
+                                fontWeight: 800,
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                              }}
+                            >
+                              <Trophy size={14} />
+                              <span>Vinh Danh Quán Quân</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Standings Table */}
                       <div>
                         <div style={{ fontSize: '11px', fontWeight: 800, color: '#eab308', marginBottom: '6px', textTransform: 'uppercase' }}>
@@ -446,6 +535,15 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
             })
           )}
         </div>
+      )}
+      {showChampionCeremony && tourDetails && tourDetails.standings.length > 0 && (
+        <ChampionOverlay
+          tournamentName={tourDetails.tournament.name}
+          champion={tourDetails.standings[0]}
+          runnerUp={tourDetails.standings[1]}
+          thirdPlace={tourDetails.standings[2]}
+          onDismiss={() => setShowChampionCeremony(false)}
+        />
       )}
     </div>
   );
