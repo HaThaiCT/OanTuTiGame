@@ -1,5 +1,4 @@
 import React from 'react';
-import { Hammer, Scissors, FileText } from 'lucide-react';
 import { PlayerSide, PieceType } from '@oantuti/engine';
 import { ReplayTurnSnapshot } from '../replay/player.js';
 
@@ -103,9 +102,9 @@ export const TurnLogs: React.FC<TurnLogsProps> = ({
                 </span>
                 {move && mover ? (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#f1f5f9' }}>
-                    {mover.type === PieceType.ROCK && <Hammer size={12} color="#38bdf8" />}
-                    {mover.type === PieceType.SCISSORS && <Scissors size={12} color="#eab308" />}
-                    {mover.type === PieceType.PAPER && <FileText size={12} color="#a855f7" />}
+                    <span style={{ fontSize: '13px' }}>
+                      {mover.type === PieceType.ROCK ? '✊' : mover.type === PieceType.SCISSORS ? '✌️' : '✋'}
+                    </span>
                     <span>#{move.pieceId} → ({move.to.x}, {move.to.y})</span>
                   </span>
                 ) : (

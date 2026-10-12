@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Hammer, Scissors, FileText } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { PieceType, PlayerSide } from '@oantuti/engine';
 import { PieceState } from '../replay/player.js';
 
@@ -118,7 +118,9 @@ const Badge: React.FC<{ type: 'ROCK' | 'SCISSORS' | 'PAPER'; count: number; colo
   color,
 }) => {
   const isDanger = count === 1;
-  const title = type === 'ROCK' ? 'Búa (Hammer)' : type === 'SCISSORS' ? 'Kéo (Scissors)' : 'Bao (Paper)';
+  const title = type === 'ROCK' ? 'Búa (Nắm đấm ✊)' : type === 'SCISSORS' ? 'Kéo (Hai ngón ✌️)' : 'Bao (Bàn tay xòe ✋)';
+  const emoji = type === 'ROCK' ? '✊' : type === 'SCISSORS' ? '✌️' : '✋';
+  const label = type === 'ROCK' ? 'Búa' : type === 'SCISSORS' ? 'Kéo' : 'Bao';
 
   return (
     <div
@@ -136,11 +138,10 @@ const Badge: React.FC<{ type: 'ROCK' | 'SCISSORS' | 'PAPER'; count: number; colo
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        {type === 'ROCK' && <Hammer size={14} color={color} />}
-        {type === 'SCISSORS' && <Scissors size={14} color={color} />}
-        {type === 'PAPER' && <FileText size={14} color={color} />}
+        <span style={{ fontSize: '14px', lineHeight: 1 }}>{emoji}</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color }}>{label}</span>
       </div>
-      <span style={{ fontSize: '13px', fontWeight: 700, color: count === 0 ? '#475569' : '#f1f5f9' }}>
+      <span style={{ fontSize: '13px', fontWeight: 800, color: count === 0 ? '#475569' : '#f1f5f9' }}>
         {count}
       </span>
     </div>

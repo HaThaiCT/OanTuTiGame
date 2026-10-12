@@ -95,9 +95,9 @@ export function updateParticles(particles: Particle[]): void {
 }
 
 /**
- * Draws a stylized Hammer icon (Búa)
+ * Draws a stylized human Fist hand gesture (Búa - Clenched Fist ✊)
  */
-function drawHammerIcon(
+function drawFistHandIcon(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -105,139 +105,55 @@ function drawHammerIcon(
   color: string
 ): void {
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(-0.35); // 20-degree dynamic battle angle
+  ctx.translate(cx, cy + size * 0.05);
 
   ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-
-  const headW = size * 0.72;
-  const headH = size * 0.32;
-  const handleW = size * 0.16;
-  const handleH = size * 0.65;
-  const headY = -size * 0.42;
-
-  // Handle with rounded pommel
-  ctx.beginPath();
-  ctx.roundRect(-handleW / 2, headY + headH * 0.6, handleW, handleH, handleW / 3);
-  ctx.fill();
-
-  // Hammer Head (chamfered polygon)
-  const chamfer = headH * 0.22;
-  const left = -headW / 2;
-  const right = headW / 2;
-  const top = headY;
-  const bottom = headY + headH;
-
-  ctx.beginPath();
-  ctx.moveTo(left + chamfer, top);
-  ctx.lineTo(right - chamfer, top);
-  ctx.lineTo(right, top + chamfer);
-  ctx.lineTo(right, bottom - chamfer);
-  ctx.lineTo(right - chamfer, bottom);
-  ctx.lineTo(left + chamfer, bottom);
-  ctx.lineTo(left, bottom - chamfer);
-  ctx.lineTo(left, top + chamfer);
-  ctx.closePath();
-  ctx.fill();
-
-  // Inner structural groove lines on hammer head
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-  ctx.lineWidth = Math.max(1, size * 0.04);
-  ctx.beginPath();
-  ctx.moveTo(left + headW * 0.24, top + 2);
-  ctx.lineTo(left + headW * 0.24, bottom - 2);
-  ctx.moveTo(right - headW * 0.24, top + 2);
-  ctx.lineTo(right - headW * 0.24, bottom - 2);
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-/**
- * Draws a stylized Scissors icon (Kéo)
- */
-function drawScissorsIcon(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  size: number,
-  color: string
-): void {
-  ctx.save();
-  ctx.translate(cx, cy);
-
-  ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-  const strokeW = Math.max(1.8, size * 0.08);
-  ctx.lineWidth = strokeW;
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+  ctx.lineWidth = Math.max(1.2, size * 0.04);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  const bladeLen = size * 0.46;
-  const bladeAngle = 0.42;
+  const s = size * 0.44;
 
-  // Blade 1 (pointing up-left)
-  ctx.save();
-  ctx.rotate(-bladeAngle);
+  // Wrist
   ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(-size * 0.06, -bladeLen * 0.4);
-  ctx.lineTo(0, -bladeLen);
-  ctx.lineTo(size * 0.06, -bladeLen * 0.4);
-  ctx.closePath();
+  ctx.roundRect(-s * 0.42, s * 0.4, s * 0.84, s * 0.45, s * 0.15);
   ctx.fill();
-  ctx.restore();
 
-  // Blade 2 (pointing up-right)
-  ctx.save();
-  ctx.rotate(bladeAngle);
+  // Clenched Fist Main Block (rounded palm & 4 folded fingers)
   ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(-size * 0.06, -bladeLen * 0.4);
-  ctx.lineTo(0, -bladeLen);
-  ctx.lineTo(size * 0.06, -bladeLen * 0.4);
-  ctx.closePath();
+  ctx.roundRect(-s * 0.65, -s * 0.55, s * 1.3, s * 1.05, s * 0.35);
   ctx.fill();
-  ctx.restore();
-
-  // Left handle and loop
-  const loopRadius = size * 0.15;
-  const loopDistX = size * 0.24;
-  const loopDistY = size * 0.30;
-
-  ctx.beginPath();
-  ctx.moveTo(-size * 0.06, 0);
-  ctx.lineTo(-loopDistX, loopDistY - loopRadius);
   ctx.stroke();
 
-  ctx.beginPath();
-  ctx.arc(-loopDistX, loopDistY, loopRadius, 0, Math.PI * 2);
-  ctx.stroke();
+  // 4 Finger Creases / Knuckles (Index, Middle, Ring, Pinky)
+  const fingerW = (s * 1.3) / 4;
+  for (let i = 1; i <= 3; i++) {
+    const x = -s * 0.65 + i * fingerW;
+    ctx.beginPath();
+    ctx.moveTo(x, -s * 0.5);
+    ctx.lineTo(x, -s * 0.05);
+    ctx.stroke();
+  }
 
-  // Right handle and loop
+  // Thumb folded horizontally across the fingers
   ctx.beginPath();
-  ctx.moveTo(size * 0.06, 0);
-  ctx.lineTo(loopDistX, loopDistY - loopRadius);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(loopDistX, loopDistY, loopRadius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Center pivot screw
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-  ctx.beginPath();
-  ctx.arc(0, 0, strokeW * 0.8, 0, Math.PI * 2);
+  ctx.roundRect(-s * 0.70, -s * 0.08, s * 1.15, s * 0.38, s * 0.18);
   ctx.fill();
+  ctx.stroke();
+
+  // Thumb knuckle crease
+  ctx.beginPath();
+  ctx.arc(-s * 0.25, s * 0.1, s * 0.1, -Math.PI * 0.4, Math.PI * 0.4);
+  ctx.stroke();
 
   ctx.restore();
 }
 
 /**
- * Draws a stylized Paper sheet icon (Bao)
+ * Draws a stylized human Scissors hand gesture (Kéo - Two Fingers V-sign ✌️)
  */
-function drawPaperIcon(
+function drawScissorsHandIcon(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -245,66 +161,136 @@ function drawPaperIcon(
   color: string
 ): void {
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(cx, cy + size * 0.08);
 
   ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-
-  const w = size * 0.62;
-  const h = size * 0.78;
-  const left = -w / 2;
-  const right = w / 2;
-  const top = -h / 2;
-  const bottom = h / 2;
-  const fold = size * 0.22;
-  const r = Math.max(2, size * 0.05);
-
-  // Main sheet with dog-ear notch
-  ctx.beginPath();
-  ctx.moveTo(left + r, top);
-  ctx.lineTo(right - fold, top);
-  ctx.lineTo(right, top + fold);
-  ctx.lineTo(right, bottom - r);
-  ctx.arcTo(right, bottom, right - r, bottom, r);
-  ctx.lineTo(left + r, bottom);
-  ctx.arcTo(left, bottom, left, bottom - r, r);
-  ctx.lineTo(left, top + r);
-  ctx.arcTo(left, top, left + r, top, r);
-  ctx.closePath();
-  ctx.fill();
-
-  // 3D Fold flap triangle
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-  ctx.beginPath();
-  ctx.moveTo(right - fold, top);
-  ctx.lineTo(right - fold, top + fold);
-  ctx.lineTo(right, top + fold);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
-  ctx.lineWidth = Math.max(1, size * 0.035);
-  ctx.stroke();
-
-  // Document lines inside sheet
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
-  ctx.lineWidth = Math.max(1.5, size * 0.045);
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+  ctx.lineWidth = Math.max(1.2, size * 0.04);
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
-  const linePad = size * 0.12;
-  const lineLeft = left + linePad;
-  const lineRight = right - linePad;
+  const s = size * 0.44;
 
+  // Wrist
   ctx.beginPath();
-  ctx.moveTo(lineLeft, top + h * 0.42);
-  ctx.lineTo(lineRight, top + h * 0.42);
+  ctx.roundRect(-s * 0.35, s * 0.42, s * 0.70, s * 0.42, s * 0.15);
+  ctx.fill();
 
-  ctx.moveTo(lineLeft, top + h * 0.60);
-  ctx.lineTo(lineRight, top + h * 0.60);
-
-  ctx.moveTo(lineLeft, top + h * 0.78);
-  ctx.lineTo(lineRight - size * 0.1, top + h * 0.78);
+  // Base palm (folded ring and pinky fingers)
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.55, -s * 0.05, s * 1.10, s * 0.65, s * 0.25);
+  ctx.fill();
   ctx.stroke();
+
+  // Thumb folded over ring & pinky
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.50, s * 0.10, s * 0.85, s * 0.32, s * 0.16);
+  ctx.fill();
+  ctx.stroke();
+
+  // Finger 1 (Index Finger - leaning left ~15 deg)
+  ctx.save();
+  ctx.translate(-s * 0.18, 0);
+  ctx.rotate(-0.25);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.15, -s * 1.05, s * 0.30, s * 1.1, s * 0.15);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // Finger 2 (Middle Finger - leaning right ~15 deg)
+  ctx.save();
+  ctx.translate(s * 0.18, 0);
+  ctx.rotate(0.25);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.15, -s * 1.10, s * 0.30, s * 1.15, s * 0.15);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/**
+ * Draws a stylized human Paper hand gesture (Bao - Open Palm 5 Fingers ✋)
+ */
+function drawPaperHandIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string
+): void {
+  ctx.save();
+  ctx.translate(cx, cy + size * 0.08);
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+  ctx.lineWidth = Math.max(1.2, size * 0.04);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const s = size * 0.44;
+
+  // Wrist
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.32, s * 0.42, s * 0.64, s * 0.42, s * 0.15);
+  ctx.fill();
+
+  // Palm base
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.52, -s * 0.15, s * 1.04, s * 0.70, s * 0.22);
+  ctx.fill();
+  ctx.stroke();
+
+  // Thumb (splayed to the left)
+  ctx.save();
+  ctx.translate(-s * 0.45, s * 0.15);
+  ctx.rotate(-0.68);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.13, -s * 0.50, s * 0.26, s * 0.65, s * 0.13);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // Index finger
+  ctx.save();
+  ctx.translate(-s * 0.32, -s * 0.10);
+  ctx.rotate(-0.16);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.12, -s * 0.85, s * 0.24, s * 0.90, s * 0.12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // Middle finger (tallest, straight up)
+  ctx.save();
+  ctx.translate(-s * 0.04, -s * 0.12);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.12, -s * 0.98, s * 0.24, s * 1.02, s * 0.12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // Ring finger
+  ctx.save();
+  ctx.translate(s * 0.22, -s * 0.10);
+  ctx.rotate(0.12);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.12, -s * 0.86, s * 0.24, s * 0.90, s * 0.12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // Pinky finger
+  ctx.save();
+  ctx.translate(s * 0.44, -s * 0.02);
+  ctx.rotate(0.30);
+  ctx.beginPath();
+  ctx.roundRect(-s * 0.10, -s * 0.65, s * 0.20, s * 0.70, s * 0.10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
 
   ctx.restore();
 }
@@ -537,11 +523,11 @@ export function renderCanvasFrame(
     const iconColor = '#f8fafc';
 
     if (p.type === PieceType.ROCK) {
-      drawHammerIcon(ctx, screenX, screenY, iconSize, iconColor);
+      drawFistHandIcon(ctx, screenX, screenY, iconSize, iconColor);
     } else if (p.type === PieceType.SCISSORS) {
-      drawScissorsIcon(ctx, screenX, screenY, iconSize, iconColor);
+      drawScissorsHandIcon(ctx, screenX, screenY, iconSize, iconColor);
     } else if (p.type === PieceType.PAPER) {
-      drawPaperIcon(ctx, screenX, screenY, iconSize, iconColor);
+      drawPaperHandIcon(ctx, screenX, screenY, iconSize, iconColor);
     }
   }
   // ==========================================
