@@ -14,6 +14,7 @@
     "test:runner": "vitest run packages/runner",
     "test:protocol": "vitest run packages/protocol",
     "test:web": "vitest run packages/web",
+    "test:server": "vitest run packages/server",
     "match:play": "tsx packages/runner/bin/run-match.ts"
   },
   "devDependencies": {
