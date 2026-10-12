@@ -3,11 +3,10 @@
  * Uses built-in node:sqlite (DatabaseSync) with schemas from docs/specs/05-DATA-MODELS-DATABASE-SPEC.md.
  */
 
+import type { DatabaseSync as SQLiteDatabase } from 'node:sqlite';
 import { createRequire } from 'node:module';
+const { DatabaseSync } = createRequire(import.meta.url)('node:sqlite') as { DatabaseSync: typeof SQLiteDatabase };
 import * as crypto from 'node:crypto';
-
-const req = createRequire(import.meta.url);
-const { DatabaseSync } = req('node:sqlite');
 
 export interface UserRow {
   readonly id: string;
@@ -57,6 +56,7 @@ export interface TournamentRow {
 
 export interface MatchRow {
   readonly id: string;
+  readonly creator_id?: string;
   readonly tournament_id?: string;
   readonly map_id: string;
   readonly white_bot_id: string;
@@ -81,7 +81,7 @@ export interface ReplayRow {
 }
 
 export class Database {
-  private readonly db: DatabaseSync;
+  private readonly db: SQLiteDatabase;
 
   constructor(location: string = ':memory:') {
     this.db = new DatabaseSync(location);
@@ -89,6 +89,7 @@ export class Database {
   }
 
   private initSchema(): void {
+    this.db.exec('PRAGMA foreign_keys = ON');
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -164,6 +165,29 @@ export class Database {
       );
     `);
 
+    // Additive migrations preserve existing accounts, bots, matches and replay data.
+    this.addColumn('bots', 'file_path', 'TEXT');
+    this.addColumn('replays', 'replay_data', 'BLOB');
+    this.addColumn('matches', 'creator_id', 'TEXT REFERENCES users(id)');
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token_hash TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+      CREATE TABLE IF NOT EXISTS bot_versions (
+        bot_id TEXT NOT NULL REFERENCES bots(id), version INTEGER NOT NULL,
+        name TEXT NOT NULL, language TEXT NOT NULL, source_code TEXT NOT NULL,
+        file_path TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (bot_id, version)
+      );
+      INSERT OR IGNORE INTO bot_versions (bot_id, version, name, language, source_code, file_path, created_at)
+        SELECT id, version, name, language, source_code, file_path, created_at FROM bots;
+      UPDATE matches SET creator_id = (SELECT creator_id FROM tournaments WHERE id = matches.tournament_id)
+        WHERE creator_id IS NULL AND tournament_id IS NOT NULL;
+    `);
+
     // Ensure system user exists
     const systemUser = this.getUserByUsername('system');
     if (!systemUser) {
@@ -176,6 +200,36 @@ export class Database {
       });
     }
   }
+
+  private addColumn(table: string, column: string, definition: string): void {
+    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!columns.some((entry) => entry.name === column)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+
+  transaction<T>(operation: () => T): T {
+    this.db.exec('BEGIN IMMEDIATE');
+    try { const result = operation(); this.db.exec('COMMIT'); return result; }
+    catch (error) { this.db.exec('ROLLBACK'); throw error; }
+  }
+
+  getUserByEmail(email: string): UserRow | undefined {
+    return this.db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
+  }
+
+  createSession(tokenHash: string, userId: string, expiresAt: number): void {
+    this.db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now());
+    this.db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(tokenHash, userId, expiresAt);
+  }
+
+  getSessionUser(tokenHash: string): UserRow | undefined {
+    return this.db.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?')
+      .get(tokenHash, Date.now()) as UserRow | undefined;
+  }
+
+  revokeSession(tokenHash: string): void {
+    this.db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash);
+  }
+
 
   createUser(user: {
     id?: string;
@@ -226,7 +280,9 @@ export class Database {
     `);
     eloStmt.run(`elo_${crypto.randomUUID().slice(0, 8)}`, id);
 
-    return this.getBotById(id)!;
+    const created = this.getBotById(id)!;
+    this.recordBotVersion(created);
+    return created;
   }
 
   getBotById(id: string): BotRow | undefined {
@@ -234,10 +290,47 @@ export class Database {
     return stmt.get(id) as BotRow | undefined;
   }
 
-  getBotByName(name: string): BotRow | undefined {
-    const stmt = this.db.prepare('SELECT * FROM bots WHERE name = ?');
-    return stmt.get(name) as BotRow | undefined;
+
+  getOwnedBotByName(userId: string, name: string): BotRow | undefined {
+    return this.db.prepare('SELECT * FROM bots WHERE user_id = ? AND name = ?').get(userId, name) as BotRow | undefined;
   }
+
+  listBotsWithoutSourcePath(): BotRow[] {
+    return this.db.prepare("SELECT * FROM bots WHERE file_path IS NULL OR file_path = ''").all() as BotRow[];
+  }
+
+  assignMigratedSourcePath(id: string, version: number, filePath: string): void {
+    this.db.prepare('UPDATE bots SET file_path = ? WHERE id = ? AND version = ?').run(filePath, id, version);
+    this.db.prepare('UPDATE bot_versions SET file_path = ? WHERE bot_id = ? AND version = ?').run(filePath, id, version);
+  }
+
+
+  recordBotVersion(bot: BotRow): void {
+    this.db.prepare('INSERT INTO bot_versions (bot_id, version, name, language, source_code, file_path) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(bot.id, bot.version, bot.name, bot.language, bot.source_code, bot.file_path ?? null);
+  }
+
+  listBotVersions(botId: string): { version: number; name: string; language: string; sourceCode: string; createdAt: string }[] {
+    return this.db.prepare('SELECT version, name, language, source_code AS sourceCode, created_at AS createdAt FROM bot_versions WHERE bot_id = ? ORDER BY version DESC')
+      .all(botId) as { version: number; name: string; language: string; sourceCode: string; createdAt: string }[];
+  }
+
+  updateOwnedBot(id: string, userId: string, version: number, bot: { name: string; language: 'PYTHON' | 'TYPESCRIPT'; sourceCode: string; filePath: string }): BotRow | undefined {
+    const result = this.db.prepare(`UPDATE bots SET name = ?, language = ?, source_code = ?, file_path = ?, version = version + 1, updated_at = datetime('now')
+      WHERE id = ? AND user_id = ? AND version = ? AND is_active = 1`)
+      .run(bot.name, bot.language, bot.sourceCode, bot.filePath, id, userId, version);
+    if (!result.changes) return undefined;
+    const updated = this.getBotById(id)!; this.recordBotVersion(updated); return updated;
+  }
+
+  deactivateBot(id: string, userId: string): void {
+    this.db.prepare("UPDATE bots SET is_active = 0, updated_at = datetime('now') WHERE id = ? AND user_id = ?").run(id, userId);
+  }
+
+  setMatchCreator(id: string, userId: string): void {
+    this.db.prepare('UPDATE matches SET creator_id = ? WHERE id = ?').run(userId, id);
+  }
+
 
   listBots(): (BotRow & { elo: number })[] {
     const stmt = this.db.prepare(`
@@ -263,6 +356,10 @@ export class Database {
       VALUES (?, ?, ?, ?, ?)
     `);
     stmt.run(id, match.tournamentId ?? null, match.mapId, match.whiteBotId, match.blackBotId);
+    if (match.tournamentId) {
+      const tournament = this.getTournamentById(match.tournamentId);
+      if (tournament) this.setMatchCreator(id, tournament.creator_id);
+    }
     return this.getMatchById(id)!;
   }
 
@@ -390,20 +487,19 @@ export class Database {
 
   createTournament(tournament: {
     id?: string;
-    creatorId?: string;
+    creatorId: string;
     name: string;
     format: 'SWISS' | 'ROUND_ROBIN' | 'SINGLE_ELIMINATION' | 'DOUBLE_ELIMINATION';
     configJson?: string;
     status?: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
   }): TournamentRow {
     const id = tournament.id ?? `tour_${Date.now()}_${crypto.randomUUID().slice(0, 4)}`;
-    const creatorId = tournament.creatorId ?? 'usr_system';
     const status = tournament.status ?? 'PENDING';
     const stmt = this.db.prepare(`
       INSERT INTO tournaments (id, creator_id, name, format, status, config_json, started_at)
       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
     `);
-    stmt.run(id, creatorId, tournament.name, tournament.format, status, tournament.configJson ?? '{}');
+    stmt.run(id, tournament.creatorId, tournament.name, tournament.format, status, tournament.configJson ?? '{}');
     return this.getTournamentById(id)!;
   }
 

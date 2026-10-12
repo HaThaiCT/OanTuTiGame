@@ -9,6 +9,7 @@ services:
       HOST: "0.0.0.0"
       NODE_ENV: production
       DB_LOCATION: /app/storage/arena.sqlite
+      PUBLIC_ORIGINS: "${PUBLIC_ORIGINS:-http://localhost:${WEB_PORT:-3000},http://127.0.0.1:${WEB_PORT:-3000}}"
     expose:
       - "3001"
     volumes:

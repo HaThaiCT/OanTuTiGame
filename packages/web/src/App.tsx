@@ -26,6 +26,7 @@ export const App: React.FC = () => {
   const [playbackSpeed, setPlaybackSpeed] = React.useState<number>(1);
   const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false);
   const [isTourModalOpen, setIsTourModalOpen] = React.useState<boolean>(false);
+  const [activeTournamentId, setActiveTournamentId] = React.useState<string | undefined>();
   const [isLiveStream, setIsLiveStream] = React.useState<boolean>(false);
   const [rightTab, setRightTab] = React.useState<'EDITOR' | 'LOGS' | 'LEADERBOARD'>('LOGS');
   const [isMuted, setIsMuted] = React.useState<boolean>(() => soundManager.isMuted());
@@ -410,6 +411,7 @@ export const App: React.FC = () => {
                 onChallengeBot={() => setIsModalOpen(true)}
                 onOpenCreateTournament={() => setIsTourModalOpen(true)}
                 onPlayMatch={handlePlaySpecificMatch}
+                initialTournamentId={activeTournamentId}
               />
             </div>
           )}
@@ -428,7 +430,8 @@ export const App: React.FC = () => {
       <TournamentModal
         isOpen={isTourModalOpen}
         onClose={() => setIsTourModalOpen(false)}
-        onTournamentStarted={(_tourId) => {
+        onTournamentStarted={(tourId) => {
+          setActiveTournamentId(tourId);
           setRightTab('LEADERBOARD');
         }}
       />

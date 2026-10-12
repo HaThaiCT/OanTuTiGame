@@ -3,19 +3,21 @@
  */
 
 import Fastify, { FastifyInstance } from 'fastify';
-import fastifyCors from '@fastify/cors';
 import fastifyWebsocket from '@fastify/websocket';
-import * as fs from 'fs';
 import * as path from 'path';
 import { Database } from './db.js';
 import { MatchService } from './match-service.js';
 import { WebSocketHub } from './ws-hub.js';
 import { TournamentService } from './tournament-service.js';
+import { AuthService, HttpError, botSourceFields, mapIdField, maxTurnsField, objectPayload, protectMutations, textField } from './auth.js';
+import { migrateBotSourceFiles, registerBotRoutes } from './bot-routes.js';
 
 export interface ServerOptions {
   readonly dbLocation?: string;
   readonly mapsDir?: string;
   readonly replaysDir?: string;
+  readonly botsDir?: string;
+  readonly allowedOrigins?: readonly string[];
 }
 
 export interface AppContext {
@@ -68,7 +70,9 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   ];
 
   for (const b of defaultBots) {
-    if (!db.getBotByName(b.name)) {
+    const existing = db.getOwnedBotByName('usr_system', b.name);
+    if (existing && !existing.file_path) db.assignMigratedSourcePath(existing.id, existing.version, b.filePath);
+    if (!db.getOwnedBotByName('usr_system', b.name)) {
       db.createBot({
         userId: 'usr_system',
         name: b.name,
@@ -78,14 +82,22 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       });
     }
   }
+  migrateBotSourceFiles(db, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
 
   const app = Fastify({ logger: false });
-
-  await app.register(fastifyCors, {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  const auth = new AuthService(db);
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
+    if (error.statusCode && error.statusCode < 500) return reply.code(error.statusCode).send({ error: 'Invalid request payload' });
+    return reply.code(500).send({ error: 'Internal server error' });
   });
-
+  app.addHook('onRequest', async (request) => {
+    const url = request.url.split('?')[0];
+    if (['POST', 'PUT', 'DELETE'].includes(request.method) && ['/api/bots', '/api/matches', '/api/matches/test', '/api/tournaments'].some((route) => url === route || (route === '/api/bots' && url.startsWith('/api/bots/')))) auth.requireUser(request);
+  });
+  protectMutations(app, options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']));
+  auth.registerRoutes(app);
+  registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
   await app.register(fastifyWebsocket);
 
   // Health check
@@ -99,6 +111,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   });
 
   app.get<{ Params: { id: string } }>('/api/maps/:id', async (req, reply) => {
+    if (!/^[a-zA-Z0-9_-]+$/.test(req.params.id)) throw new HttpError(400, 'Invalid mapId');
     try {
       const map = matchService.getMapDescriptor(req.params.id);
       return map;
@@ -108,105 +121,55 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     }
   });
 
-  // Bots
-  app.get('/api/bots', async () => {
-    return { bots: db.listBots() };
-  });
-
-  app.post<{
-    Body: {
-      name: string;
-      language: 'PYTHON' | 'TYPESCRIPT' | 'JAVASCRIPT' | 'CPP' | 'JAVA' | 'GO';
-      sourceCode: string;
-      filePath?: string;
-    };
-  }>('/api/bots', async (req, reply) => {
-    const { name, language, sourceCode } = req.body;
-    if (!name || !language || !sourceCode) {
-      reply.status(400);
-      return { error: 'Missing required bot fields (name, language, sourceCode)' };
-    }
-
-    let resolvedFilePath = req.body.filePath;
-    if (!resolvedFilePath && sourceCode) {
-      const botsDir = path.resolve(process.cwd(), 'storage/bots');
-      if (!fs.existsSync(botsDir)) fs.mkdirSync(botsDir, { recursive: true });
-      const ext = language === 'PYTHON' ? 'py' : language === 'CPP' ? 'cpp' : 'ts';
-      const safeName = name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      const filename = `${safeName}_${Date.now()}.${ext}`;
-      resolvedFilePath = path.join(botsDir, filename);
-      fs.writeFileSync(resolvedFilePath, sourceCode);
-    }
-
-    try {
-      const bot = db.createBot({
-        userId: 'usr_system',
-        name,
-        language,
-        sourceCode,
-        filePath: resolvedFilePath,
-      });
-      return { bot };
-    } catch (err) {
-      reply.status(409);
-      return { error: (err as Error).message };
-    }
-  });
 
   // Matches
-  app.post<{
-    Body: {
-      mapId: string;
-      whiteBotId: string;
-      blackBotId: string;
-      maxTurns?: number;
-    };
-  }>('/api/matches', async (req, reply) => {
-    const { mapId, whiteBotId, blackBotId, maxTurns } = req.body;
-    if (!mapId || !whiteBotId || !blackBotId) {
-      reply.status(400);
-      return { error: 'Missing required match parameters (mapId, whiteBotId, blackBotId)' };
-    }
-
+  app.post('/api/matches', async (req) => {
+    const user = auth.requireUser(req);
+    const payload = objectPayload(req.body, ['mapId', 'whiteBotId', 'blackBotId', 'maxTurns']);
+    const mapId = mapIdField(payload.mapId);
+    const whiteBotId = textField(payload.whiteBotId, 'whiteBotId', 100);
+    const blackBotId = textField(payload.blackBotId, 'blackBotId', 100);
+    const maxTurns = maxTurnsField(payload.maxTurns);
+    if (!matchService.getAvailableMaps().some((map) => map.id === mapId)) throw new HttpError(400, 'Map not found');
+    if (![whiteBotId, blackBotId].every((id) => db.getBotById(id)?.is_active)) throw new HttpError(400, 'Active bot not found');
     try {
-      const { matchId } = await matchService.startMatch({
-        mapId,
-        whiteBotId,
-        blackBotId,
-        maxTurns,
-      });
+      const { matchId } = await matchService.startMatch({ mapId, whiteBotId, blackBotId, maxTurns });
+      db.setMatchCreator(matchId, user.id);
       return { matchId, status: 'RUNNING' };
-    } catch (err) {
-      reply.status(400);
-      return { error: (err as Error).message };
-    }
+    } catch { throw new HttpError(400, 'Unable to start match'); }
   });
 
-  app.get<{ Params: { id: string } }>('/api/matches/:id', async (req, reply) => {
-    const match = db.getMatchById(req.params.id);
-    if (!match) {
-      reply.status(404);
-      return { error: `Match "${req.params.id}" not found` };
-    }
+  app.post('/api/matches/test', async (req) => {
+    auth.requireUser(req);
+    const payload = objectPayload(req.body, ['mapId', 'opponentBotId', 'language', 'sourceCode', 'maxTurns']);
+    const mapId = mapIdField(payload.mapId);
+    const opponentBotId = textField(payload.opponentBotId, 'opponentBotId', 100);
+    const { language, sourceCode } = botSourceFields({ ...payload, name: 'Draft' });
+    const maxTurns = maxTurnsField(payload.maxTurns);
+    if (!matchService.getAvailableMaps().some((map) => map.id === mapId)) throw new HttpError(400, 'Map not found');
+    if (!db.getBotById(opponentBotId)?.is_active) throw new HttpError(400, 'Active opponent not found');
+    try {
+      const { matchId } = await matchService.startTestMatch({ mapId, opponentBotId, language, sourceCode, maxTurns });
+      return { matchId, status: 'RUNNING' };
+    } catch { throw new HttpError(400, 'Unable to start test match'); }
+  });
 
-    const activeState = matchService.getActiveMatch(req.params.id);
+  app.get<{ Params: { id: string } }>('/api/matches/:id', async (req) => {
+    const match = db.getMatchById(req.params.id);
+    const active = matchService.getActiveMatch(req.params.id);
+    if (!match && !active) throw new HttpError(404, 'Match not found');
     return {
-      match,
-      isLive: Boolean(activeState && !activeState.isFinished),
+      match: match ?? { id: req.params.id, white_bot_name: active!.whiteBotName, black_bot_name: active!.blackBotName, total_turns: active!.deltaFrameBytes.length },
+      isLive: Boolean(active && !active.isFinished),
+      ...(active?.error ? { error: 'Match execution failed' } : {}),
     };
   });
 
   app.get<{ Params: { id: string } }>('/api/matches/:id/replay', async (req, reply) => {
-    const replayRow = db.getReplayByMatchId(req.params.id);
-    if (!replayRow || !replayRow.replay_data) {
-      reply.status(404);
-      return { error: `Replay for match "${req.params.id}" not found` };
-    }
-
-    reply
-      .header('Content-Type', 'application/octet-stream')
-      .header('Content-Disposition', `attachment; filename="${req.params.id}.oantuti"`)
-      .send(Buffer.from(replayRow.replay_data));
+    const replay = db.getReplayByMatchId(req.params.id)?.replay_data ?? matchService.getActiveMatch(req.params.id)?.replayBinary;
+    if (!replay) throw new HttpError(404, 'Replay not found');
+    return reply.header('Content-Type', 'application/octet-stream')
+      .header('Content-Disposition', 'attachment; filename="match.oantuti"').send(Buffer.from(replay));
   });
 
   // Leaderboard
@@ -219,36 +182,23 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     return { tournaments: tournamentService.listTournaments() };
   });
 
-  app.post<{
-    Body: {
-      name: string;
-      format?: 'ROUND_ROBIN' | 'SWISS';
-      mapId: string;
-      botIds: string[];
-      maxTurns?: number;
-      doubleRound?: boolean;
-    };
-  }>('/api/tournaments', async (req, reply) => {
-    const { name, format, mapId, botIds, maxTurns, doubleRound } = req.body;
-    if (!name || !mapId || !Array.isArray(botIds) || botIds.length < 2) {
-      reply.status(400);
-      return { error: 'Missing required tournament fields (name, mapId, botIds with at least 2 bots)' };
-    }
-
+  app.post('/api/tournaments', async (req) => {
+    const user = auth.requireUser(req);
+    const payload = objectPayload(req.body, ['name', 'format', 'mapId', 'botIds', 'maxTurns', 'doubleRound']);
+    const name = textField(payload.name, 'name', 100).trim();
+    const mapId = mapIdField(payload.mapId);
+    const maxTurns = maxTurnsField(payload.maxTurns);
+    if (payload.format !== undefined && payload.format !== 'ROUND_ROBIN' && payload.format !== 'SWISS') throw new HttpError(400, 'Invalid format');
+    if (payload.doubleRound !== undefined && typeof payload.doubleRound !== 'boolean') throw new HttpError(400, 'Invalid doubleRound');
+    if (!Array.isArray(payload.botIds) || payload.botIds.length < 2 || payload.botIds.length > 64) throw new HttpError(400, 'Tournament requires at least 2 bots (maximum 64)');
+    const botIds = payload.botIds.map((id: unknown) => textField(id, 'botId', 100));
+    if (new Set(botIds).size !== botIds.length) throw new HttpError(400, 'Duplicate tournament bot');
+    if (!botIds.every((id) => db.getBotById(id)?.is_active)) throw new HttpError(400, 'Active bot not found');
+    if (!matchService.getAvailableMaps().some((map) => map.id === mapId)) throw new HttpError(400, 'Map not found');
     try {
-      const tournament = await tournamentService.createTournament({
-        name,
-        format,
-        mapId,
-        botIds,
-        maxTurns,
-        doubleRound,
-      });
+      const tournament = await tournamentService.createTournament({ creatorId: user.id, name, mapId, botIds, maxTurns, format: payload.format, doubleRound: payload.doubleRound });
       return { tournament };
-    } catch (err) {
-      reply.status(400);
-      return { error: (err as Error).message };
-    }
+    } catch { throw new HttpError(400, 'Unable to start tournament'); }
   });
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {

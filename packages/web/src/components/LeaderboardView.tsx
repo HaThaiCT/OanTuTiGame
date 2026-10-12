@@ -25,14 +25,16 @@ interface LeaderboardViewProps {
   readonly onChallengeBot: (botId: string) => void;
   readonly onOpenCreateTournament: () => void;
   readonly onPlayMatch: (matchId: string) => void;
+  readonly initialTournamentId?: string;
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   onChallengeBot,
   onOpenCreateTournament,
   onPlayMatch,
+  initialTournamentId,
 }) => {
-  const [activeTab, setActiveTab] = React.useState<'LADDER' | 'TOURNAMENTS'>('LADDER');
+  const [activeTab, setActiveTab] = React.useState<'LADDER' | 'TOURNAMENTS'>(initialTournamentId ? 'TOURNAMENTS' : 'LADDER');
   const [entries, setEntries] = React.useState<LeaderboardEntry[]>([]);
   const [tournaments, setTournaments] = React.useState<TournamentSummary[]>([]);
   const [selectedTourId, setSelectedTourId] = React.useState<string | null>(null);
@@ -58,6 +60,16 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   React.useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  React.useEffect(() => {
+    if (initialTournamentId) {
+      setActiveTab('TOURNAMENTS');
+      setSelectedTourId(initialTournamentId);
+      fetchTournamentDetails(initialTournamentId)
+        .then((data) => setTourDetails(data))
+        .catch((err) => console.error('Failed to load tournament details:', err));
+    }
+  }, [initialTournamentId]);
 
   const handleSelectTournament = (id: string) => {
     if (selectedTourId === id) {

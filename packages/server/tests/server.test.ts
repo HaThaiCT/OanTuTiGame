@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { WebSocket } from 'ws';
 import { createApp, AppContext } from '../src/app.js';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   decodeWebSocketFrame,
   decodeMatchInitFrame,
@@ -14,9 +17,17 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
   let context: AppContext;
   let serverAddress: string;
   let port: number;
+  let cookie: string;
+  let userId: string;
+  let storageDir: string;
 
   beforeAll(async () => {
-    context = await createApp();
+    storageDir = mkdtempSync(join(tmpdir(), 'oantuti-server-'));
+    context = await createApp({ botsDir: join(storageDir, 'bots'), replaysDir: join(storageDir, 'replays') });
+    const account = await context.app.inject({ method: 'POST', url: '/api/auth/register', payload: { username: 'server_test', email: 'server@example.com', password: 'server integration password' } });
+    expect(account.statusCode).toBe(201);
+    cookie = String(account.headers['set-cookie']).split(';')[0];
+    userId = account.json().user.id;
     serverAddress = await context.app.listen({ port: 0, host: '127.0.0.1' });
     const address = context.app.server.address();
     port = typeof address === 'object' && address ? address.port : 3001;
@@ -25,6 +36,7 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
   afterAll(async () => {
     await context.app.close();
     context.db.close();
+    rmSync(storageDir, { recursive: true, force: true });
   });
 
   it('GET /api/health returns 200 OK', async () => {
@@ -76,13 +88,14 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
     const res = await context.app.inject({
       method: 'POST',
       url: '/api/bots',
+      headers: { cookie },
       payload: {
         name: 'MinimaxBot',
         language: 'PYTHON',
         sourceCode: 'def on_turn(): pass',
       },
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
     expect(body.bot.name).toBe('MinimaxBot');
     expect(body.bot.language).toBe('PYTHON');
@@ -97,6 +110,7 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
     const createRes = await context.app.inject({
       method: 'POST',
       url: '/api/matches',
+      headers: { cookie },
       payload: {
         mapId: 'sample-donut',
         whiteBotId: greedyBot.id,
@@ -109,6 +123,7 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
     const { matchId, status } = JSON.parse(createRes.body);
     expect(matchId).toBeDefined();
     expect(status).toBe('RUNNING');
+    expect(context.db.getMatchById(matchId)!.creator_id).toBe(userId);
 
     // 2. Connect WebSocket client
     const wsUrl = `ws://127.0.0.1:${port}/ws/matches/${matchId}`;
@@ -147,7 +162,7 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
       });
 
       ws.on('error', (err) => {
-        clearTimeout(timeout);
+        ws.close();
         reject(err);
       });
     });
@@ -173,7 +188,7 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
       });
 
       catchupWs.on('error', (err) => {
-        clearTimeout(timeout);
+        catchupWs.close();
         reject(err);
       });
     });

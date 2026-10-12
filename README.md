@@ -1,8 +1,8 @@
 # OanTuTi Arena
 
-Nền tảng thi đấu bot Oẳn Tù Tì: engine TypeScript, runner STDIO NDJSON, Fastify API/WebSocket, replay Protobuf và giao diện React/Canvas với Monaco Editor.
+Nền tảng thi đấu bot Oẳn Tù Tì: engine TypeScript, runner STDIO NDJSON, Fastify API/WebSocket, replay Protobuf, quản lý tài khoản/phiên bản bot và giao diện React/Canvas với Monaco Editor.
 
-> **Phạm vi vận hành:** dành cho môi trường nội bộ và mã bot đáng tin cậy. Docker Compose dưới đây đóng gói ứng dụng, **không cô lập riêng từng bot**. API hiện chưa có xác thực/phân quyền; bot được chạy bằng tiến trình con cùng container server. Không công khai dịch vụ nhận code lên Internet. Không có Security Pentest trong phạm vi bàn giao này.
+> **Phạm vi vận hành:** dành cho môi trường nội bộ và mã bot đáng tin cậy. Docker Compose dưới đây đóng gói ứng dụng, **không cô lập riêng từng bot**. Các mutation API (tạo trận, giải đấu, lưu bot, chạy draft) yêu cầu xác thực bằng tài khoản người dùng; bot vẫn chạy bằng tiến trình con cùng container server. Không công khai dịch vụ nhận code lên Internet. Không có Security Pentest trong phạm vi bàn giao này.
 
 ## 1. Chạy bằng Docker Compose
 
@@ -90,15 +90,20 @@ Database trong RAM mất toàn bộ registry/ELO/lịch sử khi server dừng. 
 
 ## 3. Giao diện sử dụng
 
-- **New Match:** chọn map và hai bot để chạy trận trên server.
-- **Bot IDE:** soạn Python hoặc TypeScript, Save để đăng ký bot; Run Test đăng ký phiên bản code hiện tại rồi chạy đối kháng trên server. Đây không phải môi trường thực thi offline trong WebWorker.
-- **Match Logs:** xuất hiện theo lượt đang trình chiếu; Reset Logs quay về lượt 0.
-- **Timeline:** Play/Pause, bước tới/lùi, tua và tốc độ 1x/2x/5x/10x.
-- **Load .oantuti Replay:** tải replay và dựng lại bàn cờ.
-- **Leaderboard → Tournaments:** tạo giải và xem bảng điểm, danh sách trận, replay từng trận.
+- **Tài khoản:** góc trên phải có menu Sign in / Register / Log out. Phiên đăng nhập dùng cookie `HttpOnly` lưu trên server. Khi chưa đăng nhập, người dùng vẫn có thể xem trận, bảng xếp hạng và thử code tự do; các thao tác Save bot, chạy Test và tạo trận/giải yêu cầu đăng nhập.
+- **Bot IDE:**
+  - Cho phép chọn bot cá nhân (`Owned bot`), tạo mới (`New Bot`), đổi tên và chọn ngôn ngữ (Python / TypeScript).
+  - **Save:** tạo bot mới hoặc lưu phiên bản mới của bot đang chọn (tăng version, giữ nguyên điểm ELO, lưu mã nguồn bất biến vào lịch sử).
+  - **History:** mở lại mã nguồn các phiên bản cũ để xem hoặc tiếp tục chỉnh sửa rồi lưu thành phiên bản mới.
+  - **Delete:** xóa mềm bot cá nhân khỏi danh sách thi đấu nhưng giữ nguyên lịch sử các trận đã diễn ra.
+  - **Run Test:** chạy đối kháng ngay bằng buffer code đang soạn thảo trên giao diện, truyền phát lượt đi trực tiếp lên Canvas mà **không tạo bot rác** trên danh sách hay bảng xếp hạng ELO.
+- **New Match:** chọn map và hai bot bất kỳ trong danh sách (gồm bot hệ thống và các bot đang hoạt động) để khởi chạy trận đấu.
+- **Match Logs:** xuất hiện tuần tự theo từng lượt đi được trình chiếu; nút Reset Logs đưa bàn cờ và nhật ký về lượt 0.
+- **Timeline:** Play/Pause, bước tới/lùi, tua nhanh/chậm (1x, 2x, 5x, 10x).
+- **Load .oantuti Replay:** nạp tệp replay nhị phân ngoại tuyến để phát lại bàn cờ.
+- **Leaderboard & Tournaments:** xem bảng xếp hạng ELO, danh sách giải đấu Round-Robin, bảng điểm và xem lại từng trận.
 
-Monaco Editor hiện tải tài nguyên từ CDN; font từ Google Fonts. Dùng IDE cần trình duyệt truy cập được các dịch vụ đó. Nếu server đã chạy trước khi sửa mã backend, cần khởi động lại server; Vite chỉ cập nhật frontend.
-
+Monaco Editor tải tài nguyên từ CDN; font từ Google Fonts. Nếu server chạy trước khi cập nhật mã backend, cần khởi động lại server.
 ## 4. Luật chơi
 
 Mỗi quân đi một ô theo 8 hướng vua trên các ô hợp lệ. Không đi vào đồng minh, quân địch cùng loại hoặc quân khắc chế mình.
@@ -164,21 +169,28 @@ flowchart LR
 
 ## 7. API chính
 
-| Endpoint | Chức năng |
-| --- | --- |
-| `GET /api/health` | Healthcheck |
-| `GET /api/maps`, `GET /api/maps/:id` | Map catalog và descriptor |
-| `GET /api/bots`, `POST /api/bots` | Registry bot |
-| `POST /api/matches` | Chạy trận với `mapId`, `whiteBotId`, `blackBotId`, `maxTurns` |
-| `GET /api/matches/:id` | Trạng thái/kết quả |
-| `GET /api/matches/:id/replay` | Download replay nhị phân |
-| `GET /api/leaderboard` | ELO |
-| `GET /api/tournaments`, `POST /api/tournaments` | Danh sách/tạo giải |
-| `GET /api/tournaments/:id` | Bảng điểm và các trận |
-| `WS /ws/matches/:matchId` | INIT → DELTA → END, có catch-up |
+| Endpoint | Phương thức | Xác thực | Chức năng |
+| --- | --- | --- | --- |
+| `/api/auth/register` | POST | Không | Đăng ký tài khoản mới (mật khẩu scrypt, cấp session cookie) |
+| `/api/auth/login` | POST | Không | Đăng nhập tài khoản |
+| `/api/auth/me` | GET | Tùy chọn | Thông tin tài khoản hiện tại |
+| `/api/auth/logout` | POST | Session | Đăng xuất và thu hồi session token |
+| `/api/bots` | GET | Không | Danh sách bot công khai (chỉ metadata: id, tên, ngôn ngữ, ELO, version; không lộ mã nguồn/đường dẫn tệp) |
+| `/api/bots?mine=1` | GET | Bắt buộc | Danh sách bot do tài khoản sở hữu |
+| `/api/bots` | POST | Bắt buộc | Tạo bot mới thuộc tài khoản đang đăng nhập |
+| `/api/bots/:id` | GET | Chủ sở hữu | Xem chi tiết bot kèm mã nguồn phiên bản hiện tại |
+| `/api/bots/:id` | PUT | Chủ sở hữu | Cập nhật phiên bản mới (yêu cầu đúng version hiện tại để tránh ghi đè chéo) |
+| `/api/bots/:id` | DELETE | Chủ sở hữu | Xóa mềm bot khỏi danh sách thi đấu |
+| `/api/bots/:id/versions` | GET | Chủ sở hữu | Lịch sử tất cả các phiên bản mã nguồn của bot |
+| `/api/matches/test` | POST | Bắt buộc | Chạy thử nghiệm unranked từ mã nguồn gửi kèm (không tạo bot/kết quả trên database) |
+| `/api/matches` | POST | Bắt buộc | Khởi tạo trận đấu chính thức giữa 2 bot |
+| `/api/matches/:id` | GET | Không | Trạng thái/kết quả trận đấu (hỗ trợ cả trận test đang hoạt động) |
+| `/api/matches/:id/replay` | GET | Không | Tải tệp replay nhị phân `.oantuti` |
+| `/api/tournaments` | GET/POST | GET: Không / POST: Bắt buộc | Xem hoặc tạo giải đấu tự động |
+| `/api/tournaments/:id` | GET | Không | Bảng tổng sắp và các trận đấu trong giải |
+| `/ws/matches/:matchId` | WebSocket | Không | Stream nhị phân Protobuf theo thời gian thực |
 
-Giải Round-Robin tính 3 điểm/thắng, 1 điểm/hòa; Double Round đổi phe lượt về. **Lựa chọn Swiss hiện vẫn dùng lịch Round-Robin trong implementation**, chưa có ghép cặp theo điểm từng vòng; không dùng nhãn đó để nghiệm thu Swiss.
-
+Giải đấu hỗ trợ cả 2 thể thức chuẩn: **Vòng tròn tính điểm (Round-Robin)** và **Hệ Thụy Sĩ (Swiss System)**. Thể thức Thụy Sĩ tự động phân nhóm theo điểm số qua từng vòng ($R = \lceil \log_2 N \rceil$), ngăn chặn tái đấu giữa các cặp đã gặp nhau, tự động cấp vé Bye (+3.0 điểm) khi số bot lẻ. Ban tổ chức có bảng điều khiển với nút "Trận đấu tiếp theo (Next Match)" để tuần tự chiếu từng trận lên Canvas và màn hình vinh danh Nhà vô địch kèm cúp vàng 🏆 và pháo hoa.
 ## 8. Kiểm tra
 
 ```bash
@@ -195,7 +207,7 @@ npm run test:load
 Fuzz suite so sánh SHA-256 canonical trace của các lần chạy cùng seed trên cùng runtime; chưa chứng minh tính đồng nhất trên mọi CPU/runtime hay SHA-256 toàn bộ replay `.oantuti`.
 Load benchmark hiện là phép đo ngắn trên loopback, client/server cùng tiến trình: không thay thế soak test 60 phút, kiểm tra memory leak dài hạn hoặc đo qua mạng thật. Không lấy một lần chạy làm chứng nhận SLA production.
 
-Đợt kiểm tra đóng gói Docker đã thực thi: build cả hai image; Nginx `nginx -t`; hai service healthy; trận Python/C++, TypeScript và bot Python nộp qua API; nhận INIT/DELTA/END qua WebSocket proxy; tải replay; tạo lại container và đối chiếu SHA-256 replay cùng registry/kết quả. Kiểm tra trên trình duyệt xác nhận New Match nạp map/bot và trình chiếu lượt 1/13 với một dòng log. `npm test` đạt 74/74 tests trong lần kiểm tra này.
+Đợt kiểm tra đóng gói Docker trước đó đã thực thi: build cả hai image; Nginx `nginx -t`; hai service healthy; trận Python/C++, TypeScript và bot Python nộp qua API; nhận INIT/DELTA/END qua WebSocket proxy; tải replay; tạo lại container và đối chiếu SHA-256 replay cùng registry/kết quả. Kiểm tra tài khoản/phiên bản bot đã chạy trực tiếp trên giao diện trình duyệt: đăng ký tài khoản, đăng xuất/đăng nhập lại, lưu bot lên version 1 rồi version 2, xem lại mã nguồn version cũ, chạy draft Python/TypeScript không làm tăng số lượng bot trên registry hay biến động ELO. `npm test` đạt 84/84 tests trong lần kiểm tra này.
 
 Nếu máy báo `docker: unknown command: docker compose`, cần cài Docker Compose v2 plugin theo hệ điều hành hoặc dùng standalone Compose v2. Lần smoke test dùng standalone `/tmp/oantuti-docker-compose` vì host chưa có plugin; không thay đổi cài đặt Docker của host.
 
