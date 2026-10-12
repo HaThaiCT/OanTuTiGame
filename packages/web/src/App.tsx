@@ -299,6 +299,10 @@ export const App: React.FC = () => {
                   snapshots={replay.snapshots}
                   currentTurn={currentTurn}
                   onSelectTurn={handleSeekTo}
+                  onClearLogs={() => {
+                    setIsPlaying(false);
+                    setCurrentTurn(0);
+                  }}
                 />
               </div>
             </>
