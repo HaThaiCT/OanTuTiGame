@@ -98,6 +98,9 @@ export class MatchService extends EventEmitter {
     return this.activeMatches.get(matchId);
   }
 
+  registerActiveMatch(state: ActiveMatchState): void {
+    this.activeMatches.set(state.matchId, state);
+  }
   async startMatch(params: {
     mapId: string;
     whiteBotId: string;
