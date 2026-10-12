@@ -1,5 +1,6 @@
 import React from 'react';
-import { PlayerSide } from '@oantuti/engine';
+import { Hammer, Scissors, FileText } from 'lucide-react';
+import { PlayerSide, PieceType } from '@oantuti/engine';
 import { ReplayTurnSnapshot } from '../replay/player.js';
 
 interface TurnLogsProps {
@@ -63,12 +64,7 @@ export const TurnLogs: React.FC<TurnLogsProps> = ({
           const isActive = s.turnNumber === currentTurn;
           const isWhite = s.activePlayer === PlayerSide.WHITE;
           const move = s.lastMove;
-
-          let desc = 'Pass';
-          if (move) {
-            desc = `Piece #${move.pieceId} -> (${move.to.x}, ${move.to.y})`;
-          }
-
+          const mover = move ? s.pieces.find((p) => p.id === move.pieceId) : undefined;
           return (
             <div
               key={s.turnNumber}
@@ -105,7 +101,16 @@ export const TurnLogs: React.FC<TurnLogsProps> = ({
                 }}>
                   {isWhite ? 'WHITE' : 'BLACK'}
                 </span>
-                <span style={{ color: '#f1f5f9' }}>{desc}</span>
+                {move && mover ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#f1f5f9' }}>
+                    {mover.type === PieceType.ROCK && <Hammer size={12} color="#38bdf8" />}
+                    {mover.type === PieceType.SCISSORS && <Scissors size={12} color="#eab308" />}
+                    {mover.type === PieceType.PAPER && <FileText size={12} color="#a855f7" />}
+                    <span>#{move.pieceId} → ({move.to.x}, {move.to.y})</span>
+                  </span>
+                ) : (
+                  <span style={{ color: '#64748b' }}>PASS</span>
+                )}
               </div>
 
               {move?.isCapture && (

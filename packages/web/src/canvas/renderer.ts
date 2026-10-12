@@ -94,8 +94,219 @@ export function updateParticles(particles: Particle[]): void {
   }
 }
 
-function easeInOutQuad(t: number): number {
-  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+/**
+ * Draws a stylized Hammer icon (Búa)
+ */
+function drawHammerIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.35); // 20-degree dynamic battle angle
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+
+  const headW = size * 0.72;
+  const headH = size * 0.32;
+  const handleW = size * 0.16;
+  const handleH = size * 0.65;
+  const headY = -size * 0.42;
+
+  // Handle with rounded pommel
+  ctx.beginPath();
+  ctx.roundRect(-handleW / 2, headY + headH * 0.6, handleW, handleH, handleW / 3);
+  ctx.fill();
+
+  // Hammer Head (chamfered polygon)
+  const chamfer = headH * 0.22;
+  const left = -headW / 2;
+  const right = headW / 2;
+  const top = headY;
+  const bottom = headY + headH;
+
+  ctx.beginPath();
+  ctx.moveTo(left + chamfer, top);
+  ctx.lineTo(right - chamfer, top);
+  ctx.lineTo(right, top + chamfer);
+  ctx.lineTo(right, bottom - chamfer);
+  ctx.lineTo(right - chamfer, bottom);
+  ctx.lineTo(left + chamfer, bottom);
+  ctx.lineTo(left, bottom - chamfer);
+  ctx.lineTo(left, top + chamfer);
+  ctx.closePath();
+  ctx.fill();
+
+  // Inner structural groove lines on hammer head
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.lineWidth = Math.max(1, size * 0.04);
+  ctx.beginPath();
+  ctx.moveTo(left + headW * 0.24, top + 2);
+  ctx.lineTo(left + headW * 0.24, bottom - 2);
+  ctx.moveTo(right - headW * 0.24, top + 2);
+  ctx.lineTo(right - headW * 0.24, bottom - 2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Draws a stylized Scissors icon (Kéo)
+ */
+function drawScissorsIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  const strokeW = Math.max(1.8, size * 0.08);
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const bladeLen = size * 0.46;
+  const bladeAngle = 0.42;
+
+  // Blade 1 (pointing up-left)
+  ctx.save();
+  ctx.rotate(-bladeAngle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-size * 0.06, -bladeLen * 0.4);
+  ctx.lineTo(0, -bladeLen);
+  ctx.lineTo(size * 0.06, -bladeLen * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Blade 2 (pointing up-right)
+  ctx.save();
+  ctx.rotate(bladeAngle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-size * 0.06, -bladeLen * 0.4);
+  ctx.lineTo(0, -bladeLen);
+  ctx.lineTo(size * 0.06, -bladeLen * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Left handle and loop
+  const loopRadius = size * 0.15;
+  const loopDistX = size * 0.24;
+  const loopDistY = size * 0.30;
+
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.06, 0);
+  ctx.lineTo(-loopDistX, loopDistY - loopRadius);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(-loopDistX, loopDistY, loopRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Right handle and loop
+  ctx.beginPath();
+  ctx.moveTo(size * 0.06, 0);
+  ctx.lineTo(loopDistX, loopDistY - loopRadius);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(loopDistX, loopDistY, loopRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Center pivot screw
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+  ctx.beginPath();
+  ctx.arc(0, 0, strokeW * 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Draws a stylized Paper sheet icon (Bao)
+ */
+function drawPaperIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+
+  const w = size * 0.62;
+  const h = size * 0.78;
+  const left = -w / 2;
+  const right = w / 2;
+  const top = -h / 2;
+  const bottom = h / 2;
+  const fold = size * 0.22;
+  const r = Math.max(2, size * 0.05);
+
+  // Main sheet with dog-ear notch
+  ctx.beginPath();
+  ctx.moveTo(left + r, top);
+  ctx.lineTo(right - fold, top);
+  ctx.lineTo(right, top + fold);
+  ctx.lineTo(right, bottom - r);
+  ctx.arcTo(right, bottom, right - r, bottom, r);
+  ctx.lineTo(left + r, bottom);
+  ctx.arcTo(left, bottom, left, bottom - r, r);
+  ctx.lineTo(left, top + r);
+  ctx.arcTo(left, top, left + r, top, r);
+  ctx.closePath();
+  ctx.fill();
+
+  // 3D Fold flap triangle
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  ctx.beginPath();
+  ctx.moveTo(right - fold, top);
+  ctx.lineTo(right - fold, top + fold);
+  ctx.lineTo(right, top + fold);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.lineWidth = Math.max(1, size * 0.035);
+  ctx.stroke();
+
+  // Document lines inside sheet
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.lineWidth = Math.max(1.5, size * 0.045);
+  ctx.lineCap = 'round';
+
+  const linePad = size * 0.12;
+  const lineLeft = left + linePad;
+  const lineRight = right - linePad;
+
+  ctx.beginPath();
+  ctx.moveTo(lineLeft, top + h * 0.42);
+  ctx.lineTo(lineRight, top + h * 0.42);
+
+  ctx.moveTo(lineLeft, top + h * 0.60);
+  ctx.lineTo(lineRight, top + h * 0.60);
+
+  ctx.moveTo(lineLeft, top + h * 0.78);
+  ctx.lineTo(lineRight - size * 0.1, top + h * 0.78);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 /**
@@ -262,7 +473,8 @@ export function renderCanvasFrame(
       p.animProgress !== undefined &&
       p.animProgress < 1
     ) {
-      const ease = easeInOutQuad(p.animProgress);
+      const t = p.animProgress;
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
       const startPt = boardToScreenCenter(p.animStartX, p.animStartY, transform);
       const endPt = boardToScreenCenter(p.x, p.y, transform);
       screenX = (1 - ease) * startPt.x + ease * endPt.x;
@@ -273,10 +485,10 @@ export function renderCanvasFrame(
       screenY = pt.y;
     }
 
-    const radius = tileSize * 0.34;
+    const radius = tileSize * 0.35;
     const isWhite = p.owner === PlayerSide.WHITE;
 
-    // Outer glow / selection ring
+    // Selection glow ring
     if (state.selectedPieceId === p.id) {
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = Math.max(3, tileSize * 0.08);
@@ -285,28 +497,53 @@ export function renderCanvasFrame(
       ctx.stroke();
     }
 
-    // Piece Body
-    ctx.fillStyle = isWhite ? '#38bdf8' : '#f43f5e';
+    // Piece Token Body with 3D Radial Gradient
+    const grad = ctx.createRadialGradient(
+      screenX - radius * 0.35,
+      screenY - radius * 0.35,
+      radius * 0.1,
+      screenX,
+      screenY,
+      radius
+    );
+    if (isWhite) {
+      grad.addColorStop(0, '#7dd3fc');
+      grad.addColorStop(1, '#0284c7');
+    } else {
+      grad.addColorStop(0, '#fb7185');
+      grad.addColorStop(1, '#be123c');
+    }
+    ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = isWhite ? '#f8fafc' : '#020617';
-    ctx.lineWidth = Math.max(2, tileSize * 0.06);
+    // Inner token rim highlight
+    ctx.strokeStyle = isWhite ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = Math.max(1, tileSize * 0.025);
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, radius - 2, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Emblem Icon / Text
-    let label = 'R';
-    if (p.type === PieceType.SCISSORS) label = 'S';
-    else if (p.type === PieceType.PAPER) label = 'P';
+    // Token Outer Rim Border
+    ctx.strokeStyle = isWhite ? '#f8fafc' : '#0f172a';
+    ctx.lineWidth = Math.max(2, tileSize * 0.06);
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+    ctx.stroke();
 
-    ctx.fillStyle = isWhite ? '#0f172a' : '#ffffff';
-    ctx.font = `800 ${Math.max(12, Math.round(tileSize * 0.32))}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, screenX, screenY);
+    // Draw Vector Image Icon (Búa / Kéo / Bao)
+    const iconSize = radius * 1.15;
+    const iconColor = '#f8fafc';
+
+    if (p.type === PieceType.ROCK) {
+      drawHammerIcon(ctx, screenX, screenY, iconSize, iconColor);
+    } else if (p.type === PieceType.SCISSORS) {
+      drawScissorsIcon(ctx, screenX, screenY, iconSize, iconColor);
+    } else if (p.type === PieceType.PAPER) {
+      drawPaperIcon(ctx, screenX, screenY, iconSize, iconColor);
+    }
   }
-
   // ==========================================
   // Layer 6: Capture Particles & Explosions
   // ==========================================

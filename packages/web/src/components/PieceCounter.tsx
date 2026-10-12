@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Shield } from 'lucide-react';
+import { AlertTriangle, Hammer, Scissors, FileText } from 'lucide-react';
 import { PieceType, PlayerSide } from '@oantuti/engine';
 import { PieceState } from '../replay/player.js';
 
@@ -117,21 +117,29 @@ const Badge: React.FC<{ type: 'ROCK' | 'SCISSORS' | 'PAPER'; count: number; colo
   count,
   color,
 }) => {
-  const label = type === 'ROCK' ? 'R' : type === 'SCISSORS' ? 'S' : 'P';
   const isDanger = count === 1;
+  const title = type === 'ROCK' ? 'Búa (Hammer)' : type === 'SCISSORS' ? 'Kéo (Scissors)' : 'Bao (Paper)';
 
   return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: '#0f172a',
-      borderRadius: '6px',
-      padding: '4px 8px',
-      border: isDanger ? '1px solid #f59e0b' : '1px solid #1e293b',
-    }}>
-      <span style={{ fontSize: '12px', fontWeight: 800, color }}>{label}</span>
+    <div
+      title={title}
+      style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#0f172a',
+        borderRadius: '6px',
+        padding: '5px 8px',
+        border: isDanger ? '1px solid #f59e0b' : '1px solid #1e293b',
+        gap: '4px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {type === 'ROCK' && <Hammer size={14} color={color} />}
+        {type === 'SCISSORS' && <Scissors size={14} color={color} />}
+        {type === 'PAPER' && <FileText size={14} color={color} />}
+      </div>
       <span style={{ fontSize: '13px', fontWeight: 700, color: count === 0 ? '#475569' : '#f1f5f9' }}>
         {count}
       </span>
