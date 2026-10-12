@@ -21,6 +21,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
   const [selectedBotIds, setSelectedBotIds] = React.useState<string[]>([]);
   const [doubleRound, setDoubleRound] = React.useState<boolean>(false);
   const [maxTurns, setMaxTurns] = React.useState<number>(150);
+  const [registrationOnly, setRegistrationOnly] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -66,7 +67,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedBotIds.length < 2) {
+    if (!registrationOnly && selectedBotIds.length < 2) {
       setErrorMessage('Tournament requires at least 2 participating bots');
       return;
     }
@@ -82,6 +83,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
         botIds: selectedBotIds,
         maxTurns,
         doubleRound,
+        registrationOnly,
       });
 
       onTournamentStarted(tour.id);
@@ -171,6 +173,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+          <label style={{padding:12,color:'#38bdf8'}}><input type="checkbox" checked={registrationOnly} onChange={event=>setRegistrationOnly(event.target.checked)}/> Mở đăng ký — thí sinh tự nộp bot, người tổ chức chốt sau</label>
             {errorMessage && (
               <div style={{
                 backgroundColor: 'rgba(239, 68, 68, 0.15)',
@@ -358,7 +361,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
 
               <button
                 type="submit"
-                disabled={isSubmitting || selectedBotIds.length < 2}
+                disabled={isSubmitting || (!registrationOnly && selectedBotIds.length < 2)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -375,7 +378,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
                 }}
               >
                 {isSubmitting ? <Loader2 size={16} /> : <Play size={16} />}
-                <span>{isSubmitting ? 'Starting...' : 'Launch Tournament'}</span>
+                <span>{isSubmitting ? 'Starting...' : registrationOnly ? 'Mở đăng ký giải' : 'Launch Tournament'}</span>
               </button>
             </div>
           </form>

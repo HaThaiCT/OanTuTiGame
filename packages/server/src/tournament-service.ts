@@ -106,6 +106,45 @@ export class TournamentService extends EventEmitter {
     this.matchService = matchService;
   }
 
+  openRegistration(options: {creatorId:string;name:string;mapId:string;format:'ROUND_ROBIN'|'SWISS';maxTurns?:number}): TournamentRow {
+    return this.db.createTournament({...options,status:'PENDING',configJson:JSON.stringify({mapId:options.mapId,format:options.format,maxTurns:options.maxTurns ?? 200,botIds:[],entries:[],registrationOpen:true})});
+  }
+
+  submitEntry(tournamentId:string,userId:string,botId:string): void {
+    const tournament=this.db.getTournamentById(tournamentId);
+    if(!tournament) throw new Error('Tournament not found');
+    const config=JSON.parse(tournament.config_json);
+    if(tournament.status!=='PENDING'||!config.registrationOpen) throw new Error('Registration is closed');
+    const bot=this.db.getBotById(botId);
+    if(config.entries.length>=64&&!config.entries.some((entry:{userId:string})=>entry.userId===userId)) throw new Error('Maximum 64 players');
+    if(!bot||!bot.is_active||bot.user_id!==userId) throw new Error('Owned bot not found');
+    const entries: {userId:string;botId:string;version:number}[]=config.entries;
+    config.entries=[...entries.filter(entry=>entry.userId!==userId),{userId,botId,version:bot.version}];
+    config.botIds=config.entries.map((entry:{botId:string})=>entry.botId);
+    this.db.updateTournamentConfig(tournamentId,JSON.stringify(config));
+  }
+
+  lockRegistration(tournamentId:string,userId:string): void {
+    const tournament=this.db.getTournamentById(tournamentId);
+    if(!tournament||tournament.creator_id!==userId) throw new Error('Organizer required');
+    const config=JSON.parse(tournament.config_json);
+    if(tournament.status!=='PENDING'||!config.registrationOpen) throw new Error('Registration is closed');
+    if(config.botIds.length<2) throw new Error('At least two players are required');
+    const bots=config.botIds.map((id:string)=>{
+      const bot=this.db.getBotById(id);
+      if(!bot?.is_active) throw new Error('Submitted bot is unavailable');
+      const entry=config.entries.find((submitted:{botId:string;version:number})=>submitted.botId===id);
+      if(!entry||entry.version!==bot.version) throw new Error('Bot changed after submission; player must submit again');
+      return bot;
+    });
+    config.registrationOpen=false;
+    this.db.updateTournamentConfig(tournamentId,JSON.stringify(config));
+    this.runTournament(tournamentId,bots,config.mapId,config.maxTurns,false,tournament.format as 'ROUND_ROBIN'|'SWISS').catch(error=>{
+      this.db.updateTournamentStatus(tournamentId,'CANCELLED');
+      this.emit('tournament:error',{tournamentId,error});
+    });
+  }
+
   async createTournament(options: {
     creatorId: string;
     name: string;

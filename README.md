@@ -191,6 +191,10 @@ flowchart LR
 | `/ws/matches/:matchId` | WebSocket | Không | Stream nhị phân Protobuf theo thời gian thực |
 
 Giải đấu hỗ trợ cả 2 thể thức chuẩn: **Vòng tròn tính điểm (Round-Robin)** và **Hệ Thụy Sĩ (Swiss System)**. Thể thức Thụy Sĩ tự động phân nhóm theo điểm số qua từng vòng ($R = \lceil \log_2 N \rceil$), ngăn chặn tái đấu giữa các cặp đã gặp nhau, tự động cấp vé Bye (+3.0 điểm) khi số bot lẻ. Ban tổ chức có bảng điều khiển với nút "Trận đấu tiếp theo (Next Match)" để tuần tự chiếu từng trận lên Canvas và màn hình vinh danh Nhà vô địch kèm cúp vàng 🏆 và pháo hoa.
+
+Trình chiếu do người tổ chức bấm nút điều khiển trên trình duyệt, không tự chuyển theo thời gian. Vị trí hàng đợi được giữ khi chuyển tab hoặc bật Theater trong cùng phiên trang; hết hàng đợi thì nút Next Match bị vô hiệu hóa, không tự quay lại trận đầu. Khi replay chưa sẵn sàng, thông báo lỗi được hiển thị và không tăng vị trí hàng đợi. Server vẫn tính các trận của giải ở nền; nút Next Match điều khiển trình chiếu, không phải lệnh bắt đầu tính trận trên server.
+
+Khi tạo giải, chọn **Mở đăng ký**: giải giữ trạng thái PENDING, chưa chạy trận. Người chơi lưu bot trong Bot IDE rồi vào giải, chọn bot cá nhân và bấm **Nộp bot tham gia**. Mỗi tài khoản một bài nộp, có thể thay bài trước khi khóa. Chủ giải bấm **Chốt danh sách & ghép cặp** khi có ít nhất hai người; sau khóa, không nhận bài mới. Nếu bot đã sửa sau lúc nộp, người chơi cần nộp lại trước khi chốt. Các API tương ứng: `POST /api/tournaments/:id/entries` và `POST /api/tournaments/:id/lock`.
 ## 8. Kiểm tra
 
 ```bash
@@ -213,7 +217,7 @@ Nếu máy báo `docker: unknown command: docker compose`, cần cài Docker Com
 
 ## 9. Giới hạn trước khi triển khai công khai
 
-Cần xác thực/phân quyền, HTTPS ở reverse proxy ngoài, giới hạn tài nguyên và sandbox riêng cho bot không tin cậy. API cho phép đăng ký mã nguồn/file path và chạy tiến trình; chỉ mở cho người dùng đáng tin cậy. Compose không mount Docker socket, không dùng privileged mode và không tự fallback thành một sandbox an toàn.
+Cần HTTPS ở reverse proxy ngoài, giới hạn tài nguyên và sandbox riêng cho bot không tin cậy trước khi triển khai công khai. Xác thực, quyền sở hữu bot, nộp bài vào giải và khóa đăng ký bởi chủ giải đã có. Điều khiển trình chiếu là trạng thái cục bộ của trình duyệt, chưa đồng bộ nhiều màn hình khán giả. Compose không mount Docker socket, không dùng privileged mode và không tự fallback thành một sandbox an toàn.
 
 `npm ci` trong image hiện báo 8 dependency vulnerabilities (2 low, 3 moderate, 1 high, 2 critical). Chưa thực hiện dependency upgrade hay Security Pentest; không xem build thành công là chứng nhận bảo mật.
 

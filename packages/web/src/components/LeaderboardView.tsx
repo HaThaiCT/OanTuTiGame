@@ -5,8 +5,10 @@ import {
   fetchTournamentDetails,
   TournamentSummary,
   TournamentDetailsResponse,
+  fetchOwnedBots, BotSummary, submitTournamentEntry, lockTournamentRegistration,
 } from '../api/client.js';
 import { ChampionOverlay } from './ChampionOverlay.js';
+import { useSession } from '../session.js';
 
 export interface LeaderboardEntry {
   readonly id: string;
@@ -24,7 +26,7 @@ export interface LeaderboardEntry {
 interface LeaderboardViewProps {
   readonly onChallengeBot: (botId: string) => void;
   readonly onOpenCreateTournament: () => void;
-  readonly onPlayMatch: (matchId: string) => void;
+  readonly onPlayMatch: (matchId: string) => Promise<void>;
   readonly initialTournamentId?: string;
 }
 
@@ -34,13 +36,20 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   onPlayMatch,
   initialTournamentId,
 }) => {
+  const {user}=useSession();
+  const [ownedBots,setOwnedBots]=React.useState<BotSummary[]>([]);
+  const [entryBotId,setEntryBotId]=React.useState('');
+  React.useEffect(()=>{if(user)fetchOwnedBots().then(setOwnedBots);else setOwnedBots([]);},[user?.id]);
   const [activeTab, setActiveTab] = React.useState<'LADDER' | 'TOURNAMENTS'>(initialTournamentId ? 'TOURNAMENTS' : 'LADDER');
   const [entries, setEntries] = React.useState<LeaderboardEntry[]>([]);
   const [tournaments, setTournaments] = React.useState<TournamentSummary[]>([]);
   const [selectedTourId, setSelectedTourId] = React.useState<string | null>(null);
   const [tourDetails, setTourDetails] = React.useState<TournamentDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [projectedMatchIndex, setProjectedMatchIndex] = React.useState<number>(0);
+  const [projectedByTournament, setProjectedByTournament] = React.useState<Record<string, number>>({});
+  const projectedMatchIndex = selectedTourId ? projectedByTournament[selectedTourId] ?? 0 : 0;
+  const [projecting, setProjecting] = React.useState(false);
+  const [projectionError, setProjectionError] = React.useState<string | null>(null);
   const [showChampionCeremony, setShowChampionCeremony] = React.useState<boolean>(false);
 
   const fetchData = React.useCallback(() => {
@@ -63,6 +72,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
   React.useEffect(() => {
     if (initialTournamentId) {
+      fetchData();
       setActiveTab('TOURNAMENTS');
       setSelectedTourId(initialTournamentId);
       fetchTournamentDetails(initialTournamentId)
@@ -79,6 +89,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     }
 
     setSelectedTourId(id);
+    setTourDetails(null);
     fetchTournamentDetails(id)
       .then((data) => setTourDetails(data))
       .catch((err) => console.error('Failed to load tournament details:', err));
@@ -364,6 +375,17 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   {/* Expanded Tournament Details (Standings & Fixtures) */}
                   {isSelected && tourDetails && (
                     <div style={{ padding: '12px', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {tourDetails.tournament.status==='PENDING' && JSON.parse(tourDetails.tournament.config_json).registrationOpen && (
+                        <section style={{border:'1px solid #06b6d4',padding:12,borderRadius:8}}>
+                          <h3>Đăng ký tham gia giải</h3>
+                          <p>{JSON.parse(tourDetails.tournament.config_json).botIds.length} người đã nộp bot. Mỗi tài khoản một bài nộp.</p>
+                          <select aria-label="Bot tham gia giải" value={entryBotId} onChange={event=>setEntryBotId(event.target.value)} style={{width:'100%',padding:8}}>
+                            <option value="">Chọn bot của bạn</option>{ownedBots.map(bot=><option key={bot.id} value={bot.id}>{bot.name} · v{bot.version}</option>)}
+                          </select>
+                          <button disabled={!user||!entryBotId||projecting} onClick={async()=>{setProjecting(true);try{setTourDetails(await submitTournamentEntry(t.id,entryBotId));}catch(error){setProjectionError(error instanceof Error?error.message:'Submission failed');}finally{setProjecting(false);}}}>Nộp bot tham gia</button>
+                          {user?.id===tourDetails.tournament.creator_id && <button disabled={projecting} onClick={async()=>{setProjecting(true);try{setTourDetails(await lockTournamentRegistration(t.id));fetchData();}catch(error){setProjectionError(error instanceof Error?error.message:'Cannot lock roster');}finally{setProjecting(false);}}}>Chốt danh sách & ghép cặp</button>}
+                        </section>
+                      )}
                       {/* Operator Broadcast Control Deck */}
                       <div style={{
                         backgroundColor: '#0b111e',
@@ -393,18 +415,24 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                               ? `Trận ${projectedMatchIndex + 1} / ${tourDetails.matches.length}`
                               : 'Đã chiếu hết các trận'}
                           </span>
+                        {projectionError && <p role="alert" style={{color:'#fca5a5'}}>{projectionError}</p>}
                         </div>
 
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
-                            onClick={() => {
-                              if (!tourDetails || tourDetails.matches.length === 0) return;
-                              const nextIdx = projectedMatchIndex < tourDetails.matches.length ? projectedMatchIndex : 0;
-                              const match = tourDetails.matches[nextIdx];
-                              onPlayMatch(match.id);
-                              setProjectedMatchIndex((nextIdx + 1) % tourDetails.matches.length);
+                            onClick={async () => {
+                              if (!tourDetails || projecting || projectedMatchIndex >= tourDetails.matches.length) return;
+                              const tournamentId = tourDetails.tournament.id;
+                              setProjecting(true);
+                              setProjectionError(null);
+                              try {
+                                await onPlayMatch(tourDetails.matches[projectedMatchIndex].id);
+                                setProjectedByTournament(previous => ({...previous, [tournamentId]: projectedMatchIndex + 1}));
+                              } catch (error) {
+                                setProjectionError(error instanceof Error ? error.message : 'Unable to project match');
+                              } finally { setProjecting(false); }
                             }}
-                            disabled={tourDetails.matches.length === 0}
+                            disabled={projecting || projectedMatchIndex >= tourDetails.matches.length}
                             style={{
                               flex: 1,
                               backgroundColor: '#eab308',

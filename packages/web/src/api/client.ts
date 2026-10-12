@@ -102,6 +102,8 @@ export async function createMatch(
 export interface TournamentSummary {
   readonly id: string;
   readonly name: string;
+  readonly creator_id: string;
+  readonly config_json: string;
   readonly format: string;
   readonly status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
   readonly created_at: string;
@@ -160,6 +162,7 @@ export async function createTournament(params: {
   botIds: string[];
   maxTurns?: number;
   doubleRound?: boolean;
+  registrationOnly?: boolean;
 }): Promise<TournamentSummary> {
   const res = await fetch('/api/tournaments', {
     method: 'POST',
@@ -170,6 +173,9 @@ export async function createTournament(params: {
   const data = await res.json();
   return data.tournament;
 }
+
+export const submitTournamentEntry = (id:string,botId:string) => request<TournamentDetailsResponse>(`/api/tournaments/${id}/entries`,'POST',{botId});
+export const lockTournamentRegistration = (id:string) => request<TournamentDetailsResponse>(`/api/tournaments/${id}/lock`,'POST',{});
 
 export interface LiveMatchCallbacks {
   onInit: (init: MatchInitFrameMessage, replay: LoadedReplay) => void;

@@ -161,18 +161,11 @@ export const App: React.FC = () => {
   };
 
   const handlePlaySpecificMatch = async (matchId: string) => {
-    try {
-      const res = await fetch(`/api/matches/${matchId}/replay`);
-      if (res.ok) {
-        const arrayBuf = await res.arrayBuffer();
-        handleUploadReplay(new Uint8Array(arrayBuf));
-        setRightTab('LOGS');
-      } else {
-        handleMatchStarted(matchId);
-      }
-    } catch {
-      handleMatchStarted(matchId);
-    }
+    const response = await fetch(`/api/matches/${matchId}/replay`);
+    if (!response.ok) throw new Error('Replay is not ready. Refresh the tournament and try again.');
+    const bytes = await response.arrayBuffer();
+    handleUploadReplay(new Uint8Array(bytes));
+    setRightTab('LOGS');
   };
 
   const handleMatchStarted = (matchId: string) => {
@@ -290,10 +283,9 @@ export const App: React.FC = () => {
         </div>
 
         {/* Right: Tabbed Control Panel (Bot IDE / Match Logs / ELO Leaderboard) */}
-        {!isTheaterMode && (
           <div style={{
             width: '460px',
-            display: 'flex',
+            display: isTheaterMode ? 'none' : 'flex',
             flexDirection: 'column',
             padding: '12px',
             gap: '12px',
@@ -405,8 +397,7 @@ export const App: React.FC = () => {
             </>
           )}
 
-          {rightTab === 'LEADERBOARD' && (
-            <div style={{ flex: 1, minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, display: rightTab === 'LEADERBOARD' ? 'block' : 'none' }}>
               <LeaderboardView
                 onChallengeBot={() => setIsModalOpen(true)}
                 onOpenCreateTournament={() => setIsTourModalOpen(true)}
@@ -414,9 +405,7 @@ export const App: React.FC = () => {
                 initialTournamentId={activeTournamentId}
               />
             </div>
-          )}
           </div>
-        )}
       </div>
 
       {/* New Match Modal */}

@@ -184,12 +184,16 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
 
   app.post('/api/tournaments', async (req) => {
     const user = auth.requireUser(req);
-    const payload = objectPayload(req.body, ['name', 'format', 'mapId', 'botIds', 'maxTurns', 'doubleRound']);
+    const payload = objectPayload(req.body, ['name', 'format', 'mapId', 'botIds', 'maxTurns', 'doubleRound', 'registrationOnly']);
     const name = textField(payload.name, 'name', 100).trim();
     const mapId = mapIdField(payload.mapId);
     const maxTurns = maxTurnsField(payload.maxTurns);
     if (payload.format !== undefined && payload.format !== 'ROUND_ROBIN' && payload.format !== 'SWISS') throw new HttpError(400, 'Invalid format');
     if (payload.doubleRound !== undefined && typeof payload.doubleRound !== 'boolean') throw new HttpError(400, 'Invalid doubleRound');
+    if(payload.registrationOnly === true){
+      if (!matchService.getAvailableMaps().some(map=>map.id===mapId)) throw new HttpError(400,'Map not found');
+      return {tournament:tournamentService.openRegistration({creatorId:user.id,name,mapId,format:payload.format ?? 'SWISS',maxTurns})};
+    }
     if (!Array.isArray(payload.botIds) || payload.botIds.length < 2 || payload.botIds.length > 64) throw new HttpError(400, 'Tournament requires at least 2 bots (maximum 64)');
     const botIds = payload.botIds.map((id: unknown) => textField(id, 'botId', 100));
     if (new Set(botIds).size !== botIds.length) throw new HttpError(400, 'Duplicate tournament bot');
@@ -199,6 +203,23 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       const tournament = await tournamentService.createTournament({ creatorId: user.id, name, mapId, botIds, maxTurns, format: payload.format, doubleRound: payload.doubleRound });
       return { tournament };
     } catch { throw new HttpError(400, 'Unable to start tournament'); }
+  });
+
+  app.post<{Params:{id:string}}>('/api/tournaments/:id/entries',async req=>{
+    const user=auth.requireUser(req);
+    const payload=objectPayload(req.body,['botId']);
+    const botId=textField(payload.botId,'botId',100);
+    const bot=db.getBotById(botId);
+    if(!bot||bot.user_id!==user.id) throw new HttpError(404,'Owned bot not found');
+    try{tournamentService.submitEntry(req.params.id,user.id,botId);}catch(error){throw new HttpError(409,error instanceof Error?error.message:'Entry rejected');}
+    return tournamentService.getTournamentDetails(req.params.id);
+  });
+  app.post<{Params:{id:string}}>('/api/tournaments/:id/lock',async req=>{
+    const user=auth.requireUser(req);
+    objectPayload(req.body,[]);
+    if(db.getTournamentById(req.params.id)?.creator_id!==user.id) throw new HttpError(403,'Organizer required');
+    try{tournamentService.lockRegistration(req.params.id,user.id);}catch(error){throw new HttpError(409,error instanceof Error?error.message:'Cannot lock registration');}
+    return tournamentService.getTournamentDetails(req.params.id);
   });
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {
