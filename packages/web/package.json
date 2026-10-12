@@ -1,0 +1,25 @@
+{
+  "name": "@oantuti/web",
+  "version": "1.0.0",
+  "description": "Canvas 2D Visualizer and Replay Player for OanTuTi Arena",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@oantuti/engine": "*",
+    "@oantuti/protocol": "*",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

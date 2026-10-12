@@ -10,6 +10,7 @@ import {
 } from './schema.js';
 import {
   MatchInitFrameMessage,
+  PieceMessage,
   TurnDeltaFrameMessage,
   MatchEndFrameMessage,
 } from './types.js';
