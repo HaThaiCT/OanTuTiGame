@@ -44,29 +44,41 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const particlesRef = React.useRef<Particle[]>([]);
   const prevLastMoveRef = React.useRef(lastMove);
+  const moveAnimRef = React.useRef<{
+    pieceId: number;
+    from: Coord;
+    to: Coord;
+    startTime: number;
+    duration: number;
+  } | null>(null);
 
   const [hoveredCoord, setHoveredCoord] = React.useState<Coord | undefined>();
   const [selectedPieceId, setSelectedPieceId] = React.useState<number | undefined>();
   const transformRef = React.useRef<ViewportTransform | null>(null);
 
-  // Spawn capture particles if new lastMove has capture
+  // Spawn capture particles and start move animation if new lastMove
   React.useEffect(() => {
-    if (
-      lastMove?.isCapture &&
-      lastMove !== prevLastMoveRef.current &&
-      transformRef.current
-    ) {
-      const transform = transformRef.current;
-      const center = {
-        x: transform.offsetX + (lastMove.to.x + 0.5) * transform.tileSize,
-        y: transform.offsetY + (lastMove.to.y + 0.5) * transform.tileSize,
+    if (lastMove && lastMove !== prevLastMoveRef.current) {
+      moveAnimRef.current = {
+        pieceId: lastMove.pieceId,
+        from: lastMove.from,
+        to: lastMove.to,
+        startTime: performance.now(),
+        duration: 280,
       };
-      const newParticles = createCaptureParticles(center.x, center.y);
-      particlesRef.current.push(...newParticles);
+
+      if (lastMove.isCapture && transformRef.current) {
+        const transform = transformRef.current;
+        const center = {
+          x: transform.offsetX + (lastMove.to.x + 0.5) * transform.tileSize,
+          y: transform.offsetY + (lastMove.to.y + 0.5) * transform.tileSize,
+        };
+        const newParticles = createCaptureParticles(center.x, center.y);
+        particlesRef.current.push(...newParticles);
+      }
     }
     prevLastMoveRef.current = lastMove;
   }, [lastMove]);
-
   React.useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -103,13 +115,27 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
         updateParticles(particlesRef.current);
 
+        const animatedPieces = pieces.map((p) => {
+          if (moveAnimRef.current && p.id === moveAnimRef.current.pieceId) {
+            const elapsed = time - moveAnimRef.current.startTime;
+            const progress = Math.min(1, Math.max(0, elapsed / moveAnimRef.current.duration));
+            return {
+              ...p,
+              animStartX: moveAnimRef.current.from.x,
+              animStartY: moveAnimRef.current.from.y,
+              animProgress: progress,
+            };
+          }
+          return p;
+        });
+
         const renderState: RenderState = {
           width: boardWidth,
           height: boardHeight,
           validTiles,
           whiteThrone,
           blackThrone,
-          pieces,
+          pieces: animatedPieces,
           lastMove,
           selectedPieceId,
           hoveredCoord,

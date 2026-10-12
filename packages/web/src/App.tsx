@@ -38,15 +38,21 @@ export const App: React.FC = () => {
   const currentSnapshot = replay.snapshots[currentTurn] || replay.snapshots[0];
   const totalTurns = replay.snapshots.length - 1;
 
-  // Playback timer loop
+  const replayRef = React.useRef(replay);
+  replayRef.current = replay;
+
+  // Playback timer loop: drives step-by-step match projection
   React.useEffect(() => {
     if (!isPlaying) return;
 
-    const intervalMs = Math.max(30, Math.round(500 / playbackSpeed));
+    const intervalMs = Math.max(30, Math.round(450 / playbackSpeed));
     const timer = setInterval(() => {
       setCurrentTurn((prev) => {
-        if (prev >= totalTurns) {
-          setIsPlaying(false);
+        const maxTurn = replayRef.current.snapshots.length - 1;
+        if (prev >= maxTurn) {
+          if (!isLiveStream) {
+            setIsPlaying(false);
+          }
           return prev;
         }
         return prev + 1;
@@ -54,14 +60,14 @@ export const App: React.FC = () => {
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [isPlaying, playbackSpeed, totalTurns]);
+  }, [isPlaying, playbackSpeed, isLiveStream]);
 
   const handleUploadReplay = (buffer: Uint8Array) => {
     try {
       const parsed = parseReplayBinary(buffer);
       setReplay(parsed);
       setCurrentTurn(0);
-      setIsPlaying(false);
+      setIsPlaying(true);
     } catch (err) {
       alert(`Failed to load replay file: ${(err as Error).message}`);
     }
@@ -95,21 +101,24 @@ export const App: React.FC = () => {
     liveSubRef.current?.disconnect();
 
     setIsLiveStream(true);
-    setIsPlaying(false);
+    setCurrentTurn(0);
+    setIsPlaying(true);
 
     const sub = subscribeLiveMatch(matchId, {
       onInit: (_init, initialReplay) => {
         setReplay(initialReplay);
         setCurrentTurn(0);
+        setIsPlaying(true);
       },
       onDelta: (_delta, _snapshot, updatedReplay) => {
         setReplay({ ...updatedReplay });
-        setCurrentTurn(updatedReplay.snapshots.length - 1);
+        // Maintain smooth step-by-step playback without jumping straight to the end
+        setIsPlaying(true);
       },
       onEnd: (_end, finishedReplay) => {
         setReplay({ ...finishedReplay });
-        setCurrentTurn(finishedReplay.snapshots.length - 1);
         setIsLiveStream(false);
+        // Allow playback to proceed smoothly until the final turn snapshot
       },
       onError: (err) => {
         console.error('Live stream error:', err);
