@@ -115,10 +115,13 @@ flowchart TD
    - `POST /api/auth/register`: Mọi tài khoản mới luôn nhận `role = 'PLAYER'`. Tham số `role` nếu gửi lên trong body sẽ bị loại bỏ hoặc cấm.
    - `POST /api/tournaments`: Yêu cầu `requireAdmin(request)`.
    - `POST /api/tournaments/:id/lock`: Yêu cầu `requireAdmin(request)`.
+   - `POST /api/tournaments/:id/project-next`: Yêu cầu `requireAdmin(request)`. Mỗi lần Admin bấm chuyển trận trên máy chiếu, endpoint này tăng chỉ số `projectedIndex` của giải đấu trên server.
    - `POST /api/tournaments/:id/entries`: Yêu cầu `requireUser(request)` (cả Admin và Player đều có thể nộp bot của mình).
+   - `GET /api/tournaments/:id`:
+     - **Đối với ADMIN:** Trả về đầy đủ toàn bộ các trận đấu và bảng tổng sắp hoàn chỉnh.
+     - **Đối với PLAYER (Cơ chế Chống Lộ Kết Quả - Anti-Spoiler):** Hệ thống chỉ tiết lộ các trận đấu và điểm số đến vị trí `projectedIndex` mà Admin đã bấm chiếu. Các trận chưa được chiếu sẽ bị ẩn kết quả, và bảng xếp hạng trên màn hình Player được tính toán đồng bộ theo nhịp máy chiếu của Admin.
    - `GET /api/bots`: Chỉ trả về danh sách bot thuộc sở hữu của người dùng đang đăng nhập (`where user_id = ?`). Thí sinh không thể xem source code bot của đối thủ.
    - `POST /api/bots`, `PUT /api/bots/:id`: Yêu cầu `requireUser(request)` và kiểm tra quyền sở hữu bot.
-
 ### 3.4. Trải Nghiệm Giao Diện Người Dùng (Frontend UI/UX)
 
 1. **Huy hiệu phân quyền (Role Badges):**
@@ -130,11 +133,11 @@ flowchart TD
      - Nút **"+ Create"** tạo giải đấu bị ẩn hoàn toàn.
      - Trong chi tiết giải đấu đang mở (`PENDING`): Hiển thị phần "Đăng ký tham gia giải", cho phép chọn bot cá nhân và bấm "Nộp bot tham gia".
      - Nút "Chốt danh sách & ghép cặp" và Bảng điều khiển "Trận đấu tiếp theo (Next Match)" bị ẩn hoàn toàn.
-     - Sau khi giải chạy, người chơi có thể xem bảng xếp hạng vòng đấu (Standings) và xem lại các trận đấu đã diễn ra.
+     - Sau khi giải chạy: Người chơi theo dõi bảng xếp hạng (Standings) và danh sách trận đấu trên máy cá nhân được mở khóa dần theo nhịp Admin bấm chiếu trên máy chiếu.
    - **Đối với Admin:**
      - Hiển thị đầy đủ nút **"+ Create"** tạo giải đấu.
      - Hiển thị số lượng thí sinh đã nộp bot, nút **"Chốt danh sách & ghép cặp"**.
-     - Hiển thị bảng điều khiển trình chiếu **Tournament Operator Deck** với nút bấm **"Trận đấu tiếp theo (Next Match)"** và chế độ phóng to toàn màn hình (Theater/Fullscreen) để nối ra máy chiếu/TV.
+     - Hiển thị bảng điều khiển trình chiếu **Tournament Operator Deck** với nút bấm **"Trận đấu tiếp theo (Next Match)"** (gọi `POST /api/tournaments/:id/project-next`) và chế độ phóng to toàn màn hình (Theater/Fullscreen) để nối ra máy chiếu/TV.
 
 ---
 
