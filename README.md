@@ -90,7 +90,13 @@ Database trong RAM mất toàn bộ registry/ELO/lịch sử khi server dừng. 
 
 ## 3. Giao diện sử dụng
 
-- **Tài khoản:** góc trên phải có menu Sign in / Register / Log out. Phiên đăng nhập dùng cookie `HttpOnly` lưu trên server. Khi chưa đăng nhập, người dùng vẫn có thể xem trận, bảng xếp hạng và thử code tự do; các thao tác Save bot, chạy Test và tạo trận/giải yêu cầu đăng nhập.
+- **Tài khoản & Phân quyền (RBAC):**
+  - **Admin mặc định:** Hệ thống tự động tạo sẵn tài khoản `admin` (mật khẩu mặc định `admin123` hoặc biến môi trường `ADMIN_PASSWORD`), có huy hiệu `👑 Admin`. Admin nắm độc quyền tạo giải đấu, chốt danh sách và điều khiển máy chiếu.
+  - **Người chơi (Player):** Người dùng trong mạng LAN tự đăng ký qua Web, luôn nhận vai trò `🎮 Player`. Người chơi dùng Bot IDE để lập trình và nộp bot vào giải; không thể tạo giải hay chốt giải (nhận HTTP 403 Forbidden).
+- **Mô hình Mạng Nội Bộ (LAN Party / Tournament):**
+  - Máy chủ Admin chạy trên cổng `3000` (Web) và `3001` (API/WS), lắng nghe `0.0.0.0`.
+  - Mọi người trong cùng mạng Wi-Fi/LAN truy cập bằng trình duyệt tại: `http://<IP_MÁY_ADMIN>:3000`. Không cần cài Node, Python hay C++ trên máy client.
+  - **Cơ chế Chống Lộ Kết Quả (Anti-Spoiler Gate):** Server tính toàn bộ trận đấu ở nền. Bảng điểm và danh sách trận trên máy người chơi chỉ mở khóa đồng bộ theo từng lượt Admin bấm **"Trận đấu tiếp theo (Next Match)"** trên máy chiếu.
 - **Bot IDE:**
   - Cho phép chọn bot cá nhân (`Owned bot`), tạo mới (`New Bot`), đổi tên và chọn ngôn ngữ (Python / TypeScript).
   - **Save:** tạo bot mới hoặc lưu phiên bản mới của bot đang chọn (tăng version, giữ nguyên điểm ELO, lưu mã nguồn bất biến vào lịch sử).
@@ -171,23 +177,27 @@ flowchart LR
 
 | Endpoint | Phương thức | Xác thực | Chức năng |
 | --- | --- | --- | --- |
-| `/api/auth/register` | POST | Không | Đăng ký tài khoản mới (mật khẩu scrypt, cấp session cookie) |
-| `/api/auth/login` | POST | Không | Đăng nhập tài khoản |
-| `/api/auth/me` | GET | Tùy chọn | Thông tin tài khoản hiện tại |
+| `/api/auth/register` | POST | Không | Đăng ký tài khoản mới (mật khẩu scrypt, luôn nhận vai trò `PLAYER`) |
+| `/api/auth/login` | POST | Không | Đăng nhập tài khoản (hỗ trợ `admin / admin123` hoặc tài khoản Player) |
+| `/api/auth/me` | GET | Tùy chọn | Thông tin tài khoản hiện tại kèm vai trò (`ADMIN` / `PLAYER`) |
 | `/api/auth/logout` | POST | Session | Đăng xuất và thu hồi session token |
-| `/api/bots` | GET | Không | Danh sách bot công khai (chỉ metadata: id, tên, ngôn ngữ, ELO, version; không lộ mã nguồn/đường dẫn tệp) |
+| `/api/bots` | GET | Không | Danh sách bot công khai (chỉ metadata: id, tên, ngôn ngữ, ELO, version; không lộ mã nguồn) |
 | `/api/bots?mine=1` | GET | Bắt buộc | Danh sách bot do tài khoản sở hữu |
 | `/api/bots` | POST | Bắt buộc | Tạo bot mới thuộc tài khoản đang đăng nhập |
 | `/api/bots/:id` | GET | Chủ sở hữu | Xem chi tiết bot kèm mã nguồn phiên bản hiện tại |
-| `/api/bots/:id` | PUT | Chủ sở hữu | Cập nhật phiên bản mới (yêu cầu đúng version hiện tại để tránh ghi đè chéo) |
+| `/api/bots/:id` | PUT | Chủ sở hữu | Cập nhật phiên bản mới (yêu cầu đúng version hiện tại) |
 | `/api/bots/:id` | DELETE | Chủ sở hữu | Xóa mềm bot khỏi danh sách thi đấu |
 | `/api/bots/:id/versions` | GET | Chủ sở hữu | Lịch sử tất cả các phiên bản mã nguồn của bot |
-| `/api/matches/test` | POST | Bắt buộc | Chạy thử nghiệm unranked từ mã nguồn gửi kèm (không tạo bot/kết quả trên database) |
+| `/api/matches/test` | POST | Bắt buộc | Chạy thử nghiệm unranked từ mã nguồn gửi kèm |
 | `/api/matches` | POST | Bắt buộc | Khởi tạo trận đấu chính thức giữa 2 bot |
-| `/api/matches/:id` | GET | Không | Trạng thái/kết quả trận đấu (hỗ trợ cả trận test đang hoạt động) |
+| `/api/matches/:id` | GET | Không | Trạng thái/kết quả trận đấu |
 | `/api/matches/:id/replay` | GET | Không | Tải tệp replay nhị phân `.oantuti` |
-| `/api/tournaments` | GET/POST | GET: Không / POST: Bắt buộc | Xem hoặc tạo giải đấu tự động |
-| `/api/tournaments/:id` | GET | Không | Bảng tổng sắp và các trận đấu trong giải |
+| `/api/tournaments` | GET | Không | Xem danh sách các giải đấu |
+| `/api/tournaments` | POST | `ADMIN` | Tạo giải đấu mới (Round-Robin hoặc Swiss) |
+| `/api/tournaments/:id/entries` | POST | Bắt buộc | Thí sinh nộp bot cá nhân vào giải đấu đang mở |
+| `/api/tournaments/:id/lock` | POST | `ADMIN` | Chốt danh sách thí sinh và ghép cặp |
+| `/api/tournaments/:id/project-next` | POST | `ADMIN` | Chuyển trận trình chiếu tiếp theo và mở khóa điểm số toàn phòng |
+| `/api/tournaments/:id` | GET | Không | Bảng tổng sắp và các trận đấu (tự động lọc Anti-Spoiler cho Player) |
 | `/ws/matches/:matchId` | WebSocket | Không | Stream nhị phân Protobuf theo thời gian thực |
 
 Giải đấu hỗ trợ cả 2 thể thức chuẩn: **Vòng tròn tính điểm (Round-Robin)** và **Hệ Thụy Sĩ (Swiss System)**. Thể thức Thụy Sĩ tự động phân nhóm theo điểm số qua từng vòng ($R = \lceil \log_2 N \rceil$), ngăn chặn tái đấu giữa các cặp đã gặp nhau, tự động cấp vé Bye (+3.0 điểm) khi số bot lẻ. Ban tổ chức có bảng điều khiển với nút "Trận đấu tiếp theo (Next Match)" để tuần tự chiếu từng trận lên Canvas và màn hình vinh danh Nhà vô địch kèm cúp vàng 🏆 và pháo hoa.
@@ -217,7 +227,7 @@ Nếu máy báo `docker: unknown command: docker compose`, cần cài Docker Com
 
 ## 9. Giới hạn trước khi triển khai công khai
 
-Cần HTTPS ở reverse proxy ngoài, giới hạn tài nguyên và sandbox riêng cho bot không tin cậy trước khi triển khai công khai. Xác thực, quyền sở hữu bot, nộp bài vào giải và khóa đăng ký bởi chủ giải đã có. Điều khiển trình chiếu là trạng thái cục bộ của trình duyệt, chưa đồng bộ nhiều màn hình khán giả. Compose không mount Docker socket, không dùng privileged mode và không tự fallback thành một sandbox an toàn.
+Cần HTTPS ở reverse proxy ngoài, giới hạn tài nguyên và sandbox riêng cho bot không tin cậy trước khi triển khai công khai. Hệ thống đã có phân quyền 2 tầng `ADMIN` và `PLAYER`, tài khoản Admin mặc định, nộp bot theo tài khoản, khóa danh sách bởi Admin và cơ chế Anti-Spoiler đồng bộ tiến trình trình chiếu qua mạng LAN. Compose không mount Docker socket, không dùng privileged mode và không tự fallback thành một sandbox an toàn.
 
 `npm ci` trong image hiện báo 8 dependency vulnerabilities (2 low, 3 moderate, 1 high, 2 critical). Chưa thực hiện dependency upgrade hay Security Pentest; không xem build thành công là chứng nhận bảo mật.
 
