@@ -150,3 +150,18 @@ flowchart LR
 ```
 
 - **Quy tắc tuyệt đối:** Không được phép merge bất kỳ PR nào nếu có dù chỉ 1 bài test bị lỗi hoặc độ trễ lượt đi vượt quá ngưỡng 100ms.
+
+---
+
+## 7. Kiểm Thử Phân Quyền RBAC & Kết Nối Mạng LAN (RBAC & LAN Testing Matrix)
+
+| Mã Kịch Bản | Mục Tiêu Kiểm Thử | Điều Kiện Thực Thi | Kết Quả Kỳ Vọng (Expected Assertion) |
+|:---|:---|:---|:---|
+| `TC_RBAC_001` | **Khởi tạo Admin mặc định** | Server start lần đầu với DB mới | Tài khoản `admin` tồn tại, role là `ADMIN`, đăng nhập thành công với mật khẩu mặc định `admin123`. |
+| `TC_RBAC_002` | **Đăng ký Player chuẩn** | Gọi `POST /api/auth/register` kèm payload hợp lệ | Tài khoản được tạo với role `PLAYER`, session cookie hợp lệ. |
+| `TC_RBAC_003` | **Ngăn chặn leo thang đặc quyền** | Thí sinh gửi payload `{ username, email, password, role: 'ADMIN' }` | Role lưu trong DB bắt buộc là `PLAYER`. |
+| `TC_RBAC_004` | **Chặn Player tạo giải** | Session Player gọi `POST /api/tournaments` | Trả về `403 Forbidden: Admin privilege required`. |
+| `TC_RBAC_005` | **Chặn Player chốt giải** | Session Player gọi `POST /api/tournaments/:id/lock` | Trả về `403 Forbidden: Admin privilege required`. |
+| `TC_RBAC_006` | **Nộp bot cá nhân vào giải** | Session Player gọi `POST /api/tournaments/:id/entries` với bot của mình | Trả về `200 OK`, bot được ghi nhận vào danh sách. |
+| `TC_RBAC_007` | **Cơ chế Chống Lộ Kết Quả (Anti-Spoiler)** | Giải đấu đã chạy xong ở nền, Admin chưa bấm chiếu trận 1 (`projectedIndex == 0`) | Player gọi `GET /api/tournaments/:id` chỉ nhận danh sách trận rỗng/ẩn kết quả, standings chưa tính điểm trận đó. |
+| `TC_RBAC_008` | **Đồng bộ tiến trình trình chiếu** | Admin gọi `POST /api/tournaments/:id/project-next` | `projectedIndex` tăng lên 1, Player query lại thấy trận 1 mở kết quả và standings được cộng điểm. |

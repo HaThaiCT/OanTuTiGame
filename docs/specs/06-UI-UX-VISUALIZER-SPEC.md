@@ -40,6 +40,21 @@ Giao diện thi đấu của **OanTuTi Arena** được thiết kế hiện đ�
 +-------------------------------------------------------+--------------------------------------------+
 ```
 
+### 1.3. Phân Quyền Giao Diện & Màn Hình Trình Chiếu (Role UI & Projector View)
+
+1. **Huy hiệu Phân Quyền (Role Badges):**
+   - Thanh điều hướng đầu trang hiển thị tên người dùng và huy hiệu vai trò:
+     - `👑 Admin`: Tông màu vàng kim `#facc15`, nền `rgba(234, 179, 8, 0.2)`.
+     - `🎮 Player`: Tông màu xanh neon `#38bdf8`, nền `rgba(56, 189, 248, 0.2)`.
+2. **Giao Diện Ban Tổ Chức (Admin Operator & Projector Screen):**
+   - Hiển thị nút `+ Create` để tạo giải đấu mới (Round-Robin hoặc Swiss).
+   - Trong giải đấu đang mở: Hiển thị số lượng thí sinh đăng ký và nút `Chốt danh sách & ghép cặp`.
+   - Khi giải đấu đang diễn ra: Hiển thị bảng điều khiển Operator Deck nổi bật với nút `Trận đấu tiếp theo (Next Match) ▶` để điều khiển phát sóng từng trận lên màn hình lớn/máy chiếu và đồng bộ tiến trình tới toàn thể người chơi trong phòng.
+3. **Giao Diện Thí Sinh (Player Screen):**
+   - Nút tạo giải và các nút chốt danh sách / điều khiển giải đấu bị ẩn hoàn toàn.
+   - Trong giải đấu đang mở: Hiển thị hộp nộp bài, cho phép chọn bot cá nhân và bấm `Nộp bot tham gia`.
+   - Trong giải đấu đang diễn ra: Bảng xếp hạng và danh sách cặp đấu được mở khóa tuần tự theo từng trận Admin bấm chiếu trên máy chiếu, không bị lộ trước kết quả của các trận chưa chiếu.
+
 ---
 
 ## 2. Thuật Toán Ánh Xạ Tọa Độ Camera (Camera Viewport Transform)

@@ -108,7 +108,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'MODERATOR')),
+    role VARCHAR(20) NOT NULL DEFAULT 'PLAYER' CHECK (role IN ('PLAYER', 'ADMIN')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -192,7 +192,7 @@ CREATE TABLE users (
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'MODERATOR')),
+    role TEXT NOT NULL DEFAULT 'PLAYER' CHECK (role IN ('PLAYER', 'ADMIN')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -236,6 +236,19 @@ CREATE TABLE tournaments (
     finished_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- Cấu trúc config_json trong TOURNAMENTS:
+-- {
+--   "botIds": ["bot_1", "bot_2"],
+--   "mapId": "sample-donut",
+--   "maxTurns": 150,
+--   "registrationOpen": true,
+--   "projectedIndex": 0, /* Chỉ số trận đã được Admin bấm chiếu trên máy chiếu */
+--   "entries": [{"userId": "usr_1", "botId": "bot_1", "version": 1}],
+--   "rounds": [...]
+-- }
+-- Khởi tạo mặc định (Database Seed):
+-- Tài khoản Quản trị viên 'usr_admin_default' (username: 'admin', role: 'ADMIN') được tự động khởi tạo khi hệ thống start.
+-- Tài khoản Hệ thống 'usr_system' (username: 'system', role: 'ADMIN') sở hữu các bot mẫu.
 
 -- 5. Bảng MATCHES
 CREATE TABLE matches (

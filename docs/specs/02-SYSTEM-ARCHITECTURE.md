@@ -52,6 +52,54 @@ flowchart TB
     WS_CLIENT <-- "Binary Protobuf Frames (<200B/turn)" --> WS_HUB
 ```
 
+### 1.3. Mô Hình Mạng Nội Bộ (LAN Client-Server) & Phân Quyền RBAC (Role-Based Access Control)
+
+Trong môi trường thi đấu nội bộ (LAN Tournament), hệ thống phân tách 2 vai trò bảo mật:
+
+```mermaid
+flowchart TD
+    subgraph LAN_Network ["Mạng LAN Nội Bộ (192.168.x.x)"]
+        subgraph AdminHost ["Máy Chủ Ban Tổ Chức (Admin Host :3000 / :3001)"]
+            SERVER["Fastify REST & WebSocket Hub (Listen 0.0.0.0:3001)"]
+            VITE["Vite / Nginx Static Server (Listen 0.0.0.0:3000)"]
+            DB[(SQLite storage/arena.sqlite)]
+            RUNNER_SVC["Bot Runner & Turn Budget Enforcer"]
+            PROJECTOR["Màn Hình Lớn / Máy Chiếu (Admin Operator Screen)"]
+            
+            SERVER --- DB
+            SERVER --- RUNNER_SVC
+            VITE --- PROJECTOR
+        end
+
+        subgraph PlayerClient1 ["Client Người Chơi 1 (Laptop / Mobile)"]
+            P1["Trình Duyệt: http://192.168.1.x:3000<br/>• Role: PLAYER<br/>• Bot IDE: Viết/tải code<br/>• Nộp bot vào giải đấu"]
+        end
+
+        subgraph PlayerClient2 ["Client Người Chơi 2 (Laptop)"]
+            P2["Trình Duyệt: http://192.168.1.x:3000<br/>• Role: PLAYER<br/>• Nộp bot cá nhân"]
+        end
+
+        P1 -- "HTTP API / WS (Session Cookie)" --> VITE
+        P2 -- "HTTP API / WS (Session Cookie)" --> VITE
+        VITE -- "Proxy /api & /ws" --> SERVER
+    end
+```
+
+1. **Cấu hình Lắng nghe & Phân giải Tên miền Động:**
+   - Fastify và Web Server lắng nghe trên toàn dải địa chỉ `0.0.0.0`.
+   - Frontend tự động xây dựng đường dẫn API và WebSocket dựa trên `window.location.host` và `window.location.protocol`, không phụ thuộc vào địa chỉ IP tĩnh.
+2. **Cơ chế Phân quyền 2 Tầng (RBAC Matrix):**
+   - **`ADMIN` (Ban tổ chức):**
+     - Tài khoản `admin` được tạo sẵn mặc định khi khởi tạo cơ sở dữ liệu (`ensureAdminUser`).
+     - Quyền hạn: Tạo giải đấu (`POST /api/tournaments`), Chốt danh sách người tham gia (`POST /api/tournaments/:id/lock`), Chuyển trận trình chiếu tiếp theo trên máy chiếu (`POST /api/tournaments/:id/project-next`).
+   - **`PLAYER` (Người chơi tham gia):**
+     - Người chơi tự đăng ký tài khoản qua Web; hệ thống luôn gán vai trò `PLAYER`.
+     - Quyền hạn: Viết/lưu/kiểm thử bot cá nhân trong Bot IDE; Nộp bot của mình vào giải đấu đang mở (`POST /api/tournaments/:id/entries`).
+     - Hạn chế bảo mật: Tuyệt đối bị từ chối với mã lỗi `HTTP 403 Forbidden` khi cố gọi API tạo giải hoặc chốt danh sách; không thể xem mã nguồn bot của người khác.
+3. **Cơ chế Chống Lộ Kết Quả (Anti-Spoiler Projection Gate):**
+   - Khi Admin bấm chốt danh sách, giải đấu tự động chạy các trận ở nền.
+   - Để tránh việc thí sinh mở inspect mạng xem trước ai vô địch, API `GET /api/tournaments/:id` đối với `PLAYER` chỉ trả về các trận đấu và bảng điểm được tích lũy đến vị trí `projectedIndex` mà Admin đã bấm chuyển trận trên máy chiếu.
+
 ---
 
 ## 2. Phân Rã Thành Phần & Trách Nhiệm Gói (Package Decomposition & Responsibilities)

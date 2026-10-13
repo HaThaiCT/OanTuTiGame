@@ -20,6 +20,19 @@
 - **Khán giả / Cộng đồng:** Trải nghiệm theo dõi trực tiếp các trận đấu đỉnh cao theo thời gian thực (Real-time Streaming) trên nền tảng Web thông qua Canvas 2D Visualizer mượt mà, độ trễ cực thấp (<100ms) và dung lượng truyền tải siêu tối ưu.
 - **Đơn vị tổ chức giải đấu:** Hệ thống quản lý trận đấu tự động, hỗ trợ phân nhánh Swiss, Round-Robin, Double Elimination và tính toán điểm hệ số ELO chuẩn mực.
 
+### 1.4. Mô Hình Thi Đấu Mạng Nội Bộ (LAN) & Phân Quyền Người Dùng (LAN Tournament & RBAC)
+Nhằm phục vụ các sự kiện thi đấu, giao lưu học thuật và hackathon tại chỗ, OanTuTi Arena hỗ trợ mô hình vận hành mạng nội bộ (LAN) độc lập:
+1. **Máy chủ Ban tổ chức (Host Server & Projector):**
+   - Chạy toàn bộ hệ thống (Fastify API, WebSocket Hub, Runner và SQLite DB) lắng nghe trên toàn dải mạng (`0.0.0.0`).
+   - Tài khoản **Admin** được tạo sẵn mặc định (`admin`), sở hữu quyền tạo giải đấu, duyệt thí sinh, chốt danh sách và điều khiển màn hình máy chiếu/TV cho cả khán phòng theo dõi.
+2. **Máy thí sinh (Player Clients):**
+   - Mọi người chơi trong cùng mạng LAN chỉ cần mở trình duyệt web truy cập vào địa chỉ IP của máy Admin (ví dụ `http://192.168.1.x:3000`).
+   - Không yêu cầu cài đặt môi trường lập trình (Python, Node, C++) trên máy cá nhân.
+   - Người chơi tự đăng ký tài khoản (vai trò **Player**), lập trình bot trong Bot IDE, kiểm thử và nộp bot vào giải đấu.
+3. **Cơ chế Chống Lộ Kết Quả (Anti-Spoiler Gate):**
+   - Máy chủ thực thi toàn bộ các trận đấu của giải ở chế độ nền.
+   - Trên màn hình của thí sinh, bảng điểm và danh sách trận chỉ mở khóa tuần tự đồng bộ theo từng lượt Admin bấm chiếu trên máy chiếu, bảo toàn sự bất ngờ và kịch tính.
+
 ---
 
 ## 2. Mô Hình Toán Học & Thiết Kế Game (Formal Game Design & Mechanics)

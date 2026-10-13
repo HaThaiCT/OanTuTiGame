@@ -104,6 +104,7 @@ gantt
 | **WBS-3.2** | Fastify REST API (Auth, Bots, Matches) | WBS-3.1 | 4 | Backend Engineer | `packages/server/src/routes/` | Đầy đủ CRUD bots, phân quyền JWT, tính điểm ELO |
 | **WBS-3.3** | Binary WebSocket Streaming Hub | WBS-1.3, 2.3 | 4 | Backend Engineer | `packages/server/src/ws/` | Phục vụ kết nối spectator, broadcast delta nhị phân |
 | **WBS-3.4** | Spectator Load Benchmark (1k clients) | WBS-3.3 | 3 | QA Engineer | `tests/load/websocket.k6.js` | $1,000$ spectators kết nối, $p99 < 100$ms, không drop |
+| **WBS-3.5** | LAN Client Architecture & Two-Tier RBAC | WBS-3.2 | 3 | Backend Engineer | `packages/server/src/auth.ts`, `db.ts` | Default seeded Admin, Player self-reg, 403 authorization gate |
 | **WBS-4.1** | Python Bot SDK & Starter Bot | WBS-2.1 | 2 | SDK Engineer | `sdk/python/` | Bot Python chạy hoàn hảo trên runner, không lỗi I/O |
 | **WBS-4.2** | TypeScript & C++ Bot SDKs | WBS-2.1 | 3 | SDK Engineer | `sdk/typescript/`, `sdk/cpp/` | Compile và pass turn loop đúng luật |
 | **WBS-4.3** | Heuristic Starter Bots (Greedy, Minimax) | WBS-4.1, 4.2 | 3 | AI Engineer | `bots/starter/` | Bot thắng Random Bot với tỷ lệ $\ge 90\%$ |
@@ -112,6 +113,7 @@ gantt
 | **WBS-5.3** | Monaco Editor Integration & Local Test | WBS-1.2 | 4 | Frontend Engineer | `packages/web/src/components/Editor.tsx` | Soạn thảo syntax highlight, chạy test bot trên WebWorker |
 | **WBS-5.4** | Replay Timeline Controller & Dark Mode | WBS-1.4, 5.2 | 3 | Frontend Engineer | `packages/web/src/components/Timeline.tsx` | Kéo tua từng turn, Play/Pause, chuyển đổi Dark/Light |
 
+| **WBS-5.5** | LAN Operator Projector Deck & Anti-Spoiler Gate | WBS-3.5, 5.4 | 3 | Frontend Engineer | `packages/web/src/components/LeaderboardView.tsx` | Role badges, synchronized Next Match advancement, masked standings |
 ---
 
 ## 4. Ma Trận Quản Trị Rủi Ro Kỹ Thuật (Technical Risk Management & Contingency Plan)
