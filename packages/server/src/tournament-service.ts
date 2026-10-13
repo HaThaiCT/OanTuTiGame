@@ -367,10 +367,19 @@ export class TournamentService extends EventEmitter {
 
     const matches = projectedIndex !== undefined ? allMatches.slice(0, projectedIndex) : allMatches;
 
+    const sanitizedTour = { ...tour };
+    if (projectedIndex !== undefined && projectedIndex < allMatches.length) {
+      try {
+        const parsedCfg = JSON.parse(tour.config_json || '{}');
+        delete parsedCfg.standings;
+        sanitizedTour.config_json = JSON.stringify(parsedCfg);
+      } catch {}
+    }
+
     // Calculate live or finalized standings
     let standings: StandingEntry[] = [];
     const cfg = JSON.parse(tour.config_json || '{}');
-    if (projectedIndex === undefined && cfg.standings && Array.isArray(cfg.standings)) {
+    if ((projectedIndex === undefined || projectedIndex >= allMatches.length) && cfg.standings && Array.isArray(cfg.standings)) {
       standings = cfg.standings;
     } else if (cfg.botIds && Array.isArray(cfg.botIds)) {
       const map = new Map<string, StandingEntry>();
@@ -411,7 +420,7 @@ export class TournamentService extends EventEmitter {
       standings = Array.from(map.values()).sort((a, b) => b.points - a.points || b.wins - a.wins);
     }
 
-    return { tournament: tour, standings, matches };
+    return { tournament: sanitizedTour, standings, matches };
   }
 
   listTournaments(): TournamentRow[] {

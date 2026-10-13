@@ -201,7 +201,8 @@ export class Database {
     }
 
     // Ensure default admin user exists
-    const defaultAdmin = this.getUserByUsername('admin');
+    const targetAdminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const defaultAdmin = this.getUserById('usr_admin_default') || this.getUserByUsername(targetAdminUsername) || this.getUserByEmail('admin@oantuti.arena');
     if (!defaultAdmin) {
       const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
       const salt = crypto.randomBytes(16).toString('hex');
@@ -209,7 +210,7 @@ export class Database {
       const passwordHash = `scrypt$${salt}$${key.toString('hex')}`;
       this.createUser({
         id: 'usr_admin_default',
-        username: process.env.ADMIN_USERNAME || 'admin',
+        username: targetAdminUsername,
         email: 'admin@oantuti.arena',
         password_hash: passwordHash,
         role: 'ADMIN',

@@ -47,13 +47,23 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   const [tourDetails, setTourDetails] = React.useState<TournamentDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [projectedByTournament, setProjectedByTournament] = React.useState<Record<string, number>>({});
-  const projectedMatchIndex = selectedTourId ? projectedByTournament[selectedTourId] ?? 0 : 0;
+  const serverProjectedIndex = React.useMemo(() => {
+    try {
+      return tourDetails ? JSON.parse(tourDetails.tournament.config_json || '{}').projectedIndex ?? 0 : 0;
+    } catch { return 0; }
+  }, [tourDetails]);
+  const projectedMatchIndex = selectedTourId && projectedByTournament[selectedTourId] !== undefined
+    ? projectedByTournament[selectedTourId]
+    : serverProjectedIndex;
   const [projecting, setProjecting] = React.useState(false);
   const [projectionError, setProjectionError] = React.useState<string | null>(null);
   const [showChampionCeremony, setShowChampionCeremony] = React.useState<boolean>(false);
 
   const fetchData = React.useCallback(() => {
     setIsLoading(true);
+    if (selectedTourId) {
+      fetchTournamentDetails(selectedTourId).then(setTourDetails).catch(console.error);
+    }
     Promise.all([
       fetch('/api/leaderboard').then((res) => res.json()),
       fetchTournaments().catch(() => []),
@@ -64,7 +74,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
       })
       .catch((err) => console.error('Failed to load leaderboard/tournaments:', err))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [selectedTourId]);
 
   React.useEffect(() => {
     fetchData();
@@ -456,7 +466,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                             <span>Trận đấu tiếp theo (Next Match)</span>
                           </button>
 
-                          {isCompleted && tourDetails.standings.length > 0 && (
+                          {isCompleted && projectedMatchIndex >= tourDetails.matches.length && tourDetails.standings.length > 0 && (
                             <button
                               onClick={() => setShowChampionCeremony(true)}
                               style={{

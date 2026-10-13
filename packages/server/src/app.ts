@@ -178,8 +178,22 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   });
 
   // Tournaments
-  app.get('/api/tournaments', async () => {
-    return { tournaments: tournamentService.listTournaments() };
+  app.get('/api/tournaments', async (req) => {
+    const user = auth.user(req);
+    const list = tournamentService.listTournaments();
+    if (user?.role === 'ADMIN') return { tournaments: list };
+    return {
+      tournaments: list.map((t) => {
+        try {
+          const cfg = JSON.parse(t.config_json || '{}');
+          if (cfg.standings) {
+            delete cfg.standings;
+            return { ...t, config_json: JSON.stringify(cfg) };
+          }
+        } catch {}
+        return t;
+      }),
+    };
   });
 
   app.post('/api/tournaments', async (req) => {
@@ -221,15 +235,20 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     return tournamentService.getTournamentDetails(req.params.id);
   });
 
-  app.post<{Params:{id:string}}>('/api/tournaments/:id/project-next', async req => {
+  app.post<{Params:{id:string}}>('/api/tournaments/:id/project-next', async (req, reply) => {
     auth.requireAdmin(req);
     objectPayload(req.body, []);
-    const details = tournamentService.getTournamentDetails(req.params.id);
-    const cfg = JSON.parse(details.tournament.config_json || '{}');
-    const currentIndex = typeof cfg.projectedIndex === 'number' ? cfg.projectedIndex : 0;
-    const nextIndex = currentIndex + 1;
-    db.updateTournamentProjectedIndex(req.params.id, nextIndex);
-    return { success: true, projectedIndex: nextIndex };
+    try {
+      const details = tournamentService.getTournamentDetails(req.params.id);
+      const cfg = JSON.parse(details.tournament.config_json || '{}');
+      const currentIndex = typeof cfg.projectedIndex === 'number' ? cfg.projectedIndex : 0;
+      const nextIndex = details.matches.length > 0 ? Math.min(currentIndex + 1, details.matches.length) : currentIndex + 1;
+      db.updateTournamentProjectedIndex(req.params.id, nextIndex);
+      return { success: true, projectedIndex: nextIndex };
+    } catch {
+      reply.status(404);
+      return { error: `Tournament "${req.params.id}" not found` };
+    }
   });
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {

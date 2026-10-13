@@ -177,12 +177,32 @@ describe('Backend RBAC Authorization & Anti-Spoiler Protection Gate', () => {
     // Player query at projectedIndex 0 sees 0 revealed matches and initial standings
     const playerDetails0 = (await ctx.app.inject({ method: 'GET', url: `/api/tournaments/${tourId}`, headers: { cookie: p1Cookie } })).json();
     expect(playerDetails0.matches.length).toBe(0);
-
+    expect(JSON.parse(playerDetails0.tournament.config_json).standings).toBeUndefined();
     // Admin advances projection to 1
     await ctx.app.inject({ method: 'POST', url: `/api/tournaments/${tourId}/project-next`, headers: { cookie: adminCookie }, payload: {} });
 
     // Player query now sees 1 revealed match
     const playerDetails1 = (await ctx.app.inject({ method: 'GET', url: `/api/tournaments/${tourId}`, headers: { cookie: p1Cookie } })).json();
     expect(playerDetails1.matches.length).toBe(1);
+  });
+
+  it('ensures default admin seed is idempotent across database restarts with custom ADMIN_USERNAME', () => {
+    const customDbDir = mkdtempSync(join(tmpdir(), 'arena-admin-custom-'));
+    const dbFile = join(customDbDir, 'arena.db');
+    process.env.ADMIN_USERNAME = 'master_admin';
+    try {
+      const DatabaseClass = ctx.db.constructor as new (path: string) => typeof ctx.db;
+      const db1 = new DatabaseClass(dbFile);
+      expect(db1.getUserByUsername('master_admin')).toBeDefined();
+      db1.close();
+
+      // Second startup must not crash with UNIQUE constraint error
+      const db2 = new DatabaseClass(dbFile);
+      expect(db2.getUserByUsername('master_admin')).toBeDefined();
+      db2.close();
+    } finally {
+      delete process.env.ADMIN_USERNAME;
+      rmSync(customDbDir, { recursive: true, force: true });
+    }
   });
 });
