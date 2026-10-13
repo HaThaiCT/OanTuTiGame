@@ -183,7 +183,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   });
 
   app.post('/api/tournaments', async (req) => {
-    const user = auth.requireUser(req);
+    const user = auth.requireAdmin(req);
     const payload = objectPayload(req.body, ['name', 'format', 'mapId', 'botIds', 'maxTurns', 'doubleRound', 'registrationOnly']);
     const name = textField(payload.name, 'name', 100).trim();
     const mapId = mapIdField(payload.mapId);
@@ -214,18 +214,43 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     try{tournamentService.submitEntry(req.params.id,user.id,botId);}catch(error){throw new HttpError(409,error instanceof Error?error.message:'Entry rejected');}
     return tournamentService.getTournamentDetails(req.params.id);
   });
-  app.post<{Params:{id:string}}>('/api/tournaments/:id/lock',async req=>{
-    const user=auth.requireUser(req);
-    objectPayload(req.body,[]);
-    if(db.getTournamentById(req.params.id)?.creator_id!==user.id) throw new HttpError(403,'Organizer required');
-    try{tournamentService.lockRegistration(req.params.id,user.id);}catch(error){throw new HttpError(409,error instanceof Error?error.message:'Cannot lock registration');}
+  app.post<{Params:{id:string}}>('/api/tournaments/:id/lock', async req => {
+    const user = auth.requireAdmin(req);
+    objectPayload(req.body, []);
+    try { tournamentService.lockRegistration(req.params.id, user.id); } catch (error) { throw new HttpError(409, error instanceof Error ? error.message : 'Cannot lock registration'); }
     return tournamentService.getTournamentDetails(req.params.id);
+  });
+
+  app.post<{Params:{id:string}}>('/api/tournaments/:id/project-next', async req => {
+    auth.requireAdmin(req);
+    objectPayload(req.body, []);
+    const details = tournamentService.getTournamentDetails(req.params.id);
+    const cfg = JSON.parse(details.tournament.config_json || '{}');
+    const currentIndex = typeof cfg.projectedIndex === 'number' ? cfg.projectedIndex : 0;
+    const nextIndex = currentIndex + 1;
+    db.updateTournamentProjectedIndex(req.params.id, nextIndex);
+    return { success: true, projectedIndex: nextIndex };
   });
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {
     try {
-      const details = tournamentService.getTournamentDetails(req.params.id);
-      return details;
+      const user = auth.user(req);
+      if (user?.role === 'ADMIN') {
+        return tournamentService.getTournamentDetails(req.params.id);
+      }
+      const raw = db.getTournamentById(req.params.id);
+      if (!raw) {
+        reply.status(404);
+        return { error: `Tournament "${req.params.id}" not found` };
+      }
+      let projectedIndex = 0;
+      try {
+        const cfg = JSON.parse(raw.config_json || '{}');
+        projectedIndex = typeof cfg.projectedIndex === 'number' ? cfg.projectedIndex : 0;
+      } catch {
+        projectedIndex = 0;
+      }
+      return tournamentService.getTournamentDetails(req.params.id, projectedIndex);
     } catch {
       reply.status(404);
       return { error: `Tournament "${req.params.id}" not found` };

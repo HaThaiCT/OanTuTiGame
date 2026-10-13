@@ -8,7 +8,8 @@ it('allows owned submissions until only the organizer locks the roster', async()
  const ctx=await createApp({botsDir:join(dir,'bots'),replaysDir:join(dir,'replays')});
  async function register(username:string){const r=await ctx.app.inject({method:'POST',url:'/api/auth/register',payload:{username,email:username+'@example.test',password:'roster-password-123'}});return String(r.headers['set-cookie']).split(';')[0];}
  try{
- const owner=await register('organizer'),player=await register('playerone');
+ const adminRes=await ctx.app.inject({method:'POST',url:'/api/auth/login',payload:{username:'admin',password:'admin123'}});
+ const owner=String(adminRes.headers['set-cookie']).split(';')[0],player=await register('playerone');
  const created=await ctx.app.inject({method:'POST',url:'/api/tournaments',headers:{cookie:owner},payload:{name:'Registration cup',mapId:'sample-donut',format:'SWISS',registrationOnly:true}});
  expect(created.statusCode).toBe(200);const id=created.json().tournament.id;
  const code='import sys,json\nfor l in sys.stdin:\n m=json.loads(l)\n print(json.dumps({"status":"READY"} if m["type"]=="INIT" else {"action":"PASS"}),flush=True)';

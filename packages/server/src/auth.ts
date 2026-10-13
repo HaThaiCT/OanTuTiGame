@@ -61,6 +61,11 @@ export class AuthService {
     if (!user || user.id === 'usr_system') throw new HttpError(401, 'Authentication required');
     return user;
   }
+  requireAdmin(request: FastifyRequest): UserRow {
+    const user = this.requireUser(request);
+    if (user.role !== 'ADMIN') throw new HttpError(403, 'Forbidden: Admin privilege required');
+    return user;
+  }
   private setCookie(request: FastifyRequest, reply: FastifyReply, token: string, maxAge: number): void {
     const secure = request.protocol === 'https' || process.env.NODE_ENV === 'production';
     reply.header('Set-Cookie', `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure ? '; Secure' : ''}`);

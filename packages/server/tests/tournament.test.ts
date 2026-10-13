@@ -13,8 +13,8 @@ describe('Tournament Engine & Automated Matchmaking Suite', () => {
   beforeAll(async () => {
     storageDir = mkdtempSync(join(tmpdir(), 'oantuti-tournament-'));
     context = await createApp({ botsDir: join(storageDir, 'bots'), replaysDir: join(storageDir, 'replays') });
-    const account = await context.app.inject({ method: 'POST', url: '/api/auth/register', payload: { username: 'tournament_test', email: 'tournament@example.com', password: 'tournament integration password' } });
-    expect(account.statusCode).toBe(201);
+    const account = await context.app.inject({ method: 'POST', url: '/api/auth/login', payload: { username: 'admin', password: 'admin123' } });
+    expect(account.statusCode).toBe(200);
     cookie = String(account.headers['set-cookie']).split(';')[0];
     userId = account.json().user.id;
     await context.app.listen({ port: 0, host: '127.0.0.1' });
@@ -94,6 +94,7 @@ describe('Tournament Engine & Automated Matchmaking Suite', () => {
     const detailsRes = await context.app.inject({
       method: 'GET',
       url: `/api/tournaments/${tournament.id}`,
+      headers: { cookie },
     });
 
     expect(detailsRes.statusCode).toBe(200);

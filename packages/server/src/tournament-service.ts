@@ -348,7 +348,7 @@ export class TournamentService extends EventEmitter {
     this.emit('tournament:complete', { tournamentId, standings: sortedStandings });
   }
 
-  getTournamentDetails(tournamentId: string): TournamentDetails {
+  getTournamentDetails(tournamentId: string, projectedIndex?: number): TournamentDetails {
     const tour = this.db.getTournamentById(tournamentId);
     if (!tour) throw new Error(`Tournament "${tournamentId}" not found`);
 
@@ -359,16 +359,18 @@ export class TournamentService extends EventEmitter {
       botMap.set(b.id, b.name);
     }
 
-    const matches = rawMatches.map((m) => ({
+    const allMatches = rawMatches.map((m) => ({
       ...m,
       white_bot_name: botMap.get(m.white_bot_id) ?? 'Unknown White',
       black_bot_name: botMap.get(m.black_bot_id) ?? 'Unknown Black',
     }));
 
+    const matches = projectedIndex !== undefined ? allMatches.slice(0, projectedIndex) : allMatches;
+
     // Calculate live or finalized standings
     let standings: StandingEntry[] = [];
     const cfg = JSON.parse(tour.config_json || '{}');
-    if (cfg.standings && Array.isArray(cfg.standings)) {
+    if (projectedIndex === undefined && cfg.standings && Array.isArray(cfg.standings)) {
       standings = cfg.standings;
     } else if (cfg.botIds && Array.isArray(cfg.botIds)) {
       const map = new Map<string, StandingEntry>();

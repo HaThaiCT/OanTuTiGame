@@ -103,10 +103,13 @@ describe('Accounts and owned immutable bot revisions', () => {
 
   it('protects match/tournament creation and validates untrusted runtime payloads without leaking paths', async () => {
     const context = await setup(); const { cookie } = await register(context, 'alice');
+    const adminRes = await context.app.inject({ method: 'POST', url: '/api/auth/login', payload: { username: 'admin', password: 'admin123' } });
+    const adminCookie = String(adminRes.headers['set-cookie']).split(';')[0];
     for (const url of ['/api/matches', '/api/matches/test', '/api/tournaments']) {
       expect((await context.app.inject({ method: 'POST', url, payload: {} })).statusCode).toBe(401);
+      const callerCookie = url === '/api/tournaments' ? adminCookie : cookie;
       for (const payload of [null, [], { maxTurns: '5' }, { mapId: '../../etc/passwd', sourceCode: 4 }]) {
-        const response = await context.app.inject({ method: 'POST', url, headers: { cookie, 'content-type': 'application/json' }, payload });
+        const response = await context.app.inject({ method: 'POST', url, headers: { cookie: callerCookie, 'content-type': 'application/json' }, payload });
         expect(response.statusCode).toBe(400); expect(response.body).not.toContain(process.cwd());
       }
     }
