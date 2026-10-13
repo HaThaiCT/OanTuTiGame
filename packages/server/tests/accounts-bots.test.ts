@@ -63,6 +63,8 @@ describe('Accounts and owned immutable bot revisions', () => {
       expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers, payload })).statusCode).toBe(403);
     }
     expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: 'http://localhost:80' }, payload })).statusCode).toBe(200);
+    expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: 'http://10.11.172.141:3000' }, payload })).statusCode).toBe(200);
+    expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: 'http://192.168.1.50:3000' }, payload })).statusCode).toBe(200);
     expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'content-type': 'text/plain' }, payload: JSON.stringify(payload) })).statusCode).toBe(400);
   });
 

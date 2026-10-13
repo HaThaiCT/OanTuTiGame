@@ -67,8 +67,8 @@ export class AuthService {
     return user;
   }
   private setCookie(request: FastifyRequest, reply: FastifyReply, token: string, maxAge: number): void {
-    const secure = request.protocol === 'https' || process.env.NODE_ENV === 'production';
-    reply.header('Set-Cookie', `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure ? '; Secure' : ''}`);
+    const secure = request.protocol === 'https' || request.headers['x-forwarded-proto'] === 'https';
+    reply.header('Set-Cookie', `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure ? '; Secure' : ''}`);
     reply.header('Cache-Control', 'no-store');
   }
   private issueSession(user: UserRow, request: FastifyRequest, reply: FastifyReply): void {
@@ -112,6 +112,21 @@ export class AuthService {
   }
 }
 
+export function isLanOrLocalOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    const host = url.hostname;
+    if (host === 'localhost' || host.endsWith('.local') || !host.includes('.')) return true;
+    if (/^127\.\d+\.\d+\.\d+$/.test(host)) return true;
+    if (/^10\.\d+\.\d+\.\d+$/.test(host)) return true;
+    if (/^192\.168\.\d+\.\d+$/.test(host)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(host)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export function protectMutations(app: FastifyInstance, allowedOrigins: readonly string[]): void {
   app.addHook('onRequest', async (request) => {
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return;
@@ -122,7 +137,7 @@ export function protectMutations(app: FastifyInstance, allowedOrigins: readonly 
       try { normalized = new URL(origin).origin; } catch { throw new HttpError(403, 'Cross-origin mutation denied'); }
       // Never use forwarded headers to decide which origin is trusted.
       const target = new URL(`${request.protocol}://${request.host}`).origin;
-      if (normalized !== target && !allowedOrigins.includes(normalized)) throw new HttpError(403, 'Cross-origin mutation denied');
+      if (normalized !== target && !allowedOrigins.includes(normalized) && !isLanOrLocalOrigin(normalized)) throw new HttpError(403, 'Cross-origin mutation denied');
     }
     const jsonRequired = request.method !== 'DELETE';
     if (jsonRequired && request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') throw new HttpError(400, 'JSON payload required');

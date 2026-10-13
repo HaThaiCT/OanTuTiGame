@@ -187,6 +187,26 @@ export class Database {
       UPDATE matches SET creator_id = (SELECT creator_id FROM tournaments WHERE id = matches.tournament_id)
         WHERE creator_id IS NULL AND tournament_id IS NOT NULL;
     `);
+    // Migrate legacy users table if role CHECK constraint lacks 'PLAYER'
+    const usersTableSql = this.db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get() as { sql: string } | undefined;
+    if (usersTableSql && !usersTableSql.sql.includes('PLAYER')) {
+      this.db.exec(`
+        PRAGMA foreign_keys = OFF;
+        CREATE TABLE users_new (
+          id TEXT PRIMARY KEY,
+          username TEXT NOT NULL UNIQUE,
+          email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'PLAYER' CHECK (role IN ('ADMIN', 'PLAYER', 'USER')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO users_new SELECT id, username, email, password_hash, CASE WHEN role = 'USER' THEN 'PLAYER' ELSE role END, created_at, updated_at FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_new RENAME TO users;
+        PRAGMA foreign_keys = ON;
+      `);
+    }
 
     // Ensure system user exists
     const systemUser = this.getUserByUsername('system');
