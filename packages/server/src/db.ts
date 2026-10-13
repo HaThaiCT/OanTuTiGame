@@ -13,7 +13,7 @@ export interface UserRow {
   readonly username: string;
   readonly email: string;
   readonly password_hash: string;
-  readonly role: 'USER' | 'ADMIN' | 'MODERATOR';
+  readonly role: 'ADMIN' | 'PLAYER' | 'USER';
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -96,7 +96,7 @@ export class Database {
         username TEXT NOT NULL UNIQUE,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'MODERATOR')),
+        role TEXT NOT NULL DEFAULT 'PLAYER' CHECK (role IN ('ADMIN', 'PLAYER', 'USER')),
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
@@ -199,6 +199,22 @@ export class Database {
         role: 'ADMIN',
       });
     }
+
+    // Ensure default admin user exists
+    const defaultAdmin = this.getUserByUsername('admin');
+    if (!defaultAdmin) {
+      const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+      const salt = crypto.randomBytes(16).toString('hex');
+      const key = crypto.scryptSync(adminPass, salt, 64) as Buffer;
+      const passwordHash = `scrypt$${salt}$${key.toString('hex')}`;
+      this.createUser({
+        id: 'usr_admin_default',
+        username: process.env.ADMIN_USERNAME || 'admin',
+        email: 'admin@oantuti.arena',
+        password_hash: passwordHash,
+        role: 'ADMIN',
+      });
+    }
   }
 
   private addColumn(table: string, column: string, definition: string): void {
@@ -236,10 +252,10 @@ export class Database {
     username: string;
     email: string;
     password_hash: string;
-    role?: 'USER' | 'ADMIN' | 'MODERATOR';
+    role?: 'ADMIN' | 'PLAYER' | 'USER';
   }): UserRow {
     const id = user.id ?? `usr_${crypto.randomUUID().slice(0, 8)}`;
-    const role = user.role ?? 'USER';
+    const role = user.role ?? 'PLAYER';
     const stmt = this.db.prepare(`
       INSERT INTO users (id, username, email, password_hash, role)
       VALUES (?, ?, ?, ?, ?)
@@ -527,6 +543,18 @@ export class Database {
     const stmt = this.db.prepare('UPDATE tournaments SET config_json = ? WHERE id = ?');
     stmt.run(configJson, id);
   }
+  updateTournamentProjectedIndex(id: string, index: number): void {
+    const tour = this.getTournamentById(id);
+    if (!tour) return;
+    try {
+      const config = JSON.parse(tour.config_json);
+      config.projectedIndex = index;
+      this.updateTournamentConfig(id, JSON.stringify(config));
+    } catch {
+      // ignore malformed config
+    }
+  }
+
 
   getMatchesByTournamentId(tournamentId: string): MatchRow[] {
     const stmt = this.db.prepare('SELECT * FROM matches WHERE tournament_id = ? ORDER BY started_at ASC');

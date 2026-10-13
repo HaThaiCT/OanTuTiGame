@@ -31,7 +31,7 @@ describe('Accounts and owned immutable bot revisions', () => {
     const dir = directory();
     const context = await setup(dir);
     const { cookie, user } = await register(context, 'alice');
-    expect(user.role).toBe('USER');
+    expect(user.role).toBe('PLAYER');
     const stored = context.db.getUserById(user.id)!;
     expect(stored.password_hash).toMatch(/^scrypt\$/);
     expect(stored.password_hash).not.toContain('correct horse');
