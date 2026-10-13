@@ -33,12 +33,27 @@ export const AccountPanel: React.FC = () => {
   };
   return <div style={{position: 'relative', fontSize: 12}}>
     <button ref={trigger} disabled={loading || busy} aria-expanded={open} aria-controls="account-panel" onClick={() => setOpen(value => !value)} style={controlStyle}>
-      {loading ? 'Loading account…' : user ? user.username : 'Sign in / Register'}
+      {loading ? 'Loading account…' : user ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span>{user.username}</span>
+          <span style={{
+            fontSize: 10,
+            padding: '1px 6px',
+            borderRadius: 4,
+            fontWeight: 700,
+            background: user.role === 'ADMIN' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+            color: user.role === 'ADMIN' ? '#facc15' : '#38bdf8',
+            border: `1px solid ${user.role === 'ADMIN' ? '#eab308' : '#0284c7'}`
+          }}>
+            {user.role === 'ADMIN' ? '👑 Admin' : '🎮 Player'}
+          </span>
+        </span>
+      ) : 'Sign in / Register'}
     </button>
     {sessionError && <span role="alert" style={{color: '#fca5a5', display: 'block', maxWidth: 220}}>{sessionError}</span>}
     {open && <section ref={panel} id="account-panel" aria-label="Account" onKeyDown={event => {if (event.key === 'Escape' && !busy) close();}} style={{position: 'absolute', right: 0, top: '100%', width: 280, zIndex: 100, padding: 18, background: '#141d2d', color: '#f8fafc', border: '1px solid #334155', borderRadius: 12, boxShadow: '0 12px 30px #0008'}}>
       <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 12}}><strong>{user ? 'Your account' : mode === 'login' ? 'Sign in' : 'Register'}</strong><button type="button" disabled={busy} onClick={close} aria-label="Close account panel" style={controlStyle}>×</button></div>
-      {user ? <><p>{user.username}</p><p>{user.email}</p><button onClick={signOut} disabled={busy} style={controlStyle}>Log out</button></> : <form onSubmit={submit} style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+      {user ? <><p><strong>{user.username}</strong> ({user.role === 'ADMIN' ? 'Admin' : 'Player'})</p><p>{user.email}</p><button onClick={signOut} disabled={busy} style={controlStyle}>Log out</button></> : <form onSubmit={submit} style={{display: 'flex', flexDirection: 'column', gap: 12}}>
         <label>Username<input name="username" required autoComplete="username" style={{...controlStyle, width: '100%', boxSizing: 'border-box'}} /></label>
         {mode === 'register' && <label>Email<input name="email" type="email" required autoComplete="email" style={{...controlStyle, width: '100%', boxSizing: 'border-box'}} /></label>}
         <label>Password<input name="password" type="password" required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} style={{...controlStyle, width: '100%', boxSizing: 'border-box'}} /></label>

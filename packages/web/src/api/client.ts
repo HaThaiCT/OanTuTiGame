@@ -176,6 +176,7 @@ export async function createTournament(params: {
 
 export const submitTournamentEntry = (id:string,botId:string) => request<TournamentDetailsResponse>(`/api/tournaments/${id}/entries`,'POST',{botId});
 export const lockTournamentRegistration = (id:string) => request<TournamentDetailsResponse>(`/api/tournaments/${id}/lock`,'POST',{});
+export const projectTournamentNextMatch = (id:string) => request<{ success: boolean; projectedIndex: number }>(`/api/tournaments/${id}/project-next`,'POST',{});
 
 export interface LiveMatchCallbacks {
   onInit: (init: MatchInitFrameMessage, replay: LoadedReplay) => void;

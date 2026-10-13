@@ -5,7 +5,7 @@ import {
   fetchTournamentDetails,
   TournamentSummary,
   TournamentDetailsResponse,
-  fetchOwnedBots, BotSummary, submitTournamentEntry, lockTournamentRegistration,
+  fetchOwnedBots, BotSummary, submitTournamentEntry, lockTournamentRegistration, projectTournamentNextMatch,
 } from '../api/client.js';
 import { ChampionOverlay } from './ChampionOverlay.js';
 import { useSession } from '../session.js';
@@ -159,7 +159,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
         {/* Action button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {activeTab === 'TOURNAMENTS' && (
+          {activeTab === 'TOURNAMENTS' && user?.role === 'ADMIN' && (
             <button
               onClick={onOpenCreateTournament}
               style={{
@@ -383,10 +383,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                             <option value="">Chọn bot của bạn</option>{ownedBots.map(bot=><option key={bot.id} value={bot.id}>{bot.name} · v{bot.version}</option>)}
                           </select>
                           <button disabled={!user||!entryBotId||projecting} onClick={async()=>{setProjecting(true);try{setTourDetails(await submitTournamentEntry(t.id,entryBotId));}catch(error){setProjectionError(error instanceof Error?error.message:'Submission failed');}finally{setProjecting(false);}}}>Nộp bot tham gia</button>
-                          {user?.id===tourDetails.tournament.creator_id && <button disabled={projecting} onClick={async()=>{setProjecting(true);try{setTourDetails(await lockTournamentRegistration(t.id));fetchData();}catch(error){setProjectionError(error instanceof Error?error.message:'Cannot lock roster');}finally{setProjecting(false);}}}>Chốt danh sách & ghép cặp</button>}
+                          {user?.role === 'ADMIN' && <button disabled={projecting} onClick={async()=>{setProjecting(true);try{setTourDetails(await lockTournamentRegistration(t.id));fetchData();}catch(error){setProjectionError(error instanceof Error?error.message:'Cannot lock roster');}finally{setProjecting(false);}}}>Chốt danh sách & ghép cặp</button>}
                         </section>
                       )}
                       {/* Operator Broadcast Control Deck */}
+                      {user?.role === 'ADMIN' && (
                       <div style={{
                         backgroundColor: '#0b111e',
                         border: '1px solid #eab308',
@@ -427,6 +428,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                               setProjectionError(null);
                               try {
                                 await onPlayMatch(tourDetails.matches[projectedMatchIndex].id);
+                                await projectTournamentNextMatch(tournamentId);
                                 setProjectedByTournament(previous => ({...previous, [tournamentId]: projectedMatchIndex + 1}));
                               } catch (error) {
                                 setProjectionError(error instanceof Error ? error.message : 'Unable to project match');
@@ -477,6 +479,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                           )}
                         </div>
                       </div>
+                      )}
 
                       {/* Standings Table */}
                       <div>
