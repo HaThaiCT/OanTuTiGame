@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "status": "PARTIAL_METADATA",
+  "generatedAt": "2026-10-14T17:24:54.380Z",
+  "target": {
+    "os": "Ubuntu Server 24.04 LTS",
+    "architecture": "amd64",
+    "kernelLine": "6.8",
+    "postgresMajor": 16,
+    "nodeMajor": 24
+  },
+  "clockNote": "Host and research clocks observed Oct14 UTC; session calendar differs; no time-authority certification.",
+  "components": [
+    {
+      "name": "ubuntu-kernel",
+      "version": "6.8.0-147.147",
+      "sourceUrl": "https://packages.ubuntu.com/noble-updates/linux-image-6.8.0-147-generic",
+      "upstreamChecksumUrl": "https://packages.ubuntu.com/noble-updates/amd64/linux-image-6.8.0-147-generic/download",
+      "sha256": null,
+      "supportSourceUrl": "https://ubuntu.com/about/release-cycle",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Official noble-updates main signed linux-image-6.8.0-147-generic package is 6.8.0-147.147, amd64 explicitly listed. GA 6.8 metapackage https://packages.ubuntu.com/noble-updates/kernel/linux-image-generic-6.8 reports same version and depends on this signed image. Runtime uname would be 6.8.0-147-generic, not Debian package revision. Canonical lifecycle explicitly lists Ubuntu 24.04 amd64 and standard Main security maintenance through May 2029. Image metadata size 14845068 bytes is not full toolchain/storage footprint; modules, headers and other dependency artifacts remain separate. No kernel installation, host certification, or Node24 application integration verified. UTC timestamp obtained from live timeapi.io response (https://timeapi.io/api/time/current/zone?timeZone=UTC&metadata=s01-os-final); it reports Oct14 UTC despite session Oct15 civil-date context, so main agent should reconcile against its local UTC clock rather than silently rewrite evidence."
+    },
+    {
+      "name": "postgresql",
+      "version": "16.15-0ubuntu0.24.04.1",
+      "sourceUrl": "https://packages.ubuntu.com/noble-updates/postgresql-16",
+      "upstreamChecksumUrl": "https://packages.ubuntu.com/noble-updates/amd64/postgresql-16/download",
+      "sha256": null,
+      "supportSourceUrl": "https://ubuntu.com/about/release-cycle",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Verified supplied source-package observation against binary package: noble security https://packages.ubuntu.com/noble/postgresql-16 explicitly lists amd64 at 16.15-0ubuntu0.24.04.1, and noble-updates package and amd64 metadata download page agree. Main package receives Ubuntu24.04 standard security maintenance through May2029 per read Canonical lifecycle. libc6>=2.38 dependency listed; metadata package size 15610426 bytes. Published SHA256 is visible in checksum page but sha256 remains null because artifact was not downloaded/hashed. Node24 driver/protocol compatibility depends on the selected client driver and is not certified here. verifiedAt uses observed external UTC clock; see ubuntu-kernel note."
+    },
+    {
+      "name": "python",
+      "version": "3.12.3-1ubuntu0.17",
+      "sourceUrl": "https://packages.ubuntu.com/noble-updates/python3.12",
+      "upstreamChecksumUrl": "https://packages.ubuntu.com/noble-updates/amd64/python3.12/download",
+      "sha256": null,
+      "supportSourceUrl": "https://ubuntu.com/about/release-cycle",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Pin represents actual Python3.12 interpreter package, not python3-defaults selector. Noble-updates main explicitly lists amd64 and 3.12.3-1ubuntu0.17; noble https://packages.ubuntu.com/noble/python3.12 independently labels same revision security. python3 selector https://packages.ubuntu.com/noble-updates/python3 is 3.12.3-0ubuntu2.1 and depends on python3.12; do not confuse its revision with interpreter patch. Canonical Main security-maintenance policy applies. Exact interpreter-package metadata size650732 bytes excludes minimal interpreter/stdlib/dependencies. Node24 build-helper integration and sandbox workload execution not tested. verifiedAt uses observed external UTC clock; see ubuntu-kernel note."
+    },
+    {
+      "name": "g++",
+      "version": "13.3.0-6ubuntu2~24.04.1",
+      "sourceUrl": "https://packages.ubuntu.com/noble/g++-13",
+      "upstreamChecksumUrl": "https://packages.ubuntu.com/noble/amd64/g++-13/download",
+      "sha256": null,
+      "supportSourceUrl": "https://ubuntu.com/about/release-cycle",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Pin is default GCC13 C++ implementation g++-13, amd64 row explicitly 13.3.0-6ubuntu2~24.04.1 security/main. https://packages.ubuntu.com/noble/g++ selector remains4:13.2.0-7ubuntu1 and depends on g++-13; selector revision does not mean compiler executable13.2.0. Checksum page explicitly distributes security package through security.ubuntu.com. Native compiler g++-13-x86-64-linux-gnu dependency is same revision. Canonical Main policy provides distribution-maintained support; not claiming this is newest upstream GCC. Protobuf foundational matrix supports GCC>=11.2 on UbuntuLTS>=22.04. Node24 native-addon build compatibility requires actual selected modules/headers and was not tested. verifiedAt uses observed external UTC clock; see ubuntu-kernel note."
+    },
+    {
+      "name": "runsc",
+      "version": "20261005.0",
+      "sourceUrl": "https://github.com/google/gvisor/releases/tag/release-20261005.0",
+      "upstreamChecksumUrl": "https://github.com/google/gvisor/releases/download/release-20261005.0/SHA256SUMS",
+      "sha256": null,
+      "supportSourceUrl": "https://gvisor.dev/docs/user_guide/install/",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Official latest release API https://api.github.com/repos/google/gvisor/releases/latest identifies release-20261005.0, draft=false prerelease=false, published2026-10-08, plus gvisor-x86_64.tar.zstd (129604888 metadata bytes), gvisor-x86_64.tar.bz2 and SHA256SUMS. Read official installation states x86_64/ARM64 and Linux5.6+; target amd64/kernel6.8 satisfies these documented host prerequisites. Production recommendation is newest release, not nightly. IMPORTANT current multi-file packaging requires companion gvisor-bin sidecars beside runsc; runsc-only installation is obsolete and auto-download functionality scheduled to be dropped endSeptember2026. Ubuntu24.04-specific certification and guest Node24 syscall completeness are not established by host prerequisite support; actual profiles/workloads remain pending. verifiedAt uses observed external UTC clock; see ubuntu-kernel note."
+    },
+    {
+      "name": "runc",
+      "version": "1.5.2",
+      "sourceUrl": "https://github.com/opencontainers/runc/releases/tag/v1.5.2",
+      "upstreamChecksumUrl": "https://github.com/opencontainers/runc/releases/download/v1.5.2/runc.sha256sum",
+      "sha256": null,
+      "supportSourceUrl": "https://github.com/opencontainers/runc/blob/main/docs/cgroup-v2.md",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Official latest release API https://api.github.com/repos/opencontainers/runc/releases/latest confirms v1.5.2 draft=false prerelease=false immutable=true, published2026-09-25; newer1.6.0-rc.1 excluded. runc.amd64 release metadata size10866512 bytes and published API digest observed; release binaries statically link libseccomp and libpathrs. Official README says Linux-only and provides Ubuntu/Debian prerequisites. Read cgroup-v2 guide explicitly fully supported since1.0.0-rc93, Ubuntu uses v2 default since21.10, kernel minimum4.15/recommended>=5.2, systemd recommended>=244. Target GA6.8 satisfies documented kernel prerequisites, not proof of actual host delegation/configuration. Guide is main-branch documentation rather than release-specific Ubuntu24.04 certification. Node24 sandbox workload and runc/runsc integration remain unexercised. verifiedAt uses observed external UTC clock; see ubuntu-kernel note."
+    },
+    {
+      "name": "protoc",
+      "version": "36.2",
+      "sourceUrl": "https://github.com/protocolbuffers/protobuf/releases/tag/v36.2",
+      "upstreamChecksumUrl": "https://api.github.com/repos/protocolbuffers/protobuf/releases/390922307/assets",
+      "sha256": null,
+      "supportSourceUrl": "https://protobuf.dev/support/version-support/",
+      "verifiedAt": "2026-10-14T17:22:44.7473367Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Official latest API https://api.github.com/repos/protocolbuffers/protobuf/releases/latest confirms v36.2 draft=false prerelease=false published2026-09-17 and protoc-36.2-linux-x86_64.zip, metadata size3681545 bytes and SHA256 digest. upstreamChecksumUrl points to official release asset JSON digests, not an independently fetched checksum manifest. Read version-support page lists protoc36.x active; official installation https://protobuf.dev/installation/ recommends Linuxx86_64 precompiled asset. Referenced/read foundational matrix https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md explicitly UbuntuLTS>=22.04, GCC>=11.2, glibc>=2.34, so Ubuntu24.04/defaultGCC13 target supported at policy level. Artifact ABI/runtime loading not exercised. Compiler itself does not depend on Node24; generated JS/TS plugin and runtime packages are separate and their Node24 compatibility not established here. Protobuf C++ runtime/gencode requires exact version match. verifiedAt uses observed external UTC clock; see ubuntu-kernel note."
+    },
+    {
+      "name": "node",
+      "version": "24.22.0",
+      "sourceUrl": "https://nodejs.org/en/download/archive/v24.22.0",
+      "upstreamChecksumUrl": "https://nodejs.org/dist/v24.22.0/SHASUMS256.txt.asc",
+      "sha256": null,
+      "supportSourceUrl": "https://nodejs.org/en/about/previous-releases",
+      "verifiedAt": "2026-10-14T17:16:20.471Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Official table labels v24 LTS and archive lists Linux x64. Installed CLI is 24.21.0, not selected release. No binary/signature/target runtime verified.",
+      "upstreamArtifactMetadata": {
+        "file": "node-v24.22.0-linux-x64.tar.xz",
+        "publishedSha256": "cc2f601cee82d9a5a233302fe307abc600727035fd7d2c3a3571755989e95008",
+        "signatureVerified": false,
+        "artifactVerified": false
+      }
+    },
+    {
+      "name": "rust",
+      "version": "1.99.0",
+      "sourceUrl": "https://blog.rust-lang.org/2026/10/01/Rust-1.99.0/",
+      "upstreamChecksumUrl": "https://static.rust-lang.org/dist/channel-rust-stable.toml",
+      "sha256": null,
+      "supportSourceUrl": "https://doc.rust-lang.org/rustc/platform-support.html",
+      "verifiedAt": "2026-10-14T17:16:20.471Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Stable1.99.0 and x86_64 GNU Tier1 hosttools observed; manifest hashes read, not artifact/signature verified. Security/compatibility runtime review pending.",
+      "upstreamArtifactMetadata": {
+        "manifestDate": "2026-10-01",
+        "target": "x86_64-unknown-linux-gnu",
+        "block": "[pkg.rustc.target.x86_64-unknown-linux-gnu]\navailable = true\nurl = \"https://static.rust-lang.org/dist/2026-10-01/rustc-1.99.0-x86_64-unknown-linux-gnu.tar.gz\"\nhash = \"238e72b8617f79bc96f27a5bfeb1a208b5755fe1a48f8bc190fe403ef6d54ab8\"\nxz_url = \"https://static.rust-lang.org/dist/2026-10-01/rustc-1.99.0-x86_64-unknown-linux-gnu.tar.xz\"\nxz_hash = \"77171ba2a0345fdf2abc4fedda55d6de078dae7a68527c28be8c77dcc9604bd5\"\n"
+      }
+    },
+    {
+      "name": "cargo",
+      "version": "0.100.0 (5f94df478 2026-08-27)",
+      "sourceUrl": "https://static.rust-lang.org/dist/channel-rust-stable.toml",
+      "upstreamChecksumUrl": "https://static.rust-lang.org/dist/channel-rust-stable.toml",
+      "sha256": null,
+      "supportSourceUrl": "https://doc.rust-lang.org/rustc/platform-support.html",
+      "verifiedAt": "2026-10-14T17:16:20.471Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Exact manifest Cargo package version; distribution filename uses Rust1.99.0. Binary has not been downloaded or verified.",
+      "upstreamArtifactMetadata": {
+        "manifestDate": "2026-10-01",
+        "target": "x86_64-unknown-linux-gnu",
+        "block": "[pkg.cargo.target.x86_64-unknown-linux-gnu]\navailable = true\nurl = \"https://static.rust-lang.org/dist/2026-10-01/cargo-1.99.0-x86_64-unknown-linux-gnu.tar.gz\"\nhash = \"c2b8ba1f59e7a230aa5522684f3f7aa620b98e5ad37683a5e5cf9b41f534fa1e\"\nxz_url = \"https://static.rust-lang.org/dist/2026-10-01/cargo-1.99.0-x86_64-unknown-linux-gnu.tar.xz\"\nxz_hash = \"d7674918d28093097614cd9728b6ca60db9ea3038f640f0bd1e9a4188c7568ce\"\n"
+      }
+    },
+    {
+      "name": "next",
+      "version": "16.4.0",
+      "sourceUrl": "https://registry.npmjs.org/next/16.4.0",
+      "upstreamChecksumUrl": "https://registry.npmjs.org/next/16.4.0",
+      "sha256": null,
+      "supportSourceUrl": "https://nextjs.org/docs/app/getting-started/installation",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Registry /next/latest returned non-prerelease 16.4.0. engines.node >=20.9.0 includes Node24. React/react-dom peers ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0 admit React19.3.1; /react-dom/latest returned 19.3.1 with react peer ^19.3.1. Official installation documentation explicitly supports Linux. Read https://registry.npmjs.org/@next/swc-linux-x64-gnu/16.4.0: os linux, cpu x64, libc glibc, engines.node >=10; platform metadata corresponds to Ubuntu24.04amd64, not an executed distro certification. Optional sharp/native transitive artifacts still require locking and verification. Registry dist.integrity supplies SHA512 and dist.shasum SHA1, neither is a verified SHA256. verifiedAt is the actual UTC clock response from https://timeapi.io/api/time/current/zone?timeZone=UTC&metadata=s01-ui-20261015; that external UTC date differs from the session-local calendar reminder, so it is retained rather than inventing a time. No artifacts downloaded or runtime tests executed."
+    },
+    {
+      "name": "react",
+      "version": "19.3.1",
+      "sourceUrl": "https://registry.npmjs.org/react/19.3.1",
+      "upstreamChecksumUrl": "https://registry.npmjs.org/react/19.3.1",
+      "sha256": null,
+      "supportSourceUrl": "https://registry.npmjs.org/next/latest",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Registry /react/latest returned non-prerelease 19.3.1, engines.node >=0.10.0 includes Node24; portable JavaScript package has no native Ubuntu/amd64 binary requirement. Next16.4.0 declares react and react-dom ^19.0.0, admitting 19.3.1. Companion metadata read at https://registry.npmjs.org/react-dom/latest returned 19.3.1 with react peer ^19.3.1, satisfying the pair. Both publication records report _nodeVersion24.21.0, which is publication information, not runtime certification. Include react-dom19.3.1 in the later actual dependency lock even though it is outside this seven-name fragment. SHA512 integrity and SHA1 shasum are registry metadata, not a verified SHA256. UTC timestamp provenance and session-calendar discrepancy are described in next.notes."
+    },
+    {
+      "name": "fastify",
+      "version": "5.12.7",
+      "sourceUrl": "https://registry.npmjs.org/fastify/5.12.7",
+      "upstreamChecksumUrl": "https://registry.npmjs.org/fastify/5.12.7",
+      "sha256": null,
+      "supportSourceUrl": "https://raw.githubusercontent.com/fastify/fastify/v5.12.7/.github/workflows/ci.yml",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Registry /fastify/latest returned non-prerelease5.12.7. This package metadata does not declare engines; no engine assertion is fabricated. Version-pinned upstream CI explicitly declares node-version [20,22,24,26] on macos-latest, ubuntu-latest, windows-latest. Read https://fastify.dev/docs/latest/Reference/LTS/: policy tests supported NodeLTS lines and supports only latest patch of each line; its older schedule still lists only20/22 for Fastify5, so use the release-pinned Node24 CI matrix rather than silently claiming that stale table lists24. Portable CommonJS framework has no React peer dependency or native CPU selector. Linux Node24 compatibility is supported by the matrix; ubuntu-latest alone is not proof of an Ubuntu24.04-specific certified run. SHA512 integrity/SHA1 shasum available in registry, SHA256 remains unverified. UTC timestamp provenance and calendar discrepancy are described in next.notes."
+    },
+    {
+      "name": "monaco-editor",
+      "version": null,
+      "sourceUrl": "https://registry.npmjs.org/monaco-editor/latest",
+      "upstreamChecksumUrl": "https://registry.npmjs.org/monaco-editor/0.57.0",
+      "sha256": null,
+      "supportSourceUrl": "https://github.com/microsoft/monaco-editor",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "BLOCKED_METADATA",
+      "notes": "Candidate lateststable0.57.0 only, not selected. Registry has no engines or React/Next peer declaration; _nodeVersion18.5.0 is publisher environment, not Node24 support. README confirms browser editor, ESM compatible with e.g.webpack, web workers need HTTP(S), AMD deprecated, and mobile browsers unsupported. This does not establish compatibility of the exact stable package with Next16.4.0 default Turbopack, React19.3.1 and Node24 build tooling on Ubuntu24.04amd64. Browser-only placement/worker bundling integration must be resolved from version-specific upstream evidence before pinning; no wrapper package is silently added. Candidate metadata supplies SHA512/SHA1 but no artifact was fetched. UTC timestamp provenance and calendar discrepancy are described in next.notes."
+    },
+    {
+      "name": "shadcn-ui",
+      "version": null,
+      "sourceUrl": "https://api.github.com/repos/shadcn-ui/ui/commits/shadcn%404.21.5",
+      "upstreamChecksumUrl": null,
+      "sha256": null,
+      "supportSourceUrl": "https://ui.shadcn.com/docs/react-19",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "BLOCKED_METADATA",
+      "notes": "Actual upstream candidate commit0023018feb6e18c2f4aa0af2062f1c3107d90bfa (full Git commit identity, not SHA256). https://api.github.com/repos/shadcn-ui/ui/releases/latest returned tag shadcn@4.21.5, draft=false, prerelease=false; commits API resolves that release tag to the candidate commit. Do not use CLI4.21.5 as copied-source version. Read pinned apps/v4/package.json at https://raw.githubusercontent.com/shadcn-ui/ui/0023018feb6e18c2f4aa0af2062f1c3107d90bfa/apps/v4/package.json: upstream demo pins Next16.3.8 and React/react-dom19.2.3, Tailwind^4.3.0. Docs explicitly announce React19/Tailwind4 full support, but warn the rest of the page may be outdated. https://registry.npmjs.org/shadcn/latest CLI engines.node>=20.18.1 admits Node24, which does not prove every copied component's peer compatibility. Exact copied component/style/primitive selection and its peer closure for Next16.4.0/React19.3.1 remain unresolved, therefore version null rather than falsely approving an entire source catalog. Once supported, version must be the full upstream commit, not an npm package fiction. Latest CLI release tag is a reproducible candidate source snapshot, not a claim that copied components have independent semantic releases. No upstream copied-source checksum manifest observed. UTC timestamp provenance and calendar discrepancy are described in next.notes."
+    },
+    {
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "sourceUrl": "https://registry.npmjs.org/tailwindcss/4.3.3",
+      "upstreamChecksumUrl": "https://registry.npmjs.org/tailwindcss/4.3.3",
+      "sha256": null,
+      "supportSourceUrl": "https://tailwindcss.com/docs/installation/framework-guides/nextjs",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "PENDING_ARTIFACT_VERIFICATION",
+      "notes": "Registry /tailwindcss/latest returned non-prerelease4.3.3. Official Next integration requires tailwindcss,@tailwindcss/postcss,postcss, not the old Tailwind3 integration. Read https://registry.npmjs.org/@tailwindcss/postcss/latest:4.3.3 depends on tailwindcss4.3.3, @tailwindcss/node4.3.3, @tailwindcss/oxide4.3.3 and postcss^8.5.16; Next16.4.0 postcss8.5.23 meets that range. Read https://registry.npmjs.org/@tailwindcss/oxide/latest: node>=20 and optional linux-x64-gnu4.3.3. Read https://registry.npmjs.org/@tailwindcss/oxide-linux-x64-gnu/4.3.3: linux,x64,glibc,node>=20, admitting Node24 and matching Ubuntu24.04amd64 platform metadata. Core package lacks its own engines/React peers; native build-chain evidence comes from oxide, not an inferred core declaration. Does not certify actual native loading or complete transitive closure; future lock/artifact verification required. Registry provides SHA512/SHA1, not verified SHA256. UTC timestamp provenance and calendar discrepancy are described in next.notes."
+    },
+    {
+      "name": "brackets-viewer",
+      "version": null,
+      "sourceUrl": "https://registry.npmjs.org/brackets-viewer/latest",
+      "upstreamChecksumUrl": "https://registry.npmjs.org/brackets-viewer/1.9.1",
+      "sha256": null,
+      "supportSourceUrl": "https://github.com/Drarig29/brackets-viewer.js",
+      "verifiedAt": "2026-10-14T17:16:37.0966457Z",
+      "status": "BLOCKED_METADATA",
+      "notes": "Candidate lateststable1.9.1 only, not selected. Upstream README states vanillaJS usable in any framework and demonstrates browser window.bracketsViewer.render plus CSS; no explicit Node24/Next16/React19 support or engines/peer ranges observed. Registry volta.node14.21.3 is upstream development pin; _nodeVersion24.15.0 is publishing environment and cannot establish supported runtime/build integration. prepare script invokes npm run build, and React/Next SSR/browser boundary remains unverified. License metadata discrepancy: registry1.9.1 says ISC while repository/GitHub license says MIT; preserve discrepancy and inspect actual selected artifact LICENSE during later verification, rather than automatically inheriting memory's MIT claim. Registry supplies SHA512/SHA1 metadata; no tarball fetched or checksum verified. UTC timestamp provenance and calendar discrepancy are described in next.notes."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "baseHead": "cafe674a44de8076dda9c2d1dede40609a76fa63",
+  "generatedAt": "2026-10-14T17:12:39.188Z",
+  "initialHashes": {
+    "README.md": "b281252fbb5890ba18dad0203b54a91126afea9cf4cb3b3fd66b64052424c254",
+    "docs/specs/README.md": "fc1d39b1bf804de281db985f76d58d8b8172b4db7dbf720783baf55f52b6561e",
+    "docs/specs/v2/00-CURRENT-STATE-AUDIT.md": "c6e3cf0b94acfcd69f2e927caa2947b442158d78e6f6db8cf418c6e4b7963a71",
+    "docs/specs/v2/01-PRODUCT-REQUIREMENTS.md": "a99d43db773e81e8e3bd7197f8042cb70d173205936f30bc399aa52f01bce3df",
+    "docs/specs/v2/02-GAMEPLAY-TOURNAMENT-RULES.md": "c71fada3a7f47d1e46f33eb87e28321adbebf2af6c43793200380724adf74b23",
+    "docs/specs/v2/03-ARCHITECTURE-DATA-CONTRACTS.md": "2d6428645422732b2f99999341726b90d20b0d0eaed3bd231ad33b51b1e0e67a",
+    "docs/specs/v2/04-UI-UX-DESIGN-SYSTEM.md": "3a7cca6cae2229166c18a15778e4923eac4e81021b5b5bc0f41869b60ed33031",
+    "docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md": "8ec0e95135a5017921e8211218561901f4fe3705d511d4ef102bbdcce014c4c3",
+    "docs/specs/v2/06-DESIGN-REVIEW-RECORD.md": "e018a0bd14d93d09a6ad8559731be7ab5af60da375db1fa17d8d367dfa2e5c72",
+    "docs/specs/v2/README.md": "7faa1a36aecc39e6c84bd165c8f1224ec494351577d2e0af6181c1d1ecdc5807",
+    "docs/superpowers/plans/2026-10-13-production-upgrade.md": "e0e0335fafc0d4dc114a886461564ca590a127f806ca5be0c8e0236369f3d570",
+    "docs/superpowers/plans/2026-10-14-sequential-implementation-sessions.md": "90aad4a7a1b3d6df487bf29279401e792f8221415a0551ad7626978d57a7b267",
+    "docs/superpowers/plans/2026-10-14-preimplementation-preparation.md": "da6e04d7d184c9ef5d55a60248cf945f024a693d95202ae3bc0683b1be180ea3",
+    "docs/superpowers/specs/2026-10-13-production-upgrade-design.md": "c4dd8ec9fe9bb41e298fcbf85014a4c53c68d5e90387b695ea1dbcb5c1c0a5ea",
+    "docs/research/2026-10-14-esports-ui-template-options.md": "2cf32d6b01ff12d88482083a3f9bba8f03c2772a352fd4b3f166676dfbdd7dbe"
+  },
+  "finalHashes": {
+    "README.md": "b281252fbb5890ba18dad0203b54a91126afea9cf4cb3b3fd66b64052424c254",
+    "docs/specs/README.md": "fc1d39b1bf804de281db985f76d58d8b8172b4db7dbf720783baf55f52b6561e",
+    "docs/specs/v2/00-CURRENT-STATE-AUDIT.md": "c6e3cf0b94acfcd69f2e927caa2947b442158d78e6f6db8cf418c6e4b7963a71",
+    "docs/specs/v2/01-PRODUCT-REQUIREMENTS.md": "a99d43db773e81e8e3bd7197f8042cb70d173205936f30bc399aa52f01bce3df",
+    "docs/specs/v2/02-GAMEPLAY-TOURNAMENT-RULES.md": "c71fada3a7f47d1e46f33eb87e28321adbebf2af6c43793200380724adf74b23",
+    "docs/specs/v2/03-ARCHITECTURE-DATA-CONTRACTS.md": "2d6428645422732b2f99999341726b90d20b0d0eaed3bd231ad33b51b1e0e67a",
+    "docs/specs/v2/04-UI-UX-DESIGN-SYSTEM.md": "3a7cca6cae2229166c18a15778e4923eac4e81021b5b5bc0f41869b60ed33031",
+    "docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md": "8ec0e95135a5017921e8211218561901f4fe3705d511d4ef102bbdcce014c4c3",
+    "docs/specs/v2/06-DESIGN-REVIEW-RECORD.md": "e018a0bd14d93d09a6ad8559731be7ab5af60da375db1fa17d8d367dfa2e5c72",
+    "docs/specs/v2/README.md": "7faa1a36aecc39e6c84bd165c8f1224ec494351577d2e0af6181c1d1ecdc5807",
+    "docs/superpowers/plans/2026-10-13-production-upgrade.md": "e0e0335fafc0d4dc114a886461564ca590a127f806ca5be0c8e0236369f3d570",
+    "docs/superpowers/plans/2026-10-14-sequential-implementation-sessions.md": "d7ef9d570fd132f5a99eb2901e7e1b5a4ea5525c8c9f531f50d52132a4465bfb",
+    "docs/superpowers/plans/2026-10-14-preimplementation-preparation.md": "67715e07b4257f78fdc43f248269bfa86b6c099741961512d72db1c4960387ec",
+    "docs/superpowers/specs/2026-10-13-production-upgrade-design.md": "c4dd8ec9fe9bb41e298fcbf85014a4c53c68d5e90387b695ea1dbcb5c1c0a5ea",
+    "docs/research/2026-10-14-esports-ui-template-options.md": "2cf32d6b01ff12d88482083a3f9bba8f03c2772a352fd4b3f166676dfbdd7dbe"
+  },
+  "authorizedChangedPaths": [
+    "docs/superpowers/plans/2026-10-14-sequential-implementation-sessions.md",
+    "docs/superpowers/plans/2026-10-14-preimplementation-preparation.md"
+  ],
+  "verifiedAt": "2026-10-14T17:25:57.955Z"
+}

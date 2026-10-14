@@ -1,7 +1,9 @@
 # OanTuTi Arena — SDLC Technical Specification Package
 
 > **Thư mục đặc tả kỹ thuật và kiến trúc hệ thống chuẩn SDLC (Software Development Life Cycle)**  
-> Phiên bản: **1.0.0** | Trạng thái: **Phê duyệt triển khai (Approved for Implementation)** | Nguyên lý: **Ponytail Senior Engineering**
+> Phiên bản: **1.0.0 — tài liệu lịch sử v1**. Một số mục mô tả mục tiêu chưa triển khai; không là chứng nhận production.
+
+> **Thiết kế nâng cấp mới:** xem [bộ đặc tả production v2](v2/README.md), [thiết kế tổng](../superpowers/specs/2026-10-13-production-upgrade-design.md) và [kế hoạch triển khai](../superpowers/plans/2026-10-13-production-upgrade.md). V2 đang **đề xuất chờ phê duyệt**, chưa sửa code. Với thiết kế v2, dùng luật và policy v2 thay cho các mục LAN/projector/global Elo v1; không áp đồng thời hai bộ quy tắc.
 
 ---
 

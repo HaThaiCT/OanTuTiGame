@@ -4,6 +4,16 @@ Nền tảng thi đấu bot Oẳn Tù Tì: engine TypeScript, runner STDIO NDJSO
 
 > **Phạm vi vận hành:** dành cho môi trường nội bộ và mã bot đáng tin cậy. Docker Compose dưới đây đóng gói ứng dụng, **không cô lập riêng từng bot**. Các mutation API (tạo trận, giải đấu, lưu bot, chạy draft) yêu cầu xác thực bằng tài khoản người dùng; bot vẫn chạy bằng tiến trình con cùng container server. Không công khai dịch vụ nhận code lên Internet. Không có Security Pentest trong phạm vi bàn giao này.
 
+## Thiết kế nâng cấp production v2 — chưa triển khai
+
+Bộ tài liệu mới dành cho giải Bot khoảng 500 đội, chạy nhiều ngày, bốn thể thức và khán giả không cần đăng nhập:
+
+- **[Mục lục đặc tả v2](docs/specs/v2/README.md)** — audit hiện trạng, yêu cầu sản phẩm, gameplay/giải đấu, kiến trúc/dữ liệu, UI/UX, an toàn và vận hành.
+- **[Thiết kế tổng](docs/superpowers/specs/2026-10-13-production-upgrade-design.md)** và **[kế hoạch triển khai](docs/superpowers/plans/2026-10-13-production-upgrade.md)** — quyết định đề xuất, dependencies và cổng nghiệm thu.
+- **[Research nền tảng](docs/research/2026-10-13-v2-platform-research.md)** và **[đánh giá tech stack](docs/research/2026-10-13-v2-tech-stack-evaluation.md)** — nguồn chính thức và tradeoffs.
+
+Đây là **đề xuất chờ phê duyệt, chỉ thay đổi tài liệu**; không có chức năng v2 được triển khai trong lần này. Các lệnh và mô tả vận hành bên dưới vẫn là **v1** với giới hạn trusted-bot đã nêu. Mục tiêu tải, sandbox và phục hồi trong đặc tả mới không phải bằng chứng v1 đã đạt production.
+
 ## 1. Chạy bằng Docker Compose
 
 Yêu cầu Docker Engine và Docker Compose v2. Chạy từ thư mục gốc repository:
