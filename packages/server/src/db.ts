@@ -333,7 +333,7 @@ export class Database {
   }
 
   listBotsWithoutSourcePath(): BotRow[] {
-    return this.db.prepare("SELECT * FROM bots WHERE file_path IS NULL OR file_path = ''").all() as BotRow[];
+    return this.db.prepare("SELECT * FROM bots WHERE file_path IS NULL OR file_path = ''").all() as unknown as BotRow[];
   }
 
   assignMigratedSourcePath(id: string, version: number, filePath: string): void {
@@ -352,7 +352,7 @@ export class Database {
       .all(botId) as { version: number; name: string; language: string; sourceCode: string; createdAt: string }[];
   }
 
-  updateOwnedBot(id: string, userId: string, version: number, bot: { name: string; language: 'PYTHON' | 'TYPESCRIPT'; sourceCode: string; filePath: string }): BotRow | undefined {
+  updateOwnedBot(id: string, userId: string, version: number, bot: { name: string; language: 'PYTHON' | 'TYPESCRIPT' | 'CPP'; sourceCode: string; filePath: string }): BotRow | undefined {
     const result = this.db.prepare(`UPDATE bots SET name = ?, language = ?, source_code = ?, file_path = ?, version = version + 1, updated_at = datetime('now')
       WHERE id = ? AND user_id = ? AND version = ? AND is_active = 1`)
       .run(bot.name, bot.language, bot.sourceCode, bot.filePath, id, userId, version);
@@ -377,7 +377,7 @@ export class Database {
       WHERE b.is_active = 1
       ORDER BY e.rating_elo DESC
     `);
-    return stmt.all() as (BotRow & { elo: number })[];
+    return stmt.all() as unknown as (BotRow & { elo: number })[];
   }
 
   createMatch(match: {
@@ -464,7 +464,7 @@ export class Database {
       JOIN bots b ON e.bot_id = b.id
       ORDER BY e.rating_elo DESC
     `);
-    return stmt.all() as (LeaderboardEloRow & { bot_name: string; language: string })[];
+    return stmt.all() as unknown as (LeaderboardEloRow & { bot_name: string; language: string })[];
   }
 
   private updateEloRatings(
@@ -547,7 +547,7 @@ export class Database {
 
   listTournaments(): TournamentRow[] {
     const stmt = this.db.prepare('SELECT * FROM tournaments ORDER BY created_at DESC');
-    return stmt.all() as TournamentRow[];
+    return stmt.all() as unknown as TournamentRow[];
   }
 
   updateTournamentStatus(id: string, status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED'): void {
@@ -579,7 +579,7 @@ export class Database {
 
   getMatchesByTournamentId(tournamentId: string): MatchRow[] {
     const stmt = this.db.prepare('SELECT * FROM matches WHERE tournament_id = ? ORDER BY started_at ASC');
-    return stmt.all(tournamentId) as MatchRow[];
+    return stmt.all(tournamentId) as unknown as MatchRow[];
   }
 
   close(): void {

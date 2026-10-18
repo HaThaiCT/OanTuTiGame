@@ -20,7 +20,7 @@ export interface BotInitPayload {
     readonly white_throne: readonly [number, number];
     readonly black_throne: readonly [number, number];
   };
-  readonly pieces: readonly Array<{
+  readonly pieces: ReadonlyArray<{
     readonly id: number;
     readonly owner: 'WHITE' | 'BLACK';
     readonly type: 'ROCK' | 'SCISSORS' | 'PAPER';
@@ -36,7 +36,7 @@ export interface BotTurnPayload {
   readonly type: 'TURN';
   readonly turn_number: number;
   readonly time_remaining_ms: number;
-  readonly pieces: readonly Array<{
+  readonly pieces: ReadonlyArray<{
     readonly id: number;
     readonly owner: 'WHITE' | 'BLACK';
     readonly type: 'ROCK' | 'SCISSORS' | 'PAPER';

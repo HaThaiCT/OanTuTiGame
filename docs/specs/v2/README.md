@@ -1,6 +1,6 @@
 # OanTuTi Arena v2 — Production specification
 
-> **Baseline đặc tả trước triển khai — chỉ tài liệu, chưa code.** Nền tảng Bot đại học, single-Linux-host LAN/ONLINE, bốn format, publicviewer;500đội/1000viewers là target cần đo. Designer-defaults được chốt cho implementer, không giả mọi tham số là yêu cầu user hoặc v1 đã production-ready.
+> **Baseline đặc tả; rebuild S01 đang chỉnh authority, chưa nghiệm thu implementation.** Nền tảng Bot đại học, single-Linux-host LAN/ONLINE, bốn format, public viewer; 500 đội/1000 viewers là target cần đo. Designer-defaults giữ nguyên; code/report cũ không chứng minh production-ready.
 
 ## Đọc theo thứ tự
 
@@ -25,7 +25,9 @@
 
 Yêu cầu trực tiếp của chủ sản phẩm được ưu tiên. Sau khi phê duyệt, các tài liệu có thẩm quyền theo lĩnh vực: 01 — sản phẩm/quyền riêng tư; 02 — gameplay/scoring; 03 — contracts/state/data; 04 — UI; 05 — security/resource/operational gates. Research cung cấp dữ kiện, tài liệu tham khảo và phương án, **không thay thế quyết định canonical**: rating/points/quota và backend sandbox có thể khác research. Kế hoạch phải tuân theo đặc tả; mọi mâu thuẫn cần được giải quyết trước khi triển khai.
 
-Tài liệu v1 ở `docs/specs/01…08` và các thiết kế LAN/projector cũ được giữ làm lịch sử. Không áp dụng đồng thời hai bộ luật cho v2: v2 bỏ projector publication gate, global casual Elo, default admin và cơ chế thực thi latest Bot; giữ archive reader để xem lịch sử v1 đúng version. Source `.proto`/map schema hiện tại vẫn là v1, không thay đổi trong phạm vi chỉ chỉnh tài liệu.
+Delta kiến trúc được chủ sản phẩm duyệt ngày 2026-10-17: **Rust engine + Rust native runner + cùng engine qua WASM cho browser**, thay Node/TypeScript game-host và v2 engine. TypeScript/Fastify vẫn sở hữu control plane/tournament policies; Next/React vẫn sở hữu web. Kế hoạch rebuild đã duyệt tại `../../../OANTUTI_ARENA_V2_PLAN.md` điều phối S01; không thay product/rules/security/UX canonical. Báo cáo/checklist completion trước rebuild là **SUPERSEDED / NOT_ACCEPTED**, giữ làm lịch sử, phải nghiệm thu lại theo đúng S01–S17 và G0–G4.
+
+Tài liệu v1 ở `docs/specs/01…08` và các thiết kế LAN/projector cũ được giữ làm lịch sử. Không áp dụng đồng thời hai bộ luật cho v2: v2 bỏ projector publication gate, global casual Elo, default admin và cơ chế thực thi latest Bot; giữ archive reader để xem lịch sử v1 đúng version. Proto v1 giữ reader read-only; v2 dùng source `.proto` versioned/generated Rust và TS, không hai schema/wire authorities.
 
 ## Bốn lựa chọn sản phẩm
 
@@ -33,7 +35,7 @@ Bốn format: knockoutrandombracket, Swiss/playoff autoN, RRmộtlượt, Elores
 
 **Đã xác nhận:** mỗi đội khóa một Bot mỗi giải; được nộp lại, tự lấy bản hợp lệ mới nhất theo server receipt ordinal; không chọn thủ công/luyện tập. Hạn tính nhận đủ source bền vững: đóng nhận bài rồi kiểm tra hết bài đúng hạn, READY sau hạn vẫn hợp lệ; sau đó khóa. Infra lỗi hoãn khóa, không loại đội; sau khóa không đổi.
 
-Stack single-host đề xuất: **Next/React + Fastify/TypeScript + Rust supervisor + Node/TS engine + PostgreSQL + local durable artifacts + gVisor**. Một máy Linux cảLAN/ONLINE, khôngcluster/replication/standby; backupngoàimáy vàrestore. Stackv1khôngràngbuộc, correctness/security/capacity phảiđo.
+Stack single-host đã duyệt: **Next/React + Fastify/TypeScript + Rust engine/native runner/supervisor + Rust WASM browser + PostgreSQL + local durable artifacts + gVisor**. Một máy Linux cả LAN/ONLINE, không cluster/replication/standby; backup ngoài máy và restore. Native/WASM dùng cùng gameplay semantics/revision; browser không chạy Bot thí sinh hoặc accept kết quả. Correctness/security/capacity phải đo.
 
 **UI đã duyệt:** shadcn/ui + Tailwind + brackets-viewer.js, dark-first esports, không mua template. Navy gần đen/violet/cyan, cam LIVE; palette/screens tại04. Người dùng xác nhận đã xin phép sao chép code từ các bên đã nêu; được copy/adapt vào nền đã chọn, ghi provenance và phạm vi. Không suy quyền với ảnh/logo/font/dependency bên thứ ba.
 
@@ -43,4 +45,4 @@ Trước khi nhận code không tin cậy, cần đạt G1 isolation. Trước k
 
 ## Điều kiện bàn giao và triển khai
 
-Baseline01–05 đã hoàn thiện theo user decisions ở06 và designer-defaults được ghi rõ. Không còn chờ lựa chọn sản phẩm/UI trong các mục cũ. Operator điền cấu hình03/05 và pinBOM tạiG0; security/capacity/recovery/accessibility phải có proofG1–G4. Thiếu secret/maildestination/hardware report là input triển khai, không lý do để thêm unresolvedluật giải. Chỉ khi người dùng yêu cầu phiên triển khai riêng mới thực hiệnT0–T12; chưacode/khôngprototype.
+Baseline01–05 giữ đủ user decisions ở06 và designer-defaults được ghi rõ. Phiên rebuild được duyệt chỉ đang thực hiện S01; chưa cho phép bỏ gate hoặc mở intake. Operator điền cấu hình03/05 và pin BOM kể cả Rust/WASM tạiG0; security/capacity/recovery/accessibility phải có proofG1–G4. Thiếu secret/maildestination/hardware report là input triển khai, không lý do để thêm unresolved luật giải. Ba màn đại diện phải được owner duyệt trước S12 integrated portal; preview có nhãn dữ liệu minh họa không là feature proof.

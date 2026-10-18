@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "imageId": "sha256:96b7c4bdfab26384d3dbc370d6f779d4093b996e649f35911e78aa45caf0c020",
+  "archivePath": "/home/ha-thai/.local/share/oantuti/development/compiled-starters-rootfs.tar",
+  "archiveBytes": 597578752,
+  "archiveSha256": "fac7d1f7117e77461977305f459487773070d1fd84abfbf876be0c9de0446fbb",
+  "expectedNormalizedTreeSha256": "b6305c27644a343ce1994b487e41bb1db46a332869b0f085c7b5f71a90d90d89",
+  "memberCount": 15036,
+  "artifacts": {
+    "opt/oantuti/artifacts/cpp/starter_bot": {
+      "size": 59544,
+      "sha256": "e5e576e10647bad9a7eab23355381f7539b84584b203208939ac06d9395a12a5"
+    },
+    "opt/oantuti/artifacts/typescript/oantuti.js": {
+      "size": 5237,
+      "sha256": "e128c24884d7293ca6b655218632a0ebd589be0b082ac0d8b52a810c0b976f2d"
+    },
+    "opt/oantuti/artifacts/typescript/starter_bot.js": {
+      "size": 2077,
+      "sha256": "afdf3c23a2c53dd784ba1c87962a05e5618d90d6494b77d9b60701905441ce42"
+    }
+  },
+  "compilerNetwork": "none",
+  "gvisorMatchesExecuted": false
+}

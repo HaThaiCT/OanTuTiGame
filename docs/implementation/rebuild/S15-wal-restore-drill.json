@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-17T20:50:41Z",
+  "status": "LOCAL_WAL_RESTORE_DRILL_NOT_OFF_HOST",
+  "offHost": false,
+  "cluster": {
+    "socket": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket",
+    "port": "55434",
+    "database": "arena_rebuild_c72cd5a74f33",
+    "superuser": "ha-thai",
+    "backupRole": "arena_rebuild_backup",
+    "archiveDir": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/wal-archive",
+    "restoreDir": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/wal-restore",
+    "restorePort": "55435",
+    "postgresVersion": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "dataDirectory": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/data"
+  },
+  "archiving": {
+    "archiveModeBefore": "on",
+    "archiveModeAfter": "on",
+    "archiveCommand": "cp %p /home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/wal-archive/%f"
+  },
+  "baseBackup": {
+    "seconds": 6.644,
+    "bytes": 82254911,
+    "stdoutTail": "64873/64873 kB (100%), 1/1 tablespace"
+  },
+  "recovery": {
+    "baseBackupLsn": "0/13000060",
+    "markerLsn": "0/150003D0",
+    "segmentArchivedAfterSeconds": 0.006,
+    "archivedSegments": 13
+  },
+  "restore": {
+    "pgCtlStartSeconds": 1.909,
+    "queryReadySeconds": 1.917,
+    "markerFound": true,
+    "markerValue": "5a5905df3ab242efb07228cb40fab38d",
+    "rowCountsUsersGamesEncounters": "3/704/333"
+  },
+  "rpo": {
+    "transactionsCommittedAfterBaseBackupSurvived": true,
+    "note": "Archive is a local directory; the same drill must run against the off-host copy to certify RPO <= 5 min."
+  },
+  "rto": {
+    "measuredSeconds": 1.917,
+    "target": "<= 1800 s",
+    "note": "Local restore with a warm page cache on the same disk; not the release-host figure."
+  },
+  "notMeasured": [
+    "off-host transfer, immutable object inventory and GC holds",
+    "key custody, signed manifest and 35-day retention",
+    "backup-lag > 5 min write fencing and archive failure alerting",
+    "restore onto the declared GA 6.8 release host and its storage layout",
+    "a 249,500-game data volume (this drill restores a 16 MB development database)"
+  ]
+}

@@ -1,6 +1,6 @@
 # OanTuTi Arena v2 — thiết kế nâng cấp production
 
-> **Baseline thiết kế trước triển khai, documentation-only.** Quyết định chủ sản phẩm được phân biệt với designer-defaults; không chứng nhận runtime/security/capacity và không tự cấp quyền code.
+> **Baseline thiết kế, cập nhật rebuild 2026-10-17.** Chủ sản phẩm duyệt workspace cô lập bảo toàn donor và S01; tài liệu không chứng nhận runtime/security/capacity. Completion/evidence claims trước rebuild là **SUPERSEDED / NOT_ACCEPTED**, giữ lịch sử, không kế thừa acceptance/G0–G4.
 > Chi tiết canonical: [bộ đặc tả v2](../../specs/v2/README.md). Tasks: [implementation plan](../plans/2026-10-13-production-upgrade.md).
 
 ## 1. Ý định và mục tiêu
@@ -9,7 +9,7 @@ Xây dựng nền tảng thi đấu lập trình Bot trong đại học, có quy
 
 Yêu cầu bổ sung từ chủ sản phẩm: **thiết kế như sản phẩm production chuyên nghiệp, không phải demo**, và **được phép thay hoàn toàn tech stack nếu phù hợp hơn**. Đây không phải yêu cầu bắt buộc viết lại toàn bộ; việc đánh giá phải dựa trên các ràng buộc, không giữ công nghệ chỉ vì quán tính.
 
-Không viết code/scaffold, cài dependency/template hoặc dựng prototype trong phiên này. Tài liệu baseline mô tả đầy đủ scope, policy, contracts, roadmap và acceptance. Independent review kiểm consistency thiết kế; G0 cấu hình và G1–G4 runtime proof thuộc phiên triển khai riêng, không coi hoàn thiện tài liệu là đã production-ready.
+Baseline mô tả đầy đủ scope, policy, contracts, roadmap và acceptance. Rebuild hiện chỉ thực hiện S01; không triển khai các S sau, install/build/services/migration hay mở intake từ việc chỉnh authority này. Independent design review chỉ kiểm consistency; G0 config và G1–G4 runtime proof phải có evidence mới, không coi tài liệu hoặc report cũ là production-ready.
 
 ## 2. Hiện trạng có bằng chứng
 
@@ -45,19 +45,19 @@ Bốn preset:
 
 [03](../../specs/v2/03-ARCHITECTURE-DATA-CONTRACTS.md) giữ các quyết định canonical; [nghiên cứu stack](../../research/2026-10-13-v2-tech-stack-evaluation.md) so sánh các phương án, năng lực thực tế và chi phí migration. Stack gốc không phải ràng buộc; module nào cải thiện safety/maintainability sẽ được thay.
 
-**Stack single-host:** Ubuntu Server24.04LTS amd64 GA6.8/systemd/cgroupv2, PostgreSQL16/localdurableobjects, Fastify/TS, Next/React, Rustsupervisor+Node/TSengine, runsc/gVisor. LocalUID-boundUDS, noVMdefault/Redis/cluster/standby/remoteexecution. Exact patches/BOM/supportreview/inputschema theo05§7.4. LANlocalCAHTTPS/offlinebundle khácONLINEpublicTLS/mail; không tên công nghệ thay runtimeproof.
+**Stack single-host đã duyệt:** Ubuntu Server24.04LTS amd64 GA6.8/systemd/cgroupv2, PostgreSQL16/localdurableobjects, Fastify/TS, Next/React, **Rust engine + native runner + supervisor + cùng engine qua WASM browser**, runsc/gVisor. Delta thay Node/TS v2 engine/game-host; TS vẫn control plane/tournament policy, không full-Rust backend. Engine pure không IO/DB/identity/process privileges; runner trusted không đặc quyền consume pinned manifest và evidence, supervisor sở hữu Bot isolation/accounting. Native server verifier/map analysis qua bounded inspect theo03; WASM replay/visualization không Bot execution hoặc acceptance authority. Generated source proto Rust/TS và typed build/game completion, một broker/reconciler acceptance; không native/runc Bot fallback. LocalUID-boundUDS, noVMdefault/Redis/cluster/standby/remoteexecution. Exact patches/BOM kể cả WASM toolchain theo05§7.4; LANlocalCAHTTPS/offlinebundle khácONLINEpublicTLS/mail; không tên công nghệ thay runtimeproof.
 
 ## 6. UI direction và template
 
 Competition-first, **dark-first esports: shadcn/ui + Tailwind + brackets-viewer.js**, light mode phụ, palette04§4. Người dùng xác nhận đã xin phép sao chép code từ các bên đã nêu; ưu tiên tái sử dụng/adapt code phù hợp thay vì dựng lại, port vào React/Tailwind, không thêm WordPress/Bootstrap stack hoặc mua template. Ghi provenance/phạm vi/notices; quyền code không tự bao gồm ảnh/logo/font/dependency. Bracket chỉ presentation official DTO, Swiss/Elo dùng standings/matches; self-host assets. [Research](../../research/2026-10-14-esports-ui-template-options.md).
 
-[04](../../specs/v2/04-UI-UX-DESIGN-SYSTEM.md) bao gồm tokens/routes/screens, wireframes dạng văn bản, states/accessibility và các gate kiểm tra thủ công. Thiết kế không dừng ở landing đẹp: xác nhận nhận bài theo deadline, mất kết nối, draft chưa lưu, trạng thái trống cho khách, phân trang 500 hạng/giải thích tie-break và xác nhận correction là các luồng UX chính. Không tạo browser mockup chạy được trong phạm vi chỉ chỉnh tài liệu; đây là đặc tả giao diện để dựng prototype sau khi phê duyệt.
+[04](../../specs/v2/04-UI-UX-DESIGN-SYSTEM.md) bao gồm tokens/routes/screens, wireframes/states/accessibility và các gate kiểm tra thủ công. Thiết kế không dừng ở landing đẹp: deadline receipt, mất kết nối, draft chưa lưu, empty public state, pagination500/tie-break và correction confirmation là luồng chính. Owner đã duyệt checkpoint ba màn đại diện public directory/overview, team IDE, organizer operations tại1440×1000 và390×844 trước integrated S12; fixture có nhãn thường trực “Bản thiết kế — dữ liệu minh họa, chưa thực thi”. Không suy preview thành product/feature/runtime acceptance hoặc quyền bỏ hành trình thật.
 
 ## 7. Lộ trình và điều kiện mở giải
 
 T0 approve/budget → T1 sandbox proof & T2 identity/teams → T3 submission/freeze & T4 jobs → T5 result/protocol → T6 four formats & T7 correction → T8 portal & T9 viewer & T10 organizer → T11 migration/operations → T12 rehearsal/launch. Công việc chạy song song theo Interfaces trong plan, với một integration owner; không viết code trước khi phê duyệt.
 
-Launch cần G0decision/G1security/G2correctness-durability/G3capacity/G4operations trên một máy Linux;500teams/1000viewers là benchmark targets,72hsoak/7dayrehearsal và RPO5min/RTO30min là đềxuất cầnđo. KhôngHA hoặczero-losswholehostclaim; diskintact restartgiữaccepteddata, diskloss restorebackupconsistentcuối. Nếu proof khôngđạt thì sửaconfig/spec hoặcchặnstart,không silentcutoversecurity.
+Launch cần G0decision/G1security/G2correctness-durability/G3capacity/G4operations trên một máy Linux;500teams/1000viewers,72hsoak và riêng7dayrehearsal, RPO5min/RTO30min là acceptance targets bắt buộc đo theo05, không lời chứng nhận đã đạt. External load generator và independent probes chỉ measurement clients, không cluster. KhôngHA/zero-losswholehostclaim; diskintact restart giữ accepteddata, diskloss restorebackupconsistentcuối. Proof không đạt phải giữ NOT_READY/BLOCKED, không hạ rules/security/scope để báo pass.
 
 ## 8. Baseline và điều kiện bắt đầu implementation
 
@@ -68,4 +68,4 @@ Launch cần G0decision/G1security/G2correctness-durability/G3capacity/G4operati
 5. Operator inputs G0 có schema/validation tại03/05: host/BOM/secrets/mailONLINE/origins/TLS/backupdestination/owner/budget. Giá trị mật hoặc phần cứng thực tế không thể bịa trong tài liệu; thiếuinput làm preflightNOT_READY, không unresolvedproductdesign.
 6. CPU100ms/wall1s/300ply/no-ponder và capacity/recovery/UX là nghiệm thu phải chứng minh T1–T12. Khôngfallbacknative, khôngHA/zero-losswholehost.
 
-Tài liệu đủ để bắt đầu phiên triển khai có kiểm soát khi người dùng yêu cầu riêng; chưa đủ để mở sản phẩm cho người dùng thật trước G1–G4. Handoff theo plan T0→T1/T2→T3…T12; không yêu cầu prototype như prerequisite mới và không tự code.
+Rebuild S01 đang thực hiện, chưa đóng S01/G0/G1 hoặc mở sản phẩm trước G1–G4. Giữ canonical S01–S17: S10=T3b, S11=T7, S12=Next, S13=viewer, S14=admin, S15=operations, S16=capacity, S17=endurance; không bỏ S04 ONLINE. Handoff theo master/provider contracts; report cũ giữ nguyên tên/evidence với superseded provenance, không renumber sessions để khớp completion sai.

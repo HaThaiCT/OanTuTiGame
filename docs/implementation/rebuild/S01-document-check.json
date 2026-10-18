@@ -1,0 +1,13 @@
+{
+  "documentsChecked": [
+    "docs/specs/v2/README.md",
+    "docs/specs/v2/03-ARCHITECTURE-DATA-CONTRACTS.md",
+    "docs/specs/v2/06-DESIGN-REVIEW-RECORD.md",
+    "docs/superpowers/plans/2026-10-13-production-upgrade.md",
+    "docs/superpowers/plans/2026-10-14-sequential-implementation-sessions.md",
+    "docs/superpowers/specs/2026-10-13-production-upgrade-design.md"
+  ],
+  "brokenLocalLinks": [],
+  "unclosedFences": [],
+  "scope": "DOCUMENT_INTEGRITY_ONLY_NOT_RUNTIME_CERTIFICATION"
+}

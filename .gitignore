@@ -9,3 +9,18 @@ sdk/cpp/starter_bot
 __pycache__/
 *.pyc
 storage/
+
+# Reproducible build output and downloaded toolchain caches
+.next/
+target/
+/downloads/
+*.tsbuildinfo
+
+# Local verification scripts and environment secrets
+/tmp-*
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.pem

@@ -1,0 +1,274 @@
+{
+  "status": "LOCK_CHECKSUM_COMPARISON_ONLY",
+  "packages": [
+    {
+      "name": "aho-corasick",
+      "version": "1.1.5",
+      "expectedSha256": "c982642fa9e8606056828ee9a8505737230110bb1099153c79efe865c59d12ba",
+      "actualSha256": "c982642fa9e8606056828ee9a8505737230110bb1099153c79efe865c59d12ba",
+      "matchesLock": true
+    },
+    {
+      "name": "anyhow",
+      "version": "1.0.104",
+      "expectedSha256": "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470",
+      "actualSha256": "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470",
+      "matchesLock": true
+    },
+    {
+      "name": "bitflags",
+      "version": "2.13.2",
+      "expectedSha256": "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06",
+      "actualSha256": "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06",
+      "matchesLock": true
+    },
+    {
+      "name": "bytes",
+      "version": "1.12.1",
+      "expectedSha256": "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04",
+      "actualSha256": "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04",
+      "matchesLock": true
+    },
+    {
+      "name": "either",
+      "version": "1.19.0",
+      "expectedSha256": "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be",
+      "actualSha256": "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be",
+      "matchesLock": true
+    },
+    {
+      "name": "equivalent",
+      "version": "1.0.3",
+      "expectedSha256": "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826",
+      "actualSha256": "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826",
+      "matchesLock": true
+    },
+    {
+      "name": "errno",
+      "version": "0.3.14",
+      "expectedSha256": "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb",
+      "actualSha256": "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb",
+      "matchesLock": true
+    },
+    {
+      "name": "fastrand",
+      "version": "2.5.0",
+      "expectedSha256": "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223",
+      "actualSha256": "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223",
+      "matchesLock": true
+    },
+    {
+      "name": "fixedbitset",
+      "version": "0.5.7",
+      "expectedSha256": "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99",
+      "actualSha256": "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99",
+      "matchesLock": true
+    },
+    {
+      "name": "foldhash",
+      "version": "0.1.5",
+      "expectedSha256": "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2",
+      "actualSha256": "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2",
+      "matchesLock": true
+    },
+    {
+      "name": "hashbrown",
+      "version": "0.15.5",
+      "expectedSha256": "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1",
+      "actualSha256": "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1",
+      "matchesLock": true
+    },
+    {
+      "name": "hashbrown",
+      "version": "0.17.1",
+      "expectedSha256": "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a",
+      "actualSha256": "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a",
+      "matchesLock": true
+    },
+    {
+      "name": "heck",
+      "version": "0.5.0",
+      "expectedSha256": "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea",
+      "actualSha256": "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea",
+      "matchesLock": true
+    },
+    {
+      "name": "indexmap",
+      "version": "2.14.2",
+      "expectedSha256": "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855",
+      "actualSha256": "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855",
+      "matchesLock": true
+    },
+    {
+      "name": "itertools",
+      "version": "0.14.0",
+      "expectedSha256": "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285",
+      "actualSha256": "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285",
+      "matchesLock": true
+    },
+    {
+      "name": "libc",
+      "version": "0.2.190",
+      "expectedSha256": "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78",
+      "actualSha256": "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78",
+      "matchesLock": true
+    },
+    {
+      "name": "linux-raw-sys",
+      "version": "0.12.1",
+      "expectedSha256": "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53",
+      "actualSha256": "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53",
+      "matchesLock": true
+    },
+    {
+      "name": "log",
+      "version": "0.4.34",
+      "expectedSha256": "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6",
+      "actualSha256": "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6",
+      "matchesLock": true
+    },
+    {
+      "name": "memchr",
+      "version": "2.8.3",
+      "expectedSha256": "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98",
+      "actualSha256": "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98",
+      "matchesLock": true
+    },
+    {
+      "name": "multimap",
+      "version": "0.10.1",
+      "expectedSha256": "1d87ecb2933e8aeadb3e3a02b828fed80a7528047e68b4f424523a0981a3a084",
+      "actualSha256": "1d87ecb2933e8aeadb3e3a02b828fed80a7528047e68b4f424523a0981a3a084",
+      "matchesLock": true
+    },
+    {
+      "name": "once_cell",
+      "version": "1.21.4",
+      "expectedSha256": "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50",
+      "actualSha256": "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50",
+      "matchesLock": true
+    },
+    {
+      "name": "petgraph",
+      "version": "0.8.3",
+      "expectedSha256": "8701b58ea97060d5e5b155d383a69952a60943f0e6dfe30b04c287beb0b27455",
+      "actualSha256": "8701b58ea97060d5e5b155d383a69952a60943f0e6dfe30b04c287beb0b27455",
+      "matchesLock": true
+    },
+    {
+      "name": "prettyplease",
+      "version": "0.2.37",
+      "expectedSha256": "479ca8adacdd7ce8f1fb39ce9ecccbfe93a3f1344b3d0d97f20bc0196208f62b",
+      "actualSha256": "479ca8adacdd7ce8f1fb39ce9ecccbfe93a3f1344b3d0d97f20bc0196208f62b",
+      "matchesLock": true
+    },
+    {
+      "name": "proc-macro2",
+      "version": "1.0.107",
+      "expectedSha256": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+      "actualSha256": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+      "matchesLock": true
+    },
+    {
+      "name": "prost",
+      "version": "0.14.4",
+      "expectedSha256": "528ac67416ff8646872a3c02cad9cc4ee5dc9f9540c9b10771855c95cb2e5ae1",
+      "actualSha256": "528ac67416ff8646872a3c02cad9cc4ee5dc9f9540c9b10771855c95cb2e5ae1",
+      "matchesLock": true
+    },
+    {
+      "name": "prost-build",
+      "version": "0.14.4",
+      "expectedSha256": "03da047801ff44bb6a4d407d4860c05fd70bb81714e6b2f3812603d5b145b042",
+      "actualSha256": "03da047801ff44bb6a4d407d4860c05fd70bb81714e6b2f3812603d5b145b042",
+      "matchesLock": true
+    },
+    {
+      "name": "prost-derive",
+      "version": "0.14.4",
+      "expectedSha256": "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf",
+      "actualSha256": "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf",
+      "matchesLock": true
+    },
+    {
+      "name": "prost-types",
+      "version": "0.14.4",
+      "expectedSha256": "f94967dc7688f3054c7fac87473ffae4cc4c3904800e2d9f5b857246d8963b0a",
+      "actualSha256": "f94967dc7688f3054c7fac87473ffae4cc4c3904800e2d9f5b857246d8963b0a",
+      "matchesLock": true
+    },
+    {
+      "name": "quote",
+      "version": "1.0.47",
+      "expectedSha256": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+      "actualSha256": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+      "matchesLock": true
+    },
+    {
+      "name": "regex",
+      "version": "1.13.1",
+      "expectedSha256": "f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d",
+      "actualSha256": "f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d",
+      "matchesLock": true
+    },
+    {
+      "name": "regex-automata",
+      "version": "0.4.18",
+      "expectedSha256": "ad8553b9b26413251cbf30e620595c7a41b3887f03da04579c0e6b0d6a06b4b2",
+      "actualSha256": "ad8553b9b26413251cbf30e620595c7a41b3887f03da04579c0e6b0d6a06b4b2",
+      "matchesLock": true
+    },
+    {
+      "name": "regex-syntax",
+      "version": "0.8.11",
+      "expectedSha256": "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4",
+      "actualSha256": "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4",
+      "matchesLock": true
+    },
+    {
+      "name": "rustix",
+      "version": "1.1.5",
+      "expectedSha256": "891efababe418670775f199f0d233d84843c227a0949a883ce15b37c78d6629d",
+      "actualSha256": "891efababe418670775f199f0d233d84843c227a0949a883ce15b37c78d6629d",
+      "matchesLock": true
+    },
+    {
+      "name": "syn",
+      "version": "2.0.119",
+      "expectedSha256": "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297",
+      "actualSha256": "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297",
+      "matchesLock": true
+    },
+    {
+      "name": "tempfile",
+      "version": "3.27.0",
+      "expectedSha256": "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd",
+      "actualSha256": "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd",
+      "matchesLock": true
+    },
+    {
+      "name": "unicode-ident",
+      "version": "1.0.27",
+      "expectedSha256": "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563",
+      "actualSha256": "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563",
+      "matchesLock": true
+    },
+    {
+      "name": "windows-link",
+      "version": "0.2.1",
+      "expectedSha256": "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5",
+      "actualSha256": null,
+      "matchesLock": false
+    },
+    {
+      "name": "windows-sys",
+      "version": "0.61.2",
+      "expectedSha256": "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc",
+      "actualSha256": null,
+      "matchesLock": false
+    }
+  ],
+  "upstreamProvenanceCertified": false,
+  "advisoryReview": "PENDING",
+  "releaseReady": false
+}

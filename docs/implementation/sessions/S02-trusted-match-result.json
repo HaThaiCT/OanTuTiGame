@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "evidenceSource": "agent-executed exact scoped sudo trusted-match action",
+  "exitCode": 0,
+  "status": "PASS",
+  "kernel": "7.0.0-38-generic",
+  "trustedBotLanguage": "Python",
+  "match": {
+    "gameId": "3c4e2380-eaf2-4d1b-950e-dcb98dc2b561",
+    "winner": 1,
+    "reason": 2,
+    "totalPly": 1,
+    "trace": [
+      { "ply": 1, "side": 1, "move": { "pieceId": 1, "targetPos": { "x": 1, "y": 0 } } }
+    ]
+  },
+  "gvisorCertified": false,
+  "releaseReady": false,
+  "limitations": [
+    "One fixed trusted Python match, not three-language certification or capacity evidence",
+    "Independent process reaper not integrated with this match launcher",
+    "Uses existing engine semantics; v2 gameplay migration remains incomplete",
+    "No durable tournament/result broker integration or public untrusted intake"
+  ]
+}

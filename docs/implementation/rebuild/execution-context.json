@@ -1,0 +1,81 @@
+{
+  "plan": "OANTUTI_ARENA_V2_PLAN.md",
+  "donorRoot": "/home/ha-thai/OanTuTi",
+  "rebuildRoot": "/home/ha-thai/OanTuTi-rebuild",
+  "preservationRoot": "/home/ha-thai/.local/share/oantuti/rebuild-preservation/20261017T100235Z",
+  "branch": "rebuild/v2",
+  "baseHead": "982e3bb3df85c054cd538b09fdfc59b6ee94715a",
+  "sourceFilesVerified": 327,
+  "status": "S01_IN_PROGRESS",
+  "externalDataCopied": false,
+  "runtimeCertification": "PENDING_RUNTIME_PROOF",
+  "releaseReady": false,
+  "deploymentId": "c72cd5a7-4f33-44ae-82da-723b6953024d",
+  "runtimeRoot": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d",
+  "webPort": 4300,
+  "apiPort": 4301,
+  "pgDatabase": "arena_rebuild_c72cd5a74f33",
+  "pgSocketPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket",
+  "objectRoot": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/objects",
+  "stagingRoot": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging",
+  "spoolRoot": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/spool",
+  "bindAddress": "127.0.0.1",
+  "developmentConfigReady": false,
+  "configPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/development-config.json",
+  "pgPort": 55434,
+  "toolPaths": {
+    "rustBin": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin",
+    "wasmBindgenBin": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/wasm-bindgen-0.2.129/bin",
+    "protoc": "/home/ha-thai/.local/share/oantuti/toolchains/protoc-36.2/bin/protoc",
+    "postgresBin": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin",
+    "postgresLibraryPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/x86_64-linux-gnu"
+  },
+  "toolchainEvidence": {
+    "rustc": {
+      "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/rustc",
+      "sha256": "b53b780f77f952062f8ca8a3b70aef2390b1e45ad91939be94afdc9543026853",
+      "present": true
+    },
+    "cargo": {
+      "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/cargo",
+      "sha256": "a670e02cfa39ac2e53f77a2d911ca1fc9e2c479b0603ec956625be1daf24e3af",
+      "present": true
+    },
+    "wasmBindgen": {
+      "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/wasm-bindgen-0.2.129/bin/wasm-bindgen",
+      "sha256": "fb59da714982a04273e9e4b09a85e523e5dd04de35b1a4a8b1641785ee7a71cf",
+      "present": true
+    },
+    "node": {
+      "path": "/home/ha-thai/.local/share/oantuti/toolchains/node-24.22.0/bin/node",
+      "sha256": "67ca5783febb8bf85736c79fcdd92c8d6d465a0eb2a082672bcdfa76a506751c",
+      "present": true
+    },
+    "protoc": {
+      "path": "/home/ha-thai/.local/share/oantuti/toolchains/protoc-36.2/bin/protoc",
+      "sha256": "f6ee22d65361338459208da8bff801c9ca689741cba9187b34990dd45198f864",
+      "present": true
+    },
+    "postgres": {
+      "path": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/postgres",
+      "sha256": "201d8daff9a5bd9df70b820471b965c39f5a776d677f395232c477d051270722",
+      "present": true
+    }
+  },
+  "developmentTls": {
+    "certPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/tls/localhost.crt",
+    "keyPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/tls/localhost.key",
+    "caBundlePath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/tls/ca.crt",
+    "trustInstallation": "NOT_PERFORMED",
+    "certificateVerificationExit": 0
+  },
+  "configurationSmokePassed": true,
+  "preservationDonorMismatchCount": 0,
+  "pendingPrerequisites": [
+    "development BOM closure for consumed runtime/protobuf dependencies",
+    "focused config safety review",
+    "exact GA6.8 target and service UID/cgroup permissions before certified runtime",
+    "phase-specific mail/offhostbackup/humanreview inputs"
+  ],
+  "cargoHome": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/cargo-home"
+}

@@ -1,0 +1,1688 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-17T10:07:57.810141+00:00",
+  "status": "PARTIAL_READ_ONLY_INVENTORY_NOT_CERTIFIED",
+  "developmentOnly": true,
+  "developmentConfigReady": false,
+  "s01Complete": false,
+  "g0Complete": false,
+  "g1Complete": false,
+  "releaseReady": false,
+  "workspace": "/home/ha-thai/OanTuTi-rebuild",
+  "scope": {
+    "writes": [
+      "docs/implementation/rebuild/S01-bom-inventory.json"
+    ],
+    "donorAccess": "No donor files read or changed by this inventory task; preservation snapshot used only for du footprint.",
+    "prohibitedActionsNotPerformed": [
+      "download release archives",
+      "installation",
+      "build",
+      "tests",
+      "lint",
+      "services or migrations",
+      "root commands",
+      "kernel or account changes",
+      "credential reads"
+    ],
+    "networkActivity": "HTTPS upstream release/package/support metadata only; no executable/archive downloads",
+    "clock": "Host UTC observation; no trusted clock/skew certification"
+  },
+  "authority": {
+    "plan": "OANTUTI_ARENA_V2_PLAN.md S01.5",
+    "owner": "docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md 7.4",
+    "historicalInputs": [
+      "docs/implementation/sessions/S01-installed-tools.json",
+      "docs/implementation/sessions/S01-bom-resolution.json",
+      "docs/implementation/sessions/S01-preparation.md"
+    ],
+    "historicalEvidenceDisposition": "Retained unchanged. Current observations supersede freshness claims only, not historical evidence; historical versions are not selected release pins."
+  },
+  "requiredTarget": {
+    "os": "Ubuntu Server24.04 LTS",
+    "architecture": "amd64",
+    "kernelLine": "GA6.8",
+    "postgresMajor": 16,
+    "nodeMajor": 24,
+    "botLanguages": [
+      "Python",
+      "compiled TypeScript",
+      "C++20"
+    ],
+    "engine": "Rust native plus browser WASM same semantics"
+  },
+  "observedBinaries": [
+    {
+      "name": "rust",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/bin/rustc",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/bin/rustc",
+      "binarySha256": "f3834d26669b03f6855fa54bd2381443123e860167bc0c7a8dd137e5cf6e5e4f",
+      "bytes": 647376,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "rustc 1.99.0 (b940084d7 2026-09-28)",
+      "exitCode": 0
+    },
+    {
+      "name": "cargo",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/bin/cargo",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/bin/cargo",
+      "binarySha256": "e951141cc55a6cd7b9876d187bd30a3720e6086b99413af95e3b8de1cdd72f14",
+      "bytes": 36160240,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "cargo 1.99.0 (5f94df478 2026-08-27)",
+      "exitCode": 0
+    },
+    {
+      "name": "node",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/node-24.22.0/bin/node",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/node-24.22.0/bin/node",
+      "binarySha256": "67ca5783febb8bf85736c79fcdd92c8d6d465a0eb2a082672bcdfa76a506751c",
+      "bytes": 126816376,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "v24.22.0",
+      "exitCode": 0
+    },
+    {
+      "name": "protoc",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/protoc-36.2/bin/protoc",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/protoc-36.2/bin/protoc",
+      "binarySha256": "f6ee22d65361338459208da8bff801c9ca689741cba9187b34990dd45198f864",
+      "bytes": 10627256,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "libprotoc 36.2",
+      "exitCode": 0
+    },
+    {
+      "name": "runsc",
+      "requestedPath": "/usr/local/libexec/oantuti/gvisor-20261005.0/runsc",
+      "present": true,
+      "resolvedPath": "/usr/local/libexec/oantuti/gvisor-20261005.0/runsc",
+      "binarySha256": "210b437a9cfae51e8f8c9074ed19b8b5e59477178e2e391a18117d8d6b924f7a",
+      "bytes": 109966750,
+      "ownerUid": 0,
+      "ownerGid": 0,
+      "mode": "0o755",
+      "versionOutput": "runsc version release-20261005.0\nspec: 1.2.1",
+      "exitCode": 0
+    },
+    {
+      "name": "node-PATH",
+      "requestedPath": "/home/ha-thai/.local/bin/node",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/Documents/Codex/runtime/node-v24.21.0-linux-x64/bin/node",
+      "binarySha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+      "bytes": 126595440,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "v24.21.0",
+      "exitCode": 0
+    },
+    {
+      "name": "npm-PATH",
+      "requestedPath": "/home/ha-thai/.local/bin/npm",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/Documents/Codex/runtime/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-cli.js",
+      "binarySha256": "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7",
+      "bytes": 54,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "11.19.0",
+      "exitCode": 0
+    },
+    {
+      "name": "python3-PATH",
+      "requestedPath": "/usr/bin/python3",
+      "present": true,
+      "resolvedPath": "/usr/bin/python3.12",
+      "binarySha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+      "bytes": 8020928,
+      "ownerUid": 0,
+      "ownerGid": 0,
+      "mode": "0o755",
+      "versionOutput": "Python 3.12.3",
+      "exitCode": 0
+    },
+    {
+      "name": "g++-PATH",
+      "requestedPath": "/usr/bin/g++",
+      "present": true,
+      "resolvedPath": "/usr/bin/x86_64-linux-gnu-g++-13",
+      "binarySha256": "1353e9bdd29a7295c7226bf6c63abccce056d8cac31f112e5cdbecc3f28c2769",
+      "bytes": 1027128,
+      "ownerUid": 0,
+      "ownerGid": 0,
+      "mode": "0o755",
+      "versionOutput": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+      "exitCode": 0
+    },
+    {
+      "name": "psql-PATH",
+      "present": false,
+      "requestedPath": null
+    },
+    {
+      "name": "pg_config-PATH",
+      "present": false,
+      "requestedPath": null
+    },
+    {
+      "name": "wasm-bindgen-PATH",
+      "present": false,
+      "requestedPath": null
+    },
+    {
+      "name": "rustup-PATH",
+      "present": false,
+      "requestedPath": null
+    },
+    {
+      "name": "runc-PATH",
+      "requestedPath": "/usr/sbin/runc",
+      "present": true,
+      "resolvedPath": "/usr/sbin/runc",
+      "binarySha256": "bdce4d45b2dd217491db8a98c8484b161e225ce49c15ebc1ba42077fb7c07d50",
+      "bytes": 11431736,
+      "ownerUid": 0,
+      "ownerGid": 0,
+      "mode": "0o755",
+      "versionOutput": "runc version 1.3.4-0ubuntu1~24.04.1\nspec: 1.2.1\ngo: go1.24.4\nlibseccomp: 2.5.5",
+      "exitCode": 0
+    },
+    {
+      "name": "postgres-local",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/postgres",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/postgres",
+      "binarySha256": "201d8daff9a5bd9df70b820471b965c39f5a776d677f395232c477d051270722",
+      "bytes": 10511456,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "postgres (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "exitCode": 0
+    },
+    {
+      "name": "psql-local",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/psql",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/psql",
+      "binarySha256": "df8031178589c31c7bc20aa2adf902e1cc3f0aa9ea12428aa5db3d476cbcac1a",
+      "bytes": 790104,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/psql: error while loading shared libraries: libpq.so.5: cannot open shared object file: No such file or directory",
+      "exitCode": 127
+    },
+    {
+      "name": "pg_config-local",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/pg_config",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/pg_config",
+      "binarySha256": "6a8b36cfa953c33d19f3d992c81aff8fc8da77001117f806977ed674087ae2bb",
+      "bytes": 39304,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "exitCode": 0
+    },
+    {
+      "name": "pg_verifybackup-local",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/pg_verifybackup",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/postgresql/16/bin/pg_verifybackup",
+      "binarySha256": "3eceb68c7917a1d3d6910fc23fc3ba3bdec78beb1c7f2474acf0f2f9da237629",
+      "bytes": 96984,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "pg_verifybackup (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "exitCode": 0
+    },
+    {
+      "name": "npm-pinned",
+      "requestedPath": "/home/ha-thai/.local/share/oantuti/toolchains/node-24.22.0/bin/npm",
+      "present": true,
+      "resolvedPath": "/home/ha-thai/.local/share/oantuti/toolchains/node-24.22.0/lib/node_modules/npm/bin/npm-cli.js",
+      "binarySha256": "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7",
+      "bytes": 54,
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "versionOutput": "11.19.1",
+      "exitCode": 0
+    }
+  ],
+  "gvisorSidecarFileHashes": [
+    {
+      "path": "/usr/local/libexec/oantuti/gvisor-20261005.0/gvisor-bin/runsc-fd-parking",
+      "sha256": "03af90d07ea466c10ecc3e3ba839b2a59540959dd3286aea3886917cba850c11",
+      "bytes": 1320
+    },
+    {
+      "path": "/usr/local/libexec/oantuti/gvisor-20261005.0/gvisor-bin/gvisor_sentry",
+      "sha256": "0050e7c6063e17de1729500cd73b18322d85c758eb0ffcab18e539df7110bd12",
+      "bytes": 52149808
+    },
+    {
+      "path": "/usr/local/libexec/oantuti/gvisor-20261005.0/gvisor-bin/gvisor-sentry-prewarmer",
+      "sha256": "3315d7ad7c2d3751d349e4976fa02da1da6fd7e41746c35622304e5fabe4fce0",
+      "bytes": 1416
+    },
+    {
+      "path": "/usr/local/libexec/oantuti/gvisor-20261005.0/gvisor-bin/checkpointgofer",
+      "sha256": "c454d0b5fab4627d8915194f901a70c66bb4792f680e3f75d2a47516382b449a",
+      "bytes": 69128994
+    },
+    {
+      "path": "/usr/local/libexec/oantuti/gvisor-20261005.0/gvisor-bin/runsc-metric-server",
+      "sha256": "7bcbe5846a0f6d34c7d2bd312033bb92ab6305b9ac93e09b753b3474f91f27b2",
+      "bytes": 53222722
+    }
+  ],
+  "pgClientLoaderObservation": {
+    "command": "LD_LIBRARY_PATH=<isolated lib directory> <absolute psql> --version",
+    "libraryPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/x86_64-linux-gnu",
+    "exitCode": 0,
+    "output": "psql (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)"
+  },
+  "wasmTargetObservation": {
+    "requiredTarget": "wasm32-unknown-unknown",
+    "checkedPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/lib/rustlib/wasm32-unknown-unknown",
+    "exists": false,
+    "status": "MISSING_IN_OBSERVED_SYSROOT",
+    "searchScope": "Installed rust1.99.0 sysroot and command PATH; no claim of exhaustive host search"
+  },
+  "observedPackageDatabase": {
+    "command": "dpkg-query -W selected nonsecret package version/status fields",
+    "exitCode": 0,
+    "output": "g++-13\t13.3.0-6ubuntu2~24.04.1\tii \nlibstdc++6\t14.2.0-4ubuntu2~24.04.1\tii \npython3.12\t3.12.3-1ubuntu0.17\tii \nrunc\t1.3.4-0ubuntu1~24.04.1\tii \nsystemd\t255.4-1ubuntu8.18\tii"
+  },
+  "observedWorkspaceLocks": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "e979636ea3c4338af20475dd6428cef043ceb0b2e1ecaeabbdbcff4f4eea9640",
+      "bytes": 8773
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "f8850d84dcb0a3fd2fa813bd41edfe99bdb0ac0141eb011476f7896149e4c7b4",
+      "bytes": 155449
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "b5e9e696527b39ee3f952404210d6e7581dd44eca7193cf7e3aa9b86fbffd82e",
+      "bytes": 126
+    },
+    {
+      "path": "package.json",
+      "sha256": "0a7ea9c0a784cb718c1a36dbd2eeea4f78cc40182981dc7e3b825f2f04963035",
+      "bytes": 967
+    },
+    {
+      "path": "packages/web/package.json",
+      "sha256": "de1121d7e4aec0e270ec71ec46a184744f45c72ed065e84ee5fdefed565de76d",
+      "bytes": 710
+    },
+    {
+      "path": "packages/server/package.json",
+      "sha256": "866afc070f8d017b7f0f15b5191bf7e719f41fbdd81a0f28f4d6cf3b48176f42",
+      "bytes": 651
+    },
+    {
+      "path": "packages/protocol/package.json",
+      "sha256": "bf3cbda60cb945193fb1c1a4c8d1f1e9de82836f4bd5814675d8c4952729cc24",
+      "bytes": 405
+    },
+    {
+      "path": "crates/arena-engine/Cargo.toml",
+      "sha256": "981a715f3c86426662614bb73aad8a87d49550f7910f79fc3f7bda7fcae12a12",
+      "bytes": 99
+    }
+  ],
+  "lockSnapshotComponents": [
+    {
+      "name": "next",
+      "entries": []
+    },
+    {
+      "name": "react",
+      "entries": [
+        {
+          "path": "node_modules/react",
+          "version": "18.3.1",
+          "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
+          "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz"
+        }
+      ]
+    },
+    {
+      "name": "react-dom",
+      "entries": [
+        {
+          "path": "node_modules/react-dom",
+          "version": "18.3.1",
+          "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
+          "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz"
+        }
+      ]
+    },
+    {
+      "name": "fastify",
+      "entries": [
+        {
+          "path": "node_modules/fastify",
+          "version": "5.12.5",
+          "integrity": "sha512-OB2k1dlxs5/NAABqeKV2FUHkSD2BbENsCak8yULVcymn3fHIPDVa9TI3SDnJSWYSllZmSYuZXy2gTnsT+Sut1A==",
+          "resolved": "https://registry.npmjs.org/fastify/-/fastify-5.12.5.tgz"
+        }
+      ]
+    },
+    {
+      "name": "tailwindcss",
+      "entries": []
+    },
+    {
+      "name": "monaco-editor",
+      "entries": [
+        {
+          "path": "node_modules/monaco-editor",
+          "version": "0.57.0",
+          "integrity": "sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==",
+          "resolved": "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.57.0.tgz"
+        }
+      ]
+    },
+    {
+      "name": "shadcn",
+      "entries": []
+    },
+    {
+      "name": "brackets-viewer",
+      "entries": []
+    }
+  ],
+  "lockInterpretation": "Lock entries are source metadata, not installed packages or selected v2 BOM. Hashes are point-in-time rebuild workspace observations; parent may change manifests during integration. No lockfile changed by this task.",
+  "upstreamCandidateRequirements": [
+    {
+      "name": "Ubuntu GA kernel",
+      "candidateVersion": "6.8.0-147.147",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "ubuntu-kernel",
+        "ubuntu-lifecycle"
+      ],
+      "supportAndCompatibility": "Ubuntu24.04 amd64 GA6.8 required. Official GA metapackage metadata observed; standard support through May2029. Current running7.0 kernel is development-only. Exact deb/module dependency closure, package licenses and offline hashes unresolved.",
+      "licenseMetadata": null,
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "PostgreSQL16",
+      "candidateVersion": "16.15-0ubuntu0.24.04.1",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "ubuntu-pg16",
+        "postgres-policy"
+      ],
+      "supportAndCompatibility": "Upstream16.15 supported until2028-11-09; Ubuntu exact package revision observed. Local server executable exists; psql requires explicit isolated libpq loader path. No DB connection/DDL/role/config/durability checks executed.",
+      "licenseMetadata": "PostgreSQL license; exact packaged copyright/dependency closure not reviewed",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Python",
+      "candidateVersion": "3.12.3-1ubuntu0.17",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "ubuntu-python",
+        "python-lifecycle"
+      ],
+      "supportAndCompatibility": "Ubuntu-maintained Python3.12 interpreter package; upstream3.12 security lifecycle until2028-10. CLI3.12.3 alone is not package patch revision nor sandbox certification.",
+      "licenseMetadata": "PSF family; packaged copyright/dependency closure pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "C++20 compiler",
+      "candidateVersion": "13.3.0-6ubuntu2~24.04.1",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "ubuntu-g++",
+        "gcc-cxx20"
+      ],
+      "supportAndCompatibility": "GCC13 package is distribution maintained. Explicit -std=c++20 and fixed SDK/compiler flags required; upstream warns C++20 ABI not stable untilGCC16 and modules experimental. Do not claim unrestricted complete C++20 feature support or certify compiler/runtime from --version.",
+      "licenseMetadata": "GPL-3.0-or-later compiler; runtime exceptions and exact package notices pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Rust/Cargo native and WASM toolchain",
+      "candidateVersion": "1.99.1",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "rust-platform",
+        "wasm-target"
+      ],
+      "supportAndCompatibility": "Current stable manifest2026-10-15 reports rustc1.99.1; installed1.99.0 is separate. Manifest Cargo package version0.100.0 is not CLI version. x86_64-unknown-linux-gnu host and wasm32-unknown-unknown std published; latter Tier2 with limited OS APIs, LLD and browser-feature compatibility needed. No automatic update authorized.",
+      "licenseMetadata": "MIT OR Apache-2.0 plus bundled dependencies; exact SBOM pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "protoc",
+      "candidateVersion": "36.2",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "protoc-support"
+      ],
+      "supportAndCompatibility": "36.x active upstream support; latest stable release API matches installed compiler. Generated Rust/TS plugin/runtime closure still needs exact pins and regeneration evidence; C++ protobuf runtime requires exact gencode version.",
+      "licenseMetadata": "BSD-3-Clause upstream; exact bundled notices pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "runsc",
+      "candidateVersion": "release-20261012.0",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "runsc-install"
+      ],
+      "supportAndCompatibility": "Latest stable API now20261012.0, installed20261005.0 unchanged. x86_64/Linux>=5.6 documented, not GA6.8 workload certification. Sidecar files exist and are hashed, but sidecar provenance/ELF dependency closure, negative canaries/accounting/freezer/cleanup remain unproven.",
+      "licenseMetadata": "Apache-2.0 upstream plus bundled dependencies; exact SBOM pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "OCI launcher/runc",
+      "candidateVersion": "1.5.2",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [],
+      "supportAndCompatibility": "Official stable release API candidate; installed distro runc1.3.4 differs. runc is NOT a permitted native fallback for untrusted Bots. Actual narrow launcher/reaper integration and privileges are not certified.",
+      "licenseMetadata": "Apache-2.0 upstream; exact bundled notices pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Node24/npm",
+      "candidateVersion": "24.22.0 / npm11.19.1",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "node24-index",
+        "node-releases",
+        "node24-checksums"
+      ],
+      "supportAndCompatibility": "Official Node24 LTS Krypton, linux-x64 asset; installed explicit Node24.22.0 matches, PATH Node24.21.0 differs. npm entrypoint hash covers54byte JS launcher only, not full npm tree or interpreter. Explicit executable/child PATH binding is required.",
+      "licenseMetadata": "MIT Node with third-party notices; npm Artistic-2.0 metadata not fetched in this pass, exact license review pending",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "wasm-bindgen crate + CLI",
+      "candidateVersion": "0.2.129",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "wasm-bindgen-crate",
+        "wasm-cli-crate",
+        "wasm-bindgen-guide",
+        "wasm-target"
+      ],
+      "supportAndCompatibility": "Official GitHub release and crates.io metadata: crate MSRV1.81, CLI MSRV1.86, both below installed Rust1.99.0. CLI and linked crate must be pinned compatibly; exact matching0.2.129 proposed, not selected. Linuxx86_64musl release asset exists; no x86_64gnu asset observed. WASM std target absent at installed rust sysroot; wasm-bindgen CLI absent from PATH. Browser bundler target and native/WASM parity untested. npm wasm-bindgen is unrelated security-placeholder and explicitly excluded.",
+      "licenseMetadata": "MIT OR Apache-2.0",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Next",
+      "candidateVersion": "16.4.2",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "next-support",
+        "next-install"
+      ],
+      "supportAndCompatibility": "16.x ActiveLTS. npm engines>=20.9.0 admitsNode24; React/react-dom^19 admits19.3.1. Current workspace remains Vite and lacks Next lock entry, so not integrated. Native SWC/Sharp closure unverified.",
+      "licenseMetadata": "MIT registry metadata",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "React/react-dom",
+      "candidateVersion": "19.3.1",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "next-install"
+      ],
+      "supportAndCompatibility": "Registry React engine>=0.10; react-dom peer^19.3.1. Next16.4.2 peers admit pair. Existing lock18.3.1 differs; no rendered/hydration/SSR evidence.",
+      "licenseMetadata": "MIT registry metadata",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Fastify",
+      "candidateVersion": "5.12.7",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "fastify-lts",
+        "fastify-ci"
+      ],
+      "supportAndCompatibility": "Release-pinned CI explicitly Node20/22/24/26 on Linux/macOS/Windows; official LTS policy tests supported Node LTS latest patches. Package declares no engines; existing lock5.12.5 differs. Plugin/native closure unverified.",
+      "licenseMetadata": "MIT registry metadata",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Tailwind/postcss/oxide",
+      "candidateVersion": "4.3.3",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "tailwind-guide"
+      ],
+      "supportAndCompatibility": "Official Next guide uses tailwindcss,@tailwindcss/postcss,postcss. Registry postcss adapter pins4.3.3 components, needs postcss^8.5.16; Next uses8.5.23. Oxide engines>=20 admitsNode24. Native platform package closure/build/browser support and installed artifacts unverified.",
+      "licenseMetadata": "MIT registry metadata",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "shadcn copied source",
+      "candidateVersion": "ad0a097d30cf9524ac4a3b5294c9513c5c344672",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "shadcn-commit",
+        "shadcn-react",
+        "shadcn-pinned-package",
+        "shadcn-pinned-license"
+      ],
+      "supportAndCompatibility": "CLI4.22.0 is not copied-source version. Exact commit resolves tagshadcn@4.22.0, pinned demo usesNext16.3.8/React19.2.3. Docs supportReact19/Tailwind4 but warn outdated guidance. Need exact dashboard-01/sidebar-07/component files, individual hashes, full peer closure and attribution; no copied assets approved by this inventory.",
+      "licenseMetadata": "MIT pinned repository LICENSE observed",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "brackets-viewer",
+      "candidateVersion": "1.9.1",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "brackets-readme",
+        "brackets-license"
+      ],
+      "supportAndCompatibility": "VanillaJS upstream usable across frameworks, no exact Next16/React19/Node24 support declaration observed. Client-only rendering/disposal/accessibility adapter remains untested; manager dependency must not become scoring authority. npm licenseISC versus repositoryMIT discrepancy preserved; actual selected artifact LICENSE requires inspection.",
+      "licenseMetadata": "CONFLICT: ISC registry versus MIT repository",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    },
+    {
+      "name": "Monaco",
+      "candidateVersion": "0.57.0",
+      "selectedReleasePin": false,
+      "status": "CANDIDATE_METADATA_ONLY_NOT_CERTIFIED",
+      "supportSourceIds": [
+        "monaco-readme"
+      ],
+      "supportAndCompatibility": "Browser/ESM editor needs HTTP(S) web workers; upstream explicitly no mobile browser support. Next client-only lazy selfhost worker integration and mobile textarea fallback per spec required. No engine/React peers declared; existing wrapper not implicitly validated for React19.",
+      "licenseMetadata": "MIT registry metadata",
+      "artifactSha256Verified": null,
+      "signatureVerified": false
+    }
+  ],
+  "currentUpstreamMetadata": {
+    "next": {
+      "sourceUrl": "https://registry.npmjs.org/next/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "next",
+        "version": "16.4.2",
+        "license": "MIT",
+        "engines": {
+          "node": ">=20.9.0"
+        },
+        "peerDependencies": {
+          "sass": "^1.3.0",
+          "react": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0",
+          "react-dom": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0",
+          "@playwright/test": "^1.51.1",
+          "@opentelemetry/api": "^1.1.0",
+          "babel-plugin-react-compiler": "*"
+        },
+        "dependencies": {
+          "postcss": "8.5.23",
+          "@next/env": "16.4.2",
+          "styled-jsx": "5.1.6",
+          "@swc/helpers": "0.5.23",
+          "caniuse-lite": "^1.0.30001579",
+          "baseline-browser-mapping": "^2.9.19"
+        },
+        "dist": {
+          "shasum": "5b35585834dd7ed338099723eefe117eb6ab497b",
+          "tarball": "https://registry.npmjs.org/next/-/next-16.4.2.tgz",
+          "fileCount": 8690,
+          "integrity": "sha512-r+oBJojfefUjOiWkBhXgLS+igxX/7BWyK59uHnyOyplMSLtBZ+QLP3okrdYTbrfrbrmNTVWLBPaHDX9KRaIt3w==",
+          "signatures": [
+            {
+              "sig": "MEUCIBJU9xbb/wbuS42idTzzcSnj16UvCTgWEGkp+o4Rdm9VAiEAmjiQqhr3ATBa1NE8dtE2LwHxAiUd997VjXfe3LHoCkM=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            },
+            {
+              "sig": "MEUCIB5fOb32vsM4KMVNpbscR16j3peCrChqvXCB79dqnAHZAiEA8c0cJxXsGKDTasckOeGDDvoejmvr+utP9JFYtaK3oEM=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/next@16.4.2",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 192517704
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "react": {
+      "sourceUrl": "https://registry.npmjs.org/react/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "react",
+        "version": "19.3.1",
+        "license": "MIT",
+        "engines": {
+          "node": ">=0.10.0"
+        },
+        "peerDependencies": null,
+        "dependencies": null,
+        "dist": {
+          "shasum": "26e9523fc36ea06be5050ebb780249a133260ad7",
+          "tarball": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
+          "fileCount": 27,
+          "integrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
+          "signatures": [
+            {
+              "sig": "MEUCIDFKwsaTXLOJNpD3WJ6dy5E7wkTf2QNrZgmlItJn3Cy4AiEAoAvLd5MEj+CHKGO1a81NFTiC79fQLibq7JqAPGvPC0w=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            },
+            {
+              "sig": "MEQCIG60Jz/rQm93/m8ZTZvxX3fxIhTqB5EnASV642pG4n94AiA8XxzTRyCDS6L54HKPSciJX3l/dcW5MjgnFd4plotjSg==",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/react@19.3.1",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 178663
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "react-dom": {
+      "sourceUrl": "https://registry.npmjs.org/react-dom/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "react-dom",
+        "version": "19.3.1",
+        "license": "MIT",
+        "engines": null,
+        "peerDependencies": {
+          "react": "^19.3.1"
+        },
+        "dependencies": {
+          "scheduler": "^0.28.0"
+        },
+        "dist": {
+          "shasum": "b384c53cfcbe9c2a5d09d863b98455de9d68afe2",
+          "tarball": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
+          "fileCount": 43,
+          "integrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
+          "signatures": [
+            {
+              "sig": "MEYCIQDKhj2WJ0+n7p8mYN1rC0wCt9+cD0S58A7JGp6iSDsusgIhAIzdEcBxzxMDJ5pGXlJ1Qw+Utal8MwAbfud/9Fm04N1N",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            },
+            {
+              "sig": "MEYCIQCVaB5TV8fUMl1DUqtKZxsqf+6v/itdKfx9lY/4yHu8kwIhANkvM3hU52XEwXbe6/xrseK88Q6blbENfk+peCPY6Ih4",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/react-dom@19.3.1",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 8067632
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "fastify": {
+      "sourceUrl": "https://registry.npmjs.org/fastify/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "fastify",
+        "version": "5.12.7",
+        "license": "MIT",
+        "engines": null,
+        "peerDependencies": null,
+        "dependencies": {
+          "pino": "^9.14.0 || ^10.1.0",
+          "rfdc": "^1.3.1",
+          "avvio": "^9.0.0",
+          "semver": "^7.6.0",
+          "toad-cache": "^3.7.0",
+          "find-my-way": "^9.6.0",
+          "@fastify/error": "^4.0.0",
+          "process-warning": "^5.1.0",
+          "abstract-logging": "^2.0.1",
+          "light-my-request": "^6.0.0",
+          "secure-json-parse": "^4.0.0",
+          "@fastify/proxy-addr": "^5.0.0",
+          "fast-json-stringify": "^7.0.0",
+          "@fastify/ajv-compiler": "^4.0.5",
+          "@fastify/fast-json-stringify-compiler": "^5.0.0"
+        },
+        "dist": {
+          "shasum": "e8f9859b1ae908ba38bbdb0572d358788c4a4b46",
+          "tarball": "https://registry.npmjs.org/fastify/-/fastify-5.12.7.tgz",
+          "fileCount": 363,
+          "integrity": "sha512-v4pEPsTRPuqlDIYiQFB+BHjVN4SdHX9u0ABk0ZDUKbbdY1vsNryUd1j4Z+jQEZajvYIVk047Kimva9/AJ79GYw==",
+          "signatures": [
+            {
+              "sig": "MEUCIQDdLs777TiwOslMO/idGH05bxg80+NjE7/tiBTtFyMCNAIgFmARpbbz4ZQXQvmLD3sOf68PwnyIIm4RGfYYCLP2ZYA=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            },
+            {
+              "sig": "MEQCIDGArf4SMO2pVJisYrvvKpJADAJoLzXwIR92e/18A8O5AiBgzwF5w6jvb59Zt8o1+Cd4y1EPh8G/6R96Q3i42OH4Ew==",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "unpackedSize": 2970996
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "tailwindcss": {
+      "sourceUrl": "https://registry.npmjs.org/tailwindcss/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "tailwindcss",
+        "version": "4.3.3",
+        "license": "MIT",
+        "engines": null,
+        "peerDependencies": null,
+        "dependencies": null,
+        "dist": {
+          "shasum": "c006861611c213c1877893ab5b23daa16be2bb55",
+          "tarball": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz",
+          "fileCount": 34,
+          "integrity": "sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==",
+          "signatures": [
+            {
+              "sig": "MEQCIBhVHX/RChjUWt77CdssLibpRhMHsS3XWOKLRtP/ibJvAiBt9/qLAVxC6nR+eobWqzs5j/1ztHVMWGH0p/sMFj08bw==",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/tailwindcss@4.3.3",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 772893
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "@tailwindcss/postcss": {
+      "sourceUrl": "https://registry.npmjs.org/@tailwindcss/postcss/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "@tailwindcss/postcss",
+        "version": "4.3.3",
+        "license": "MIT",
+        "engines": null,
+        "peerDependencies": null,
+        "dependencies": {
+          "postcss": "^8.5.16",
+          "tailwindcss": "4.3.3",
+          "@alloc/quick-lru": "^5.2.0",
+          "@tailwindcss/node": "4.3.3",
+          "@tailwindcss/oxide": "4.3.3"
+        },
+        "dist": {
+          "shasum": "dc14df6477edc16087df1663617ee23bc1042610",
+          "tarball": "https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.3.3.tgz",
+          "fileCount": 7,
+          "integrity": "sha512-JTSZZGQi1AyKirbLN3azmjVzef92tcX7h+iSqPdaeStyFpGpDlKvvpxeOE8njhbUanbRwr3z8DyzhICWnMtQeg==",
+          "signatures": [
+            {
+              "sig": "MEUCICxRkPecO9+yyQ7ULS0msC3psAkYpbrtzIoTLpvJ4VyxAiEA9MMzo8YZ/F5Pn3hMF4Wg9GCzxms0phvOEuhfN4xgxi8=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/@tailwindcss%2fpostcss@4.3.3",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 100480
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "@tailwindcss/oxide": {
+      "sourceUrl": "https://registry.npmjs.org/@tailwindcss/oxide/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "@tailwindcss/oxide",
+        "version": "4.3.3",
+        "license": "MIT",
+        "engines": {
+          "node": ">= 20"
+        },
+        "peerDependencies": null,
+        "dependencies": null,
+        "dist": {
+          "shasum": "6266109d025cfcb04f8e4c58954a6f630a415b7f",
+          "tarball": "https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.3.3.tgz",
+          "fileCount": 4,
+          "integrity": "sha512-krXjAikiaFSPaK/FkAQT5UTx3VormQaiZ5hBFlJZ9UFQGB/rwg1MZIhHAG9smMQRTdyJxP6Qt5MwMtdyU5FWrA==",
+          "signatures": [
+            {
+              "sig": "MEUCIQDfoh40SFdKwOmL382MtobZdI3jtEeEBMg26aC7gWoWsAIgHnQzejwfwuIOunIuw3warKAhvqp9K5NSe6GUfz9QxLs=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/@tailwindcss%2foxide@4.3.3",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 29502
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "monaco-editor": {
+      "sourceUrl": "https://registry.npmjs.org/monaco-editor/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "monaco-editor",
+        "version": "0.57.0",
+        "license": "MIT",
+        "engines": null,
+        "peerDependencies": null,
+        "dependencies": {
+          "marked": "14.0.0",
+          "dompurify": "3.4.15"
+        },
+        "dist": {
+          "shasum": "9889fb51ddc27fe90e6da0e96c237c852adc4654",
+          "tarball": "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.57.0.tgz",
+          "fileCount": 1918,
+          "integrity": "sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==",
+          "signatures": [
+            {
+              "sig": "MEUCIQCNmUftR9Ni3e7Sn1qtIrmlvbzbDhTofwvuVzmmiXlUbAIgM1wS4qFmXXmpwhdsiNKQjq76CGQuOslla6SB2P7cOKk=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            },
+            {
+              "sig": "MEYCIQDZeMpyQUFeuro0ASCZvqm8FsmWVEjzSL2d5T2+0yl52QIhALCVNiolVQDP2n/cUeBxixDXgsACN68TZvxnAyLGbp6c",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "unpackedSize": 101674083
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "brackets-viewer": {
+      "sourceUrl": "https://registry.npmjs.org/brackets-viewer/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "brackets-viewer",
+        "version": "1.9.1",
+        "license": "ISC",
+        "engines": null,
+        "peerDependencies": null,
+        "dependencies": {
+          "util": "^0.12.4",
+          "i18next": "^21.6.14",
+          "process": "^0.11.10",
+          "brackets-model": "^1.7.0",
+          "path-browserify": "^1.0.1",
+          "brackets-manager": "^1.11.0",
+          "brackets-memory-db": "^1.0.6",
+          "i18next-browser-languagedetector": "^6.1.4"
+        },
+        "dist": {
+          "shasum": "48fda351a071ebc55b21785b0cf1fde16bfad6d3",
+          "tarball": "https://registry.npmjs.org/brackets-viewer/-/brackets-viewer-1.9.1.tgz",
+          "fileCount": 13,
+          "integrity": "sha512-+B29mJBsc2G4yWGQAve4HukmETQgm27TshwOKaXJfl3zCKO5yji+fLQdP1/bSWB0LulF9QzBKGPsiWYU8NYcow==",
+          "signatures": [
+            {
+              "sig": "MEUCIGKa69CJ4c97tSJKvbdf/tCf/akyAup5HMRS6bSVyyMRAiEA6frE6Nl6whn06dnT3nuE9mDVd4wnW1Znqhcp+C6bIos=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/brackets-viewer@1.9.1",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 433452
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "shadcn": {
+      "sourceUrl": "https://registry.npmjs.org/shadcn/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "name": "shadcn",
+        "version": "4.22.0",
+        "license": "MIT",
+        "engines": {
+          "node": ">=20.18.1"
+        },
+        "peerDependencies": null,
+        "dependencies": {
+          "cn": "^0.2.4",
+          "ora": "^8.2.0",
+          "zod": "^4.2.0",
+          "diff": "^8.0.2",
+          "open": "^11.0.4",
+          "execa": "^9.6.0",
+          "kleur": "^4.1.5",
+          "socks": "^2.8.8",
+          "dedent": "^1.6.0",
+          "recast": "^0.23.11",
+          "undici": "^7.29.1",
+          "postcss": "^8.5.23",
+          "prompts": "^2.4.2",
+          "fs-extra": "^11.3.1",
+          "ts-morph": "^26.0.0",
+          "commander": "^14.0.0",
+          "deepmerge": "^4.3.1",
+          "fast-glob": "^3.3.3",
+          "fuzzysort": "^3.1.0",
+          "@babel/core": "^7.28.0",
+          "browserslist": "^4.29.3",
+          "@babel/parser": "^7.28.0",
+          "tsconfig-paths": "^4.2.0",
+          "@dotenvx/dotenvx": "^1.48.4",
+          "@shadcn/registry": "0.2.0",
+          "stringify-object": "^5.0.0",
+          "postcss-selector-parser": "^7.1.6",
+          "@babel/preset-typescript": "^7.27.1",
+          "@modelcontextprotocol/sdk": "^1.32.0",
+          "validate-npm-package-name": "^7.0.1",
+          "@types/validate-npm-package-name": "^4.0.2",
+          "@babel/plugin-transform-typescript": "^7.28.0"
+        },
+        "dist": {
+          "shasum": "c0708e91b09703138fb81544da1329c2cdf0d315",
+          "tarball": "https://registry.npmjs.org/shadcn/-/shadcn-4.22.0.tgz",
+          "fileCount": 21,
+          "integrity": "sha512-QKR3XUnatWlgo8IbZqGHrpsxjgdsfpPSAvJvLntQqAxPEf5U2sNsjDYLAS2xmFrOkC9lpj5UpZbrh/BuHrE2CQ==",
+          "signatures": [
+            {
+              "sig": "MEYCIQDqDT1wK5FF3o3QRKEILsI3w+Y5NYiRzcQhBPbp5uwLHQIhAOCEzGBA6DBE1HOGmKfRj/+aduYkuvJnbCpLH4ti6EZ2",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            },
+            {
+              "sig": "MEUCIQCPXS1th2y2sEb2dTuJZKyaSOCMRk0GEkNgJqN/7sfaPwIgKl92ypyM2Rivb/ADfakxQRb1+qUkUy4wIhiRe2b5W3I=",
+              "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+            }
+          ],
+          "attestations": {
+            "url": "https://registry.npmjs.org/-/npm/v1/attestations/shadcn@4.22.0",
+            "provenance": {
+              "predicateType": "https://slsa.dev/provenance/v1"
+            }
+          },
+          "unpackedSize": 217123
+        },
+        "os": null,
+        "cpu": null,
+        "libc": null
+      }
+    },
+    "gvisor": {
+      "sourceUrl": "https://api.github.com/repos/google/gvisor/releases/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "tag_name": "release-20261012.0",
+        "published_at": "2026-10-16T20:53:24Z",
+        "html_url": "https://github.com/google/gvisor/releases/tag/release-20261012.0",
+        "draft": false,
+        "prerelease": false,
+        "target_commitish": "master",
+        "assets": [
+          {
+            "name": "gvisor-x86_64.tar.bz2",
+            "size": 100743091,
+            "digest": "sha256:180dd277f657c1478f09490e8a9a595f7378257510b43d1d3694a769aef9ed02",
+            "browser_download_url": "https://github.com/google/gvisor/releases/download/release-20261012.0/gvisor-x86_64.tar.bz2"
+          },
+          {
+            "name": "gvisor-x86_64.tar.zstd",
+            "size": 76363853,
+            "digest": "sha256:21c1f60222826204e57eda551efc68fcdfd94a3ba2ef3e01d2a43d8bc4429e51",
+            "browser_download_url": "https://github.com/google/gvisor/releases/download/release-20261012.0/gvisor-x86_64.tar.zstd"
+          },
+          {
+            "name": "SHA256SUMS",
+            "size": 356,
+            "digest": "sha256:87896baf389016713f9abab5a67c249437b3de3a4edf243b0c8024948beec760",
+            "browser_download_url": "https://github.com/google/gvisor/releases/download/release-20261012.0/SHA256SUMS"
+          }
+        ]
+      }
+    },
+    "protobuf": {
+      "sourceUrl": "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "tag_name": "v36.2",
+        "published_at": "2026-09-17T17:33:01Z",
+        "html_url": "https://github.com/protocolbuffers/protobuf/releases/tag/v36.2",
+        "draft": false,
+        "prerelease": false,
+        "target_commitish": "main",
+        "assets": [
+          {
+            "name": "protoc-36.2-linux-x86_64.zip",
+            "size": 3681545,
+            "digest": "sha256:121f6c7afe1d4d0e3ea6aab9432038599250134cbf4474cb1167d2c7decd4278",
+            "browser_download_url": "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_64.zip"
+          },
+          {
+            "name": "protoc-36.2-osx-x86_64.zip",
+            "size": 2760113,
+            "digest": "sha256:228cc7add4616cc14ca5e80dee83209d44449a7aee95a914ae748fa374efb078",
+            "browser_download_url": "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-osx-x86_64.zip"
+          }
+        ]
+      }
+    },
+    "runc": {
+      "sourceUrl": "https://api.github.com/repos/opencontainers/runc/releases/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "tag_name": "v1.5.2",
+        "published_at": "2026-09-25T21:13:32Z",
+        "html_url": "https://github.com/opencontainers/runc/releases/tag/v1.5.2",
+        "draft": false,
+        "prerelease": false,
+        "target_commitish": "main",
+        "assets": [
+          {
+            "name": "runc.amd64",
+            "size": 10866512,
+            "digest": "sha256:599f6f94ff8c5057241eff0d54c3c74f95c34935b6457b33fe545defc61e9488",
+            "browser_download_url": "https://github.com/opencontainers/runc/releases/download/v1.5.2/runc.amd64"
+          },
+          {
+            "name": "runc.amd64.asc",
+            "size": 488,
+            "digest": "sha256:2b36d2bfd696ce0fb90e0b7d218f74a258eb1294586abc1130d561b9eb58c04f",
+            "browser_download_url": "https://github.com/opencontainers/runc/releases/download/v1.5.2/runc.amd64.asc"
+          },
+          {
+            "name": "runc.sha256sum",
+            "size": 1239,
+            "digest": "sha256:1922bc06670a35b95f9d9c0e730294482717a2660a538c4ea6d5ccba7eb665af",
+            "browser_download_url": "https://github.com/opencontainers/runc/releases/download/v1.5.2/runc.sha256sum"
+          }
+        ]
+      }
+    },
+    "wasm-bindgen-release": {
+      "sourceUrl": "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/latest",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "tag_name": "0.2.129",
+        "published_at": "2026-09-25T07:13:03Z",
+        "html_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/tag/0.2.129",
+        "draft": false,
+        "prerelease": false,
+        "target_commitish": "main",
+        "assets": [
+          {
+            "name": "wasm-bindgen-0.2.129-aarch64-apple-darwin.tar.gz.sha256sum",
+            "size": 126,
+            "digest": "sha256:69cb97c44a635179e5626613dcb85a9916d6f0c52bba9f3168658ecbf87cbeb8",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-apple-darwin.tar.gz.sha256sum"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-aarch64-unknown-linux-gnu.tar.gz.sha256sum",
+            "size": 131,
+            "digest": "sha256:1b747f1c042ed4458b6504e5bf3d23f7ca468c1d505c7f5f991cf2fd192fad16",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-unknown-linux-gnu.tar.gz.sha256sum"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-aarch64-unknown-linux-musl.tar.gz.sha256sum",
+            "size": 132,
+            "digest": "sha256:67697f7a79728edcbec29ad73e1f4210aeb2d98b4a0aed998452761ca9e9743d",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-unknown-linux-musl.tar.gz.sha256sum"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-riscv64gc-unknown-linux-gnu.tar.gz.sha256sum",
+            "size": 133,
+            "digest": "sha256:8dc6364582aa2b14a128f8a08bf1863b7b4bb97d563cd8f70f26604f06be49ee",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-riscv64gc-unknown-linux-gnu.tar.gz.sha256sum"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz",
+            "size": 8374457,
+            "digest": "sha256:7e028879a68ec53dae14048b55cc5215f6df75b17a9c1426fac8fa086d3202fd",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz.sha256sum",
+            "size": 125,
+            "digest": "sha256:26fbf9797a35c907462b93b85661c7eda7e6148689e5418147d088fb7c8a210b",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz.sha256sum"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz",
+            "size": 7845552,
+            "digest": "sha256:79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz.sha256sum",
+            "size": 128,
+            "digest": "sha256:47c81dce38e2dbd0c1c5c6590649f385aa13fbe4a05e7a36f484fea1a2890e20",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz.sha256sum"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz",
+            "size": 11695824,
+            "digest": "sha256:82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz"
+          },
+          {
+            "name": "wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz.sha256sum",
+            "size": 131,
+            "digest": "sha256:2ed51cf79704934ae3b2ce3430e1844578660fee7a73cbb655b34fc8858f122a",
+            "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz.sha256sum"
+          }
+        ]
+      }
+    },
+    "rust-stable": {
+      "sourceUrl": "https://static.rust-lang.org/dist/channel-rust-stable.toml",
+      "status": "METADATA_OBSERVED_NOT_ARTIFACT_VERIFIED",
+      "metadata": {
+        "date": "2026-10-15",
+        "packages": {
+          "rustc": {
+            "version": "1.99.1 (58cf8f9c3 2026-10-13)",
+            "host": {
+              "available": true,
+              "url": "https://static.rust-lang.org/dist/2026-10-15/rustc-1.99.1-x86_64-unknown-linux-gnu.tar.gz",
+              "hash": "85e7c0e6f21636f714e2a42966011364a6cc56b6548126d32144d6ba90904966",
+              "xz_url": "https://static.rust-lang.org/dist/2026-10-15/rustc-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+              "xz_hash": "2ff05ff9c08a90861e7f6e4065b40a8b87463b4576186fd613871c3e37f2091f"
+            },
+            "wasm": null
+          },
+          "cargo": {
+            "version": "0.100.0 (5f94df478 2026-08-27)",
+            "host": {
+              "available": true,
+              "url": "https://static.rust-lang.org/dist/2026-10-15/cargo-1.99.1-x86_64-unknown-linux-gnu.tar.gz",
+              "hash": "47babc028247e26577f8a1bf390b11f447ad9b7ab93f5c9a0dda078935fc149b",
+              "xz_url": "https://static.rust-lang.org/dist/2026-10-15/cargo-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+              "xz_hash": "53f3521949404d595efb06a55c12c5658d4ed1c75566f33d3d514eaebe70bd8a"
+            },
+            "wasm": null
+          },
+          "rust-std": {
+            "version": "1.99.1 (58cf8f9c3 2026-10-13)",
+            "host": {
+              "available": true,
+              "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.gz",
+              "hash": "d1290c05994a59c029e562cb75be1bddc6fb11a4c501e1b7b0f61d119c6cbb12",
+              "xz_url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+              "xz_hash": "109b074225bf5b9ea3820890876bfdf4ed161adbfaf94b2b4b5984c85ee5d958"
+            },
+            "wasm": {
+              "available": true,
+              "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-wasm32-unknown-unknown.tar.gz",
+              "hash": "fdc80d2da1effc88df0bae8503ad117d268a4854afb14a8e31fd1ef6df0aad17",
+              "xz_url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-wasm32-unknown-unknown.tar.xz",
+              "xz_hash": "5f628f857dd00a8aa3fcac2e275665d2782066a5795274ed124c5b560f46423c"
+            }
+          }
+        }
+      }
+    }
+  },
+  "node24ReleaseMetadata": {
+    "version": "v24.22.0",
+    "date": "2026-10-14",
+    "files": [
+      "aix-ppc64",
+      "headers",
+      "linux-arm64",
+      "linux-ppc64le",
+      "linux-s390x",
+      "linux-x64",
+      "linux-x64-musl",
+      "osx-arm64-tar",
+      "osx-x64-pkg",
+      "osx-x64-tar",
+      "src",
+      "win-arm64-7z",
+      "win-arm64-zip",
+      "win-x64-7z",
+      "win-x64-exe",
+      "win-x64-msi",
+      "win-x64-zip"
+    ],
+    "npm": "11.19.1",
+    "v8": "13.6.233.17",
+    "uv": "1.52.1",
+    "zlib": "1.3.2.1-motley",
+    "openssl": "3.5.8",
+    "modules": "137",
+    "lts": "Krypton",
+    "security": false
+  },
+  "node24PublishedArchiveSha256": {
+    "artifact": "node-v24.22.0-linux-x64.tar.xz",
+    "publishedSha256": "cc2f601cee82d9a5a233302fe307abc600727035fd7d2c3a3571755989e95008",
+    "sourceId": "node24-checksums",
+    "artifactDownloadedOrVerified": false
+  },
+  "supportSources": [
+    {
+      "id": "node-releases",
+      "url": "https://nodejs.org/en/about/previous-releases",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "88cd8401d7b1aa63e8efe215c2eb4492a9d5586c9fdcde0703d7d8747e7cd43e"
+    },
+    {
+      "id": "node24-index",
+      "url": "https://nodejs.org/dist/index.json",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "b52f521b8e24898364b74f03596afef1f97c1448014df7c2b5ebdcd2b69ca4a9"
+    },
+    {
+      "id": "postgres-policy",
+      "url": "https://www.postgresql.org/support/versioning/",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "c1e471c7576f24353ac2450b14734a4898782a738158b1fb68d3d871496f7dd6"
+    },
+    {
+      "id": "ubuntu-pg16",
+      "url": "https://packages.ubuntu.com/noble-updates/postgresql-16",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "d453201ffe70f339c41b8a80689a5771d0e9a1935f929a90565d8b9b01b5fc01"
+    },
+    {
+      "id": "ubuntu-python",
+      "url": "https://packages.ubuntu.com/noble-updates/python3.12",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "b1b41f49b12f56405e193ecd73b1ec9ff7fd22665e556df4c36df62b3c0ae260"
+    },
+    {
+      "id": "ubuntu-g++",
+      "url": "https://packages.ubuntu.com/noble-updates/g++-13",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "d73e3832a89cb6995dddc9f753dd82c93742a6caf80f16706c2623483bd9e4ca"
+    },
+    {
+      "id": "ubuntu-kernel",
+      "url": "https://packages.ubuntu.com/noble-updates/linux-image-generic-6.8",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "48b4d94e02ab7b85f1add27a6ea3070421cda4f3d7ae5068f745216b735c4f09"
+    },
+    {
+      "id": "ubuntu-lifecycle",
+      "url": "https://ubuntu.com/about/release-cycle",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "c592f65a8c7b02f2f8b8daab089254a1887c60c889011bab28da99ee57df5a29"
+    },
+    {
+      "id": "python-lifecycle",
+      "url": "https://devguide.python.org/versions/",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "cf77c49d04e88f575e8c667016267e60bf5a28e4d9ffc71fc29c201a7b722a46"
+    },
+    {
+      "id": "gcc-cxx20",
+      "url": "https://gcc.gnu.org/projects/cxx-status.html",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "887d50a2e7740f08959bb727b4fa81dee01bebee45d4a8dec9eb622656b6fd78"
+    },
+    {
+      "id": "fastify-lts",
+      "url": "https://fastify.dev/docs/latest/Reference/LTS/",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "d72400bdd8f77fd61694678572446bd808b0754d03f2716b526a5f2a53ead12b"
+    },
+    {
+      "id": "fastify-ci",
+      "url": "https://raw.githubusercontent.com/fastify/fastify/v5.12.7/.github/workflows/ci.yml",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "131aee3e120391a1c4349005d09df67a7d4abc4a2a5b25add691b635b5a723b6"
+    },
+    {
+      "id": "next-support",
+      "url": "https://nextjs.org/support-policy",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "e93fdbf475f168316580b6127362ad82cb9fdc21fbcb02c09b431a009aedf2e5"
+    },
+    {
+      "id": "next-install",
+      "url": "https://nextjs.org/docs/app/getting-started/installation",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "48be52360554df9e4334fc2f46fab2a8a92eb77f5c8745e48ab3f3d269ba20f2"
+    },
+    {
+      "id": "shadcn-react",
+      "url": "https://ui.shadcn.com/docs/react-19",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "b667b18766a3103c79103c40d3cbc4a289862aaa8aa678666ebcb4157609e53b"
+    },
+    {
+      "id": "shadcn-commit",
+      "url": "https://api.github.com/repos/shadcn-ui/ui/commits/shadcn%404.22.0",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "6c6c049527d6ff5d915eed2da5a4467009bcd799e49609cce144ec36641a1e11"
+    },
+    {
+      "id": "shadcn-license",
+      "url": "https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f"
+    },
+    {
+      "id": "brackets-readme",
+      "url": "https://raw.githubusercontent.com/Drarig29/brackets-viewer.js/master/README.md",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "c4599ec276c22da48f774090d8034dedf9f1ce99cb07f97325f505d5e12c35ce"
+    },
+    {
+      "id": "brackets-license",
+      "url": "https://raw.githubusercontent.com/Drarig29/brackets-viewer.js/master/LICENSE",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "1599fa2d5e7465c02df0bbc2ce16465ebf38431b730d152b5f91a56132d327d2"
+    },
+    {
+      "id": "monaco-readme",
+      "url": "https://raw.githubusercontent.com/microsoft/monaco-editor/main/README.md",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "333e7215227199c4ba97ec927bb09cfcf69b297ba3be108e866aed735a312822"
+    },
+    {
+      "id": "wasm-bindgen-guide",
+      "url": "https://wasm-bindgen.github.io/wasm-bindgen/reference/cli.html",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "4edae351e68d26d586e7cd094c85fc948dff00de718bf5b9787a7cc85bb7760e"
+    },
+    {
+      "id": "wasm-bindgen-crate",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen/0.2.129",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "554a855d4e5a170e2d565d9c91304bb33791984194d9b98fab885ed6eac5495d"
+    },
+    {
+      "id": "protoc-support",
+      "url": "https://protobuf.dev/support/version-support/",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "6c159d1317fb09d79d7f32d56d588263592ef6a556701ba9f0379e0a84f25c1b"
+    },
+    {
+      "id": "wasm-target",
+      "url": "https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "c0a92f2594e0022df4948ccf697612f2a7604270a92a857e8958a8ba3d1566c4"
+    },
+    {
+      "id": "rust-platform",
+      "url": "https://doc.rust-lang.org/rustc/platform-support.html",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "322180674044dc30d639bce788ac8a14774e36b29c85c7b3df62630fe28edece"
+    },
+    {
+      "id": "runsc-install",
+      "url": "https://gvisor.dev/docs/user_guide/install/",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "448b945877479e1e7c080af06ad7b4993b4a5da5325861c6c1a363029c6fff81"
+    },
+    {
+      "id": "node24-checksums",
+      "url": "https://nodejs.org/dist/v24.22.0/SHASUMS256.txt",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "8912ada1431af8390bb3e30328d30bca701b59c7a6d5396b491293515c092c46"
+    },
+    {
+      "id": "wasm-cli-crate",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen-cli/0.2.129",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "3d8df34af123de7cf9c4c0625da6d83cef97accb51ad1c7f9300e1706f3a9784"
+    },
+    {
+      "id": "tailwind-guide",
+      "url": "https://tailwindcss.com/docs/installation/framework-guides/nextjs",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "eac8faf7514f71679f401ec09b37506fd9449c2d4bbd562406d7490e370c6da8"
+    },
+    {
+      "id": "shadcn-pinned-package",
+      "url": "https://raw.githubusercontent.com/shadcn-ui/ui/ad0a097d30cf9524ac4a3b5294c9513c5c344672/apps/v4/package.json",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "47ec4d998d5940898aa5df31ed88a804551a213a8d39f95024beba53d79e06dc"
+    },
+    {
+      "id": "shadcn-pinned-license",
+      "url": "https://raw.githubusercontent.com/shadcn-ui/ui/ad0a097d30cf9524ac4a3b5294c9513c5c344672/LICENSE.md",
+      "retrievalStatus": "READ",
+      "retrievedMetadataSha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f"
+    }
+  ],
+  "footprint": {
+    "observations": {
+      "workspace": {
+        "command": [
+          "du",
+          "-sx",
+          "--block-size=1",
+          "/home/ha-thai/OanTuTi-rebuild"
+        ],
+        "exitCode": 0,
+        "stdout": "3362816\t/home/ha-thai/OanTuTi-rebuild",
+        "stderr": ""
+      },
+      "toolchains": {
+        "command": [
+          "du",
+          "-sx",
+          "--block-size=1",
+          "/home/ha-thai/.local/share/oantuti/toolchains"
+        ],
+        "exitCode": 0,
+        "stdout": "2194251776\t/home/ha-thai/.local/share/oantuti/toolchains",
+        "stderr": ""
+      },
+      "preservation": {
+        "command": [
+          "du",
+          "-sx",
+          "--block-size=1",
+          "/home/ha-thai/.local/share/oantuti/rebuild-preservation/20261017T100235Z"
+        ],
+        "exitCode": 0,
+        "stdout": "3399680\t/home/ha-thai/.local/share/oantuti/rebuild-preservation/20261017T100235Z",
+        "stderr": ""
+      },
+      "filesystem": {
+        "command": [
+          "df",
+          "-B1",
+          "--output=source,fstype,size,used,avail,pcent,target",
+          "/home/ha-thai/OanTuTi-rebuild"
+        ],
+        "exitCode": 0,
+        "stdout": "Filesystem     Type    1B-blocks        Used       Avail Use% Mounted on\n/dev/nvme0n1p7 ext4 105518096384 72118468608 27992281088  73% /home",
+        "stderr": ""
+      },
+      "inodes": {
+        "command": [
+          "df",
+          "-i",
+          "/home/ha-thai/OanTuTi-rebuild"
+        ],
+        "exitCode": 0,
+        "stdout": "Filesystem      Inodes  IUsed   IFree IUse% Mounted on\n/dev/nvme0n1p7 6586368 863886 5722482   14% /home",
+        "stderr": ""
+      },
+      "mount": {
+        "command": [
+          "findmnt",
+          "-T",
+          "/home/ha-thai/OanTuTi-rebuild",
+          "-o",
+          "TARGET,SOURCE,FSTYPE,FSROOT,OPTIONS"
+        ],
+        "exitCode": 0,
+        "stdout": "TARGET SOURCE                FSTYPE FSROOT OPTIONS\n/home  /dev/nvme0n1p7[/home] ext4   /home  rw,relatime",
+        "stderr": ""
+      },
+      "kernel": {
+        "command": [
+          "uname",
+          "-srmo"
+        ],
+        "exitCode": 0,
+        "stdout": "Linux 7.0.0-38-generic x86_64 GNU/Linux",
+        "stderr": ""
+      }
+    },
+    "reservePolicy": "ceil(10% filesystem size), historical preparation planning rule; not operator-approved full provisioning budget",
+    "filesystemBytes": 105518096384,
+    "availableBytes": 27992281088,
+    "reserveBytes": 10551809639,
+    "availableAfterReserveBytes": 17440471449,
+    "currentlyInstalledToolchainAllocatedBytes": 2194251776,
+    "fullDownloadExtractBuildCacheDataSpoolPeakBytes": null,
+    "dependencyClosureFootprintBytes": null,
+    "status": "SMALL_EVIDENCE_WRITE_HEADROOM_OBSERVED_FULL_PROVISIONING_BUDGET_UNRESOLVED",
+    "notes": "du reports allocated bytes (not archive expanded byte sizes). Workspace excludes shared .git worktree metadata target outside root. Metadata dist.unpackedSize/release asset sizes are published estimates, not measured complete installed/peak footprint. No cleanup or storage changes."
+  },
+  "missingVerification": [
+    {
+      "id": "BOM-CLOSURE",
+      "phase": "S01/G0",
+      "status": "BLOCKED",
+      "detail": "Exact security-maintained selected pins, full apt offline package set and hashes/snapshot, Cargo/JS packageManager closure, image/SDK/compiler flags/generated schema hashes, SBOM/licenses/notices/advisory scan/provenance and approved canonical signed release manifest not established."
+    },
+    {
+      "id": "WASM-TOOLS",
+      "phase": "S01 toolchain preparation / later S02 parity",
+      "status": "BLOCKED_PREREQUISITE",
+      "detail": "Installed Rust sysroot lacks wasm32-unknown-unknown std; no wasm-bindgen CLI on PATH; exact matched crate/CLI and offline artifact footprint not installed or verified."
+    },
+    {
+      "id": "TOOL-PATH-BINDING",
+      "phase": "S01 development config",
+      "status": "PENDING_PARENT_INTEGRATION",
+      "detail": "Explicit Node24.22/Rust/Cargo/protoc/PG paths needed; inherited PATH Node24.21/npm11.19 differs, psql needs isolated LD_LIBRARY_PATH. No PATH/service config changed here."
+    },
+    {
+      "id": "TARGET",
+      "phase": "G1 release certification",
+      "status": "BLOCKED_EXTERNAL_TARGET",
+      "detail": "Observed kernel7.0.0-38 is not approved GA6.8 target. Need operator target/permissions; never change kernel or reboot from this inventory."
+    },
+    {
+      "id": "PG-ISOLATION",
+      "phase": "S01 development config / S03",
+      "status": "NOT_ASSESSED_PARENT_OWNED",
+      "detail": "Binary16.15 observed only. No connection/init/migration/service calls; isolated arena_rebuild_ namespace/roles/secrets/fsync/checksums/config ACL proof belongs integration owner."
+    },
+    {
+      "id": "RUNTIME-PROOF",
+      "phase": "S02/G1 and later owning gates",
+      "status": "PENDING_RUNTIME_PROOF",
+      "detail": "No three-language gVisor workload/canary/accounting/freezer/cleanup/CPU overshoot or native/WASM parity proof; no build/test run permitted in this task."
+    },
+    {
+      "id": "UI-AND-LICENSE",
+      "phase": "S12-S13/G0",
+      "status": "BLOCKED_METADATA_AND_INTEGRATION",
+      "detail": "Exact shadcn copied component closure/notices, brackets ISC-vs-MIT actual artifact inspection, Monaco workers/client boundary/mobile fallback, Next/React/Tailwind native closure remain unresolved."
+    },
+    {
+      "id": "PEAK-STORAGE",
+      "phase": "Before any install/build/data provisioning",
+      "status": "BLOCKED_UNMEASURED_FOOTPRINT",
+      "detail": "Freebytes exceed10% reserve at observation, not a complete provisioning budget. Missing archive extraction/cache/build/native+WASM/Next/data-spool growth and retained backup footprint; no downloads authorized."
+    },
+    {
+      "id": "EXTERNAL-PROVIDERS",
+      "phase": "Phase-specific later smoke/G2-G4",
+      "status": "PENDING_OPERATOR_INPUT_NOT_INSPECTED",
+      "detail": "TLS/CA/timeauthority, ONLINE controlled mailbox, offhost encrypted backup/key custody/restore target, independent reviewer/human testers/oncall, external load generators/probes are not provided or certified by this inventory. No credential content inspected."
+    }
+  ],
+  "certificationLimit": "Local file hashes establish observed bytes only, not trusted upstream origin, signature validity, exhaustive dependency closure, current advisory clearance, runtime compatibility, product completion or gate approval."
+}

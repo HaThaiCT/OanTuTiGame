@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "TOOLCHAIN_SMOKE_ONLY",
+  "rustcVersion": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "target": "wasm32-unknown-unknown",
+  "compilerExit": 0,
+  "executionEngine": "Node WebAssembly.instantiate",
+  "executionExit": 0,
+  "inputDistances": [
+    0,
+    1,
+    63
+  ],
+  "actual": [
+    25200,
+    12600,
+    393
+  ],
+  "expected": [
+    25200,
+    12600,
+    393
+  ],
+  "temporaryScriptRemoved": true,
+  "gameplayParityCertified": false,
+  "browserCompatibilityCertified": false,
+  "releaseReady": false
+}

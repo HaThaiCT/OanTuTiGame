@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "authorityPlan": "OANTUTI_ARENA_V2_PLAN.md",
+  "releaseReady": false,
+  "requirements": [
+    {"ids": ["PR-01"], "owners": ["S03", "S05", "S09", "S10", "S16"], "status": "NOT_ACCEPTED", "proof": "500 real teams, deadline burst, frozen artifacts and measured actual mixed workload"},
+    {"ids": ["PR-02", "TR-01", "TR-02", "TR-03", "TR-04", "TR-05"], "owners": ["S09", "S11", "S16"], "status": "NOT_ACCEPTED", "proof": "All four formats complete from accepted ledger; exact matching and rating rebuild"},
+    {"ids": ["PR-03", "TR-09"], "owners": ["S06", "S09", "S11", "S17"], "status": "NOT_ACCEPTED", "proof": "Restart-safe progression, real grace barriers, independent 72h soak and 7day rehearsal without admin tab"},
+    {"ids": ["PR-04", "UX-01"], "owners": ["S12", "S13"], "status": "NOT_ACCEPTED", "proof": "Anonymous cold deep links, public SSR/noJS, actual replay/live/standings and privacy network checks"},
+    {"ids": ["PR-05", "SEC-01", "SEC-02", "SEC-03", "SEC-04", "GP-05"], "owners": ["S02", "S06", "S15"], "status": "NOT_ACCEPTED", "proof": "Certified gVisor compiler/perBot isolation, independent watchdog/reaper, tree CPU/freezer and adversarial canaries"},
+    {"ids": ["PR-06", "GP-04"], "owners": ["S02", "S05", "S07", "S09"], "status": "NOT_ACCEPTED", "proof": "Pinned source/artifact/map/rules/runtime/seed/attempt provenance and verified native/WASM replay"},
+    {"ids": ["PR-07", "TR-06", "TR-07", "TR-08"], "owners": ["S06", "S07", "S08", "S10", "S11", "S15"], "status": "NOT_ACCEPTED", "proof": "Fencing/idempotency/crash boundaries, complete durable pin recovery, frozen receipts and revisioned corrections"},
+    {"ids": ["PR-08", "UX-02", "UX-03", "UX-04", "UX-05", "UX-06", "UX-07", "UX-08", "UX-09", "UX-10", "UX-11", "UX-12"], "owners": ["UI_CHECKPOINT", "S12", "S13", "S14", "S15", "S17"], "status": "NOT_ACCEPTED", "proof": "Owner three-screen visual approval; real desktop/mobile/keyboard/AT journeys, distinct human cohorts, offline and longsession proof"},
+    {"ids": ["PR-09", "OPS-01", "OPS-02", "OPS-03", "OPS-04", "OPS-05", "OPS-06", "OPS-07", "OPS-08"], "owners": ["S15", "S16", "S17"], "status": "NOT_ACCEPTED", "proof": "Clone migration, offhost physicalbase/WAL/object restore, operational drills, correlated external load measurements and signed gates"},
+    {"ids": ["GP-01", "GP-02", "GP-03"], "owners": ["S02", "S07", "S08"], "status": "NOT_ACCEPTED", "proof": "Validated maps, correct reciprocal proximity and precedence, terminal immutability, native/WASM conformance"}
+  ],
+  "gateMeanings": {"G0": "baseline/config completeness", "G1": "security isolation", "G2": "correctness/durability", "G3": "capacity/endurance", "G4": "operational release"},
+  "notes": ["Historical COMPLETE labels and constant-true gate tests are not evidence.", "This matrix assigns requirements; it does not certify implementation."]
+}

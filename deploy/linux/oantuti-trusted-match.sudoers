@@ -1,0 +1,2 @@
+# Fixed two-starter development match only; no caller arguments.
+ha-thai ALL=(root) NOPASSWD:NOSETENV: /usr/local/libexec/oantuti/trusted-match-v1/trusted-match.py ""

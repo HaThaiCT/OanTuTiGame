@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-17T21:07:07.246183+00:00",
+  "status": "DEV_SELF_AUDIT_OWNER_APPROVAL_PENDING",
+  "scope": {
+    "routes": [
+      "/",
+      "/tournaments/<id>",
+      "/replays?digest=<digest>",
+      "/workspace",
+      "/organizer"
+    ],
+    "viewports": [
+      {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "method": "headless Chromium: DOM measurements, keyboard Tab traversal, computed styles for :focus-visible"
+  },
+  "measuredBeforeFixes": {
+    "horizontalOverflowPx": {
+      "desktop": 0,
+      "mobile": 0
+    },
+    "controlsWithoutAccessibleName": 0,
+    "imagesWithoutAlt": 0,
+    "mainLandmark": "present on every route",
+    "h1Counts": {
+      "home": 1,
+      "tournament": 1,
+      "replay": 2,
+      "workspace": 1,
+      "organizer": 1
+    },
+    "focusStyle": {
+      "outlineStyle": "auto",
+      "outlineWidth": "1px",
+      "source": "browser default"
+    }
+  },
+  "findingsFixed": [
+    {
+      "finding": "replay page rendered two h1 elements",
+      "fix": "the game id in ReplayViewer is now h2; the page keeps the single h1",
+      "verified": "h1Count 1, h2 = [gameId, 'Danh s\u00e1ch n\u01b0\u1edbc \u0111i']"
+    },
+    {
+      "finding": "the root layout always showed '\u0110\u0103ng nh\u1eadp', even for a signed-in visitor",
+      "fix": "HeaderSession client component reads /api/v2/auth/me, re-reads on pathname change and on an 'oantuti:session-changed' event dispatched by the workspace, and offers logout",
+      "verified": "signed out -> only '\u0110\u0103ng nh\u1eadp'; signed in -> 'Qu\u1ea3n tr\u1ecb Arena' + '\u0110\u0103ng xu\u1ea5t'; after logout -> '\u0110\u0103ng nh\u1eadp'"
+    },
+    {
+      "finding": "no author-defined keyboard focus style; the UA ring is easy to lose on the dark theme",
+      "fix": "global :focus-visible { outline: 2px solid var(--accent-secondary); outline-offset: 2px }",
+      "verified": "computed outline solid 2px rgb(103,232,249) on the first Tab target"
+    }
+  ],
+  "measuredAfterFixes": {
+    "h1Counts": {
+      "home": 1,
+      "tournament": 1,
+      "replay": 1,
+      "workspace": 1,
+      "organizer": 1
+    },
+    "horizontalOverflowPx": {
+      "desktop": 0,
+      "mobile": 0
+    },
+    "focusRing": {
+      "outlineStyle": "solid",
+      "outlineWidth": "2px",
+      "outlineColor": "rgb(103, 232, 249)"
+    },
+    "headerStates": {
+      "signedOut": "\u0110\u0103ng nh\u1eadp",
+      "signedIn": "display name + \u0110\u0103ng xu\u1ea5t",
+      "afterLogout": "\u0110\u0103ng nh\u1eadp"
+    }
+  },
+  "notVerified": [
+    "manual screen-reader pass (NVDA/VoiceOver) with a real participant",
+    "owner/designer approval of the three surfaces",
+    "physical mobile devices and touch targets (only a 390x844 emulated viewport was measured)",
+    "colour-contrast audit against the design-system targets for every token pair"
+  ],
+  "note": "Self-audit of the current build; it does not replace the S12/Checkpoint UI owner sign-off."
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-14T20:48:36.534968+00:00",
+  "developmentOnly": true,
+  "packages": [
+    {
+      "package": "postgresql-16",
+      "version": "16.15-0ubuntu0.24.04.1",
+      "bytes": 15610426,
+      "sha256": "d60ae76fb862cd4cca7bfdcdcdcc271c5e1d75f6b7915305ce2d962735a4b666",
+      "archive": "/home/ha-thai/.local/share/oantuti/toolchains/downloads/postgresql-16_16.15-0ubuntu0.24.04.1_amd64.deb"
+    },
+    {
+      "package": "postgresql-client-16",
+      "version": "16.15-0ubuntu0.24.04.1",
+      "bytes": 1301302,
+      "sha256": "4796f72e1a7270ad8c17b1ecb025cd453f692b42c10aaf89f6b476da61761eac",
+      "archive": "/home/ha-thai/.local/share/oantuti/toolchains/downloads/postgresql-client-16_16.15-0ubuntu0.24.04.1_amd64.deb"
+    },
+    {
+      "package": "libpq5",
+      "version": "16.15-0ubuntu0.24.04.1",
+      "bytes": 151262,
+      "sha256": "3f96dd36bcd7841172c1ead4965da20a193bb9ccf9a93a3f5a3ac7f56369dbb1",
+      "archive": "/home/ha-thai/.local/share/oantuti/toolchains/downloads/libpq5_16.15-0ubuntu0.24.04.1_amd64.deb"
+    }
+  ],
+  "prefix": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15",
+  "libraryPath": "/home/ha-thai/.local/share/oantuti/toolchains/postgresql-16.15/usr/lib/x86_64-linux-gnu",
+  "clusterPath": "/home/ha-thai/.local/share/oantuti/development/pg16/data",
+  "socketDirectory": "/home/ha-thai/.local/share/oantuti/development/pg16/socket",
+  "port": 55432,
+  "listenAddresses": "",
+  "authentication": "peer with explicit development OS-user role map",
+  "dataChecksums": true,
+  "fsync": true,
+  "synchronousCommit": true,
+  "appDdlRejected": true,
+  "committedValueSurvivedCleanRestart": true,
+  "clusterState": "STOPPED",
+  "productionIsolationCertified": false,
+  "notes": [
+    "One workstation user controls developer cluster and peer map; not production OS separation.",
+    "JIT disabled for development; unused optional LLVM dependency not installed.",
+    "No package maintainer scripts/system services/production migrations executed."
+  ]
+}

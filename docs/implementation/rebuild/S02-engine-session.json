@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "status": "ENGINE_AND_SESSION_LOGIC_VERIFIED_RUNTIME_PENDING",
+  "engine": {
+    "validatedConstructors": true,
+    "proximityFormula": "sum(25200/(ChebyshevDistance+1)) integer division",
+    "initialOutcomeBeforeTurn": true,
+    "terminalMovesRejected": true,
+    "illegalMoveMutation": "none observed",
+    "initialStalemateScope": "White only as first mover"
+  },
+  "session": {
+    "contractCrate": "crates/arena-execution",
+    "framing": "u32 big-endian length, max 1MiB",
+    "manifestDigest": "SHA-256 over canonical manifest bytes",
+    "startValidation": "protocol2, identity, digest, manifest schema, validated engine state",
+    "initialTerminal": "GameFinished evidence emitted without RunBotTurn",
+    "turnLoop": "RunBotTurn/TurnObservation/TurnCommitted/GameFinished over duplex stream",
+    "startupAssessment": "independent per side; one fault awards opponent, two faults NO_CONTEST/DOUBLE_FORFEIT",
+    "infrastructureFault": "aborts without fabricated result",
+    "duplicateOrWrongIdentity": "rejected"
+  },
+  "tests": {
+    "engineContract": "8/8 pass",
+    "matchTrace": "6/6 pass",
+    "sessionStart": "3/3 pass",
+    "sessionRun": "3/3 pass",
+    "workspaceTests": "70 passed across 18 suites",
+    "command": "cargo test --workspace --tests --offline"
+  },
+  "notCertified": [
+    "real gVisor Bot execution and accounting",
+    "native/WASM engine parity",
+    "supervisor privileged launcher and cgroup delegation",
+    "GA6.8 target",
+    "G1 security isolation"
+  ],
+  "releaseReady": false
+}

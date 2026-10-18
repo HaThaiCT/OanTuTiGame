@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-14T20:40:42.347735+00:00",
+  "status": "PARTIAL_INSTALLED_EVIDENCE",
+  "developmentOnly": true,
+  "components": [
+    {
+      "name": "rust",
+      "version": "1.99.0",
+      "binaryPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/bin/rustc",
+      "binarySha256": "f3834d26669b03f6855fa54bd2381443123e860167bc0c7a8dd137e5cf6e5e4f",
+      "versionOutput": "rustc 1.99.0 (b940084d7 2026-09-28)",
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "status": "INSTALLED_VERSION_VERIFIED",
+      "runtimeCertification": "PENDING_RUNTIME_PROOF"
+    },
+    {
+      "name": "cargo",
+      "version": "1.99.0",
+      "binaryPath": "/home/ha-thai/.local/share/oantuti/toolchains/rust-1.99.0/bin/cargo",
+      "binarySha256": "e951141cc55a6cd7b9876d187bd30a3720e6086b99413af95e3b8de1cdd72f14",
+      "versionOutput": "cargo 1.99.0 (5f94df478 2026-08-27)",
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "status": "INSTALLED_VERSION_VERIFIED",
+      "runtimeCertification": "PENDING_RUNTIME_PROOF"
+    },
+    {
+      "name": "node",
+      "version": "24.22.0",
+      "binaryPath": "/home/ha-thai/.local/share/oantuti/toolchains/node-24.22.0/bin/node",
+      "binarySha256": "67ca5783febb8bf85736c79fcdd92c8d6d465a0eb2a082672bcdfa76a506751c",
+      "versionOutput": "v24.22.0",
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "status": "INSTALLED_VERSION_VERIFIED",
+      "runtimeCertification": "PENDING_RUNTIME_PROOF"
+    },
+    {
+      "name": "protoc",
+      "version": "36.2",
+      "binaryPath": "/home/ha-thai/.local/share/oantuti/toolchains/protoc-36.2/bin/protoc",
+      "binarySha256": "f6ee22d65361338459208da8bff801c9ca689741cba9187b34990dd45198f864",
+      "versionOutput": "libprotoc 36.2",
+      "ownerUid": 1000,
+      "ownerGid": 1000,
+      "mode": "0o755",
+      "status": "INSTALLED_VERSION_VERIFIED",
+      "runtimeCertification": "PENDING_RUNTIME_PROOF"
+    },
+    {
+      "name": "runsc",
+      "version": "20261005.0",
+      "binaryPath": "/usr/local/libexec/oantuti/gvisor-20261005.0/runsc",
+      "binarySha256": "210b437a9cfae51e8f8c9074ed19b8b5e59477178e2e391a18117d8d6b924f7a",
+      "versionOutput": "runsc version release-20261005.0\nspec: 1.2.1",
+      "ownerUid": 0,
+      "ownerGid": 0,
+      "mode": "0o755",
+      "status": "INSTALLED_VERSION_VERIFIED",
+      "runtimeCertification": "PENDING_RUNTIME_PROOF"
+    }
+  ],
+  "missingPrerequisites": [
+    "validated-deployment-configuration",
+    "postgresql16-isolated-test-environment",
+    "launcher-reaper-implementation-and-cgroup-delegation",
+    "complete-toolchain-image-and-sdk-digests",
+    "GA6.8-release-certification-target"
+  ],
+  "developmentConfigReady": false,
+  "releaseReady": false
+}

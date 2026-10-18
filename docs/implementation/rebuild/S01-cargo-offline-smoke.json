@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "status": "DEVELOPMENT_OFFLINE_CARGO_RESOLUTION_PASS",
+  "cargoHome": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/cargo-home",
+  "toolchain": "1.99.1",
+  "target": "x86_64-unknown-linux-gnu",
+  "command": "cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-unknown-linux-gnu",
+  "exitCode": 0,
+  "rootLockSha256": "6709f2c1c2083c7e1180d1e59bd4adbf750490516795cfad4a7db34e5e1d85a3",
+  "noBuildScriptsExecuted": true,
+  "sharedCacheMutated": false,
+  "signatureOrRuntimeCertification": false,
+  "releaseReady": false,
+  "note": "Lock later expanded by S02 implementation dependencies serde/serde_json/sha2/prost/parking_lot; this proof covers resolution only, not advisory/license closure."
+}

@@ -1,0 +1,2241 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-17T10:13:52.038965+00:00",
+  "status": "USER_LOCAL_DEVELOPMENT_TOOLS_INSTALLED_VERSION_HASH_TARGET_PRESENCE_ONLY",
+  "developmentOnly": true,
+  "s01Complete": false,
+  "g0Complete": false,
+  "g1Complete": false,
+  "productionReady": false,
+  "workspace": "/home/ha-thai/OanTuTi-rebuild",
+  "isolation": {
+    "newRebuildSpecificBase": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d",
+    "rustPrefix": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1",
+    "bindgenPrefix": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/wasm-bindgen-0.2.129",
+    "existingRust1990Modified": false,
+    "donorModified": false,
+    "globalPathOrShellConfigModified": false,
+    "rootOrSystemConfigurationChanged": false,
+    "cargoEngineProtoOrParentConfigModified": false,
+    "installerLdconfigDisabled": true,
+    "executionBinding": "Use absolute bin paths; no global PATH modification. Downstream build environment and pins are not wired by this evidence task."
+  },
+  "rust": {
+    "selectedExactVersion": "1.99.1",
+    "selectionRationale": "Current stable channel manifest dated 2026-10-15 and official point-release announcement identify 1.99.1; separate 1.99.0 remains untouched. Stable is rolling, not a multi-year LTS guarantee.",
+    "supportSources": [
+      "https://static.rust-lang.org/dist/channel-rust-stable.toml",
+      "https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/",
+      "https://doc.rust-lang.org/rustc/platform-support.html",
+      "https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html"
+    ],
+    "manifestDate": "2026-10-15",
+    "manifestSha256": "fb152be80975c194aa5fc684b2aec3a6e14e2b855efe2faa4e5f8ae6e590f463",
+    "manifestChecksumSource": "https://static.rust-lang.org/dist/channel-rust-stable.toml.sha256",
+    "manifestChecksumText": "fb152be80975c194aa5fc684b2aec3a6e14e2b855efe2faa4e5f8ae6e590f463  channel-rust-stable.toml\n",
+    "manifestRetainedPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/downloads/rust-wasm/channel-rust-stable.toml",
+    "components": [
+      {
+        "component": "rustc",
+        "target": "x86_64-unknown-linux-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rustc-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "expectedSha256": "2ff05ff9c08a90861e7f6e4065b40a8b87463b4576186fd613871c3e37f2091f",
+        "checksumSource": "https://static.rust-lang.org/dist/2026-10-15/rustc-1.99.1-x86_64-unknown-linux-gnu.tar.xz.sha256",
+        "checksumText": "2ff05ff9c08a90861e7f6e4065b40a8b87463b4576186fd613871c3e37f2091f  rustc-1.99.1-x86_64-unknown-linux-gnu.tar.xz\n",
+        "headContentLength": 84098960,
+        "downloadPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/downloads/rust-wasm/rustc-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "actualSha256": "2ff05ff9c08a90861e7f6e4065b40a8b87463b4576186fd613871c3e37f2091f",
+        "unpackedBytes": 416306981,
+        "stagePath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/rustc-1.99.1-x86_64-unknown-linux-gnu",
+        "installerSha256": "1b1ab708c8de4dbfa345cf1ca8fe3a7796c5e8bd91afd14e55489b75c1260535",
+        "components": [
+          "rustc"
+        ]
+      },
+      {
+        "component": "cargo",
+        "target": "x86_64-unknown-linux-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/cargo-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "expectedSha256": "53f3521949404d595efb06a55c12c5658d4ed1c75566f33d3d514eaebe70bd8a",
+        "checksumSource": "https://static.rust-lang.org/dist/2026-10-15/cargo-1.99.1-x86_64-unknown-linux-gnu.tar.xz.sha256",
+        "checksumText": "53f3521949404d595efb06a55c12c5658d4ed1c75566f33d3d514eaebe70bd8a  cargo-1.99.1-x86_64-unknown-linux-gnu.tar.xz\n",
+        "headContentLength": 10954816,
+        "downloadPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/downloads/rust-wasm/cargo-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "actualSha256": "53f3521949404d595efb06a55c12c5658d4ed1c75566f33d3d514eaebe70bd8a",
+        "unpackedBytes": 36780113,
+        "stagePath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/cargo-1.99.1-x86_64-unknown-linux-gnu",
+        "installerSha256": "6a9caa4cf6b65286aae8c796481f11784f6f805752664592c6fb994c3a5f1f32",
+        "components": [
+          "cargo"
+        ]
+      },
+      {
+        "component": "rust-std",
+        "target": "x86_64-unknown-linux-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "expectedSha256": "109b074225bf5b9ea3820890876bfdf4ed161adbfaf94b2b4b5984c85ee5d958",
+        "checksumSource": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.xz.sha256",
+        "checksumText": "109b074225bf5b9ea3820890876bfdf4ed161adbfaf94b2b4b5984c85ee5d958  rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.xz\n",
+        "headContentLength": 31563228,
+        "downloadPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/downloads/rust-wasm/rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "actualSha256": "109b074225bf5b9ea3820890876bfdf4ed161adbfaf94b2b4b5984c85ee5d958",
+        "unpackedBytes": 167164042,
+        "stagePath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/rust-std-1.99.1-x86_64-unknown-linux-gnu",
+        "installerSha256": "19c56df4d4a3251396a6a97be14daff33465572e4ecc7e37d776dba77b60a9a8",
+        "components": [
+          "rust-std-x86_64-unknown-linux-gnu"
+        ]
+      },
+      {
+        "component": "rust-std",
+        "target": "wasm32-unknown-unknown",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-wasm32-unknown-unknown.tar.xz",
+        "expectedSha256": "5f628f857dd00a8aa3fcac2e275665d2782066a5795274ed124c5b560f46423c",
+        "checksumSource": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-wasm32-unknown-unknown.tar.xz.sha256",
+        "checksumText": "5f628f857dd00a8aa3fcac2e275665d2782066a5795274ed124c5b560f46423c  rust-std-1.99.1-wasm32-unknown-unknown.tar.xz\n",
+        "headContentLength": 23180912,
+        "downloadPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/downloads/rust-wasm/rust-std-1.99.1-wasm32-unknown-unknown.tar.xz",
+        "actualSha256": "5f628f857dd00a8aa3fcac2e275665d2782066a5795274ed124c5b560f46423c",
+        "unpackedBytes": 103573966,
+        "stagePath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/rust-std-1.99.1-wasm32-unknown-unknown",
+        "installerSha256": "19c56df4d4a3251396a6a97be14daff33465572e4ecc7e37d776dba77b60a9a8",
+        "components": [
+          "rust-std-wasm32-unknown-unknown"
+        ]
+      }
+    ],
+    "installerReview": {
+      "sha256AuthenticatedBy": "Each script is included in a component archive matching both upstream stable manifest SHA256 and its published SHA256 sidecar over HTTPS.",
+      "reviewedAreas": "install_components destination mapping; main flow; option defaults; ldconfig branch; new-prefix component manifests validated for relative file/dir directives without traversal. Component scripts differ only in product success message.",
+      "invocation": "bash <verified-extracted-install.sh> --prefix=<new-isolated-prefix> --disable-ldconfig",
+      "noPipeToShell": true,
+      "signatureVerified": false,
+      "trustLimit": "HTTPS upstream checksums provide integrity relative to the downloaded upstream metadata, not independent signed provenance."
+    },
+    "installationResults": [
+      {
+        "command": [
+          "bash",
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/rustc-1.99.1-x86_64-unknown-linux-gnu/install.sh",
+          "--prefix=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1",
+          "--disable-ldconfig"
+        ],
+        "exitCode": 0,
+        "stdout": "install: creating uninstall script at /home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/uninstall.sh\ninstall: installing component 'rustc'\n\n    rustc installed.\n\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "bash",
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/cargo-1.99.1-x86_64-unknown-linux-gnu/install.sh",
+          "--prefix=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1",
+          "--disable-ldconfig"
+        ],
+        "exitCode": 0,
+        "stdout": "install: creating uninstall script at /home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/uninstall.sh\ninstall: installing component 'cargo'\n\n    cargo installed.\n\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "bash",
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/rust-std-1.99.1-x86_64-unknown-linux-gnu/install.sh",
+          "--prefix=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1",
+          "--disable-ldconfig"
+        ],
+        "exitCode": 0,
+        "stdout": "install: creating uninstall script at /home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/uninstall.sh\ninstall: installing component 'rust-std-x86_64-unknown-linux-gnu'\n\n    rust std installed.\n\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "bash",
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/staging/rust-wasm/rust-std-1.99.1-wasm32-unknown-unknown/install.sh",
+          "--prefix=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1",
+          "--disable-ldconfig"
+        ],
+        "exitCode": 0,
+        "stdout": "install: creating uninstall script at /home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/uninstall.sh\ninstall: installing component 'rust-std-wasm32-unknown-unknown'\n\n    rust std installed.\n\n",
+        "stderr": ""
+      }
+    ],
+    "installedTreeFiles": [
+      {
+        "relativePath": "bin/cargo",
+        "bytes": 36148320,
+        "sha256": "a670e02cfa39ac2e53f77a2d911ca1fc9e2c479b0603ec956625be1daf24e3af"
+      },
+      {
+        "relativePath": "bin/rust-gdb",
+        "bytes": 1413,
+        "sha256": "7054a508ece38b5bb81860e8ddbcd62021fab6432026789970ebbba8b84f6163"
+      },
+      {
+        "relativePath": "bin/rust-gdbgui",
+        "bytes": 2160,
+        "sha256": "bc60613775a098e59b49fa4584cea73631697fe1456c44284c337d6700340315"
+      },
+      {
+        "relativePath": "bin/rust-lldb",
+        "bytes": 961,
+        "sha256": "a82c91ccb285aa4a1dbcf08cda68ba4e8c36082af0adfefdee514673113815da"
+      },
+      {
+        "relativePath": "bin/rustc",
+        "bytes": 648536,
+        "sha256": "b53b780f77f952062f8ca8a3b70aef2390b1e45ad91939be94afdc9543026853"
+      },
+      {
+        "relativePath": "bin/rustdoc",
+        "bytes": 12570304,
+        "sha256": "832e53ca262db3d3fcaca659dc6e71f0f5a924a48adc580ee4278acac75f3e80"
+      },
+      {
+        "relativePath": "etc/bash_completion.d/cargo",
+        "bytes": 11443,
+        "sha256": "5f88be4aa33639147f33999125db6f625a84d70788dffe4adc2b80b7158bc4b4"
+      },
+      {
+        "relativePath": "etc/target-spec-json-schema.json",
+        "bytes": 26052,
+        "sha256": "7ee855fe4db0f10ee4aa31e20aafa47f47c0a0e499022c7474d9d349d0b91fdd"
+      },
+      {
+        "relativePath": "lib/libLLVM-23-rust-1.99.1-stable.so",
+        "bytes": 42,
+        "sha256": "ed06fbed8d297efa92979aeb227a4ce5b87b1a462d0aeac66d093300fad74824"
+      },
+      {
+        "relativePath": "lib/libLLVM.so.23.1-rust-1.99.1-stable",
+        "bytes": 208167760,
+        "sha256": "1cfbe1392a767227b88b33ab6187283e281c63f80f9b1ca9010d9cee5fdf9131"
+      },
+      {
+        "relativePath": "lib/librustc_driver-7ed0375ae352bd75.so",
+        "bytes": 158240640,
+        "sha256": "5a2cd52edba7d15f8d898b92a912638f5b73a089c7c1bfde5604ab45665602c7"
+      },
+      {
+        "relativePath": "lib/rustlib/components",
+        "bytes": 78,
+        "sha256": "07073fd26b02b8fde15ba90ebd7ba330e8381d875355ddc342f25e5dcac8bf8f"
+      },
+      {
+        "relativePath": "lib/rustlib/etc/gdb_load_rust_pretty_printers.py",
+        "bytes": 504,
+        "sha256": "a32e7857651bc7ed7c52dfc71131cbbea01a5cd1886399876032c4de60fa4886"
+      },
+      {
+        "relativePath": "lib/rustlib/etc/gdb_lookup.py",
+        "bytes": 3833,
+        "sha256": "e0b68235a6c2874ef24922e2cd903baf91b258b9590a60ab8779b989d84927ae"
+      },
+      {
+        "relativePath": "lib/rustlib/etc/gdb_providers.py",
+        "bytes": 16984,
+        "sha256": "cb65879ac99f0b654035e3d8ba7504608c00f428db495dad517876a6f9b05034"
+      },
+      {
+        "relativePath": "lib/rustlib/etc/lldb_lookup.py",
+        "bytes": 17524,
+        "sha256": "183b7ad0118b2f27e713dfaf4052908ddc6bd50544e724725112d1ae4291fa4b"
+      },
+      {
+        "relativePath": "lib/rustlib/etc/lldb_providers.py",
+        "bytes": 54408,
+        "sha256": "79b6372863088b358db4a386655cedfad77c6d7af4abbc91d280fea7f6ecff20"
+      },
+      {
+        "relativePath": "lib/rustlib/etc/rust_types.py",
+        "bytes": 4232,
+        "sha256": "e1bb4a46461b943999c9e2346c71808168a982cbf812587622d9c807f32d5bb5"
+      },
+      {
+        "relativePath": "lib/rustlib/install.log",
+        "bytes": 73394,
+        "sha256": "da6a6fabbdb033ba656ab2dcaa9cc82644c681f22cf43d94d0c5a86696f412bb"
+      },
+      {
+        "relativePath": "lib/rustlib/manifest-cargo",
+        "bytes": 6064,
+        "sha256": "9d1fafa13b276b2860bcae680dd7a41372dae9b2ee34994210a9f634c9fa3dc8"
+      },
+      {
+        "relativePath": "lib/rustlib/manifest-rust-std-wasm32-unknown-unknown",
+        "bytes": 9915,
+        "sha256": "a5c9e9f728f445b931ae60e3404b29540c1cbf5abdd774ae55c421f6f5657f51"
+      },
+      {
+        "relativePath": "lib/rustlib/manifest-rust-std-x86_64-unknown-linux-gnu",
+        "bytes": 11625,
+        "sha256": "f41fe2c2c4adedd748f19a486569a9b19b8d367f8501234a2cf05631bf9807d3"
+      },
+      {
+        "relativePath": "lib/rustlib/manifest-rustc",
+        "bytes": 5776,
+        "sha256": "3fd8641075215858e8244696ad8be7bea408a70d28525c9be37d4596364e8005"
+      },
+      {
+        "relativePath": "lib/rustlib/rust-installer-version",
+        "bytes": 2,
+        "sha256": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2"
+      },
+      {
+        "relativePath": "lib/rustlib/uninstall.sh",
+        "bytes": 29290,
+        "sha256": "19c56df4d4a3251396a6a97be14daff33465572e4ecc7e37d776dba77b60a9a8"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libaddr2line-31b5894fc0b82494.rlib",
+        "bytes": 22064,
+        "sha256": "b7dda5c25813e22c0816ee2eda762ca798aac30bd23588a5a2ce5bddd6df43ad"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libaddr2line-31b5894fc0b82494.rmeta",
+        "bytes": 499193,
+        "sha256": "e6e1278016e8c88c85bf187ab104b2bb318d0239b97394151ee33b53f0be2947"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libadler2-9e947446b7f6b482.rlib",
+        "bytes": 7606,
+        "sha256": "07fad3285e78543c2f7720a76ac618c68860a78f3180465ee948bc3bfcf4d04b"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libadler2-9e947446b7f6b482.rmeta",
+        "bytes": 20736,
+        "sha256": "46238d0ceb3f7eaf7873890759dc6a8b4c4d85dc38b10c18cd0cba311e19e00e"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/liballoc-327f5b6ac931bc6f.rlib",
+        "bytes": 778554,
+        "sha256": "a518d5ac00d92c0bc78fa8beaf4dfa5f6b1fbd052793ede5860d5098371f896e"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/liballoc-327f5b6ac931bc6f.rmeta",
+        "bytes": 8788883,
+        "sha256": "57c66e3a0e8ee06f031587d086a7e33c7d79e97ed40dd0d9c14ef14afa50a478"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libcfg_if-85f1fbe644584d09.rlib",
+        "bytes": 3678,
+        "sha256": "2feb48c6394cf8f7933b7ac6ce663901302e8d3cd9fa8a5e39c979ed97b44a17"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libcfg_if-85f1fbe644584d09.rmeta",
+        "bytes": 5529,
+        "sha256": "78924a13690c713f7099c13e143b40f6b69da0bf1bc889df3828bb04520e91c0"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libcompiler_builtins-7abd1d82b9fd7fae.rlib",
+        "bytes": 4299092,
+        "sha256": "4d12a9af4c78ec95c109605a8dc9aad0038103b5e8699117723107eb6e1f991f"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libcompiler_builtins-7abd1d82b9fd7fae.rmeta",
+        "bytes": 2071382,
+        "sha256": "242327fa0ec3249874e5b4d2362adebed626294f54fa79486d12492b1afeb2d2"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libcore-a9f1907fcd7ae78a.rlib",
+        "bytes": 2599500,
+        "sha256": "56d8a1a6273ca4748c9fcaa4830027d3aae05673c8f6858866192c35492259a6"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libcore-a9f1907fcd7ae78a.rmeta",
+        "bytes": 45402362,
+        "sha256": "c59f6a3e451a60ec51eaaaf0742dec71cc7dc126312f2d2761fb54c2a986596a"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libdlmalloc-d93a4a60b619baf3.rlib",
+        "bytes": 9252,
+        "sha256": "bb8b1b0ec2da2732e4a7362d469620294b429ca47f37c964280aea6ad93f3d59"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libdlmalloc-d93a4a60b619baf3.rmeta",
+        "bytes": 506192,
+        "sha256": "e2822876620e903a015541585f926fdb798b995a5846fb43ba1c6a7db5165331"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libgetopts-5f1c3267982e5167.rlib",
+        "bytes": 522518,
+        "sha256": "10fef6a71a4286d15b6b982b4511d6c8f22b7f678a08c42e8e1a8600b4bc5d18"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libgetopts-5f1c3267982e5167.rmeta",
+        "bytes": 226615,
+        "sha256": "1f8de394bb84396b23225d63c2ecf240e221fbd9ab73c5cb4f557999548fe0ed"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libgimli-fe2bf0e27d517ecd.rlib",
+        "bytes": 909108,
+        "sha256": "4d9e447e5283a016a517518ddf2cfd0a2aa3599e4b564fbb364b990b74acb54a"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libgimli-fe2bf0e27d517ecd.rmeta",
+        "bytes": 5950198,
+        "sha256": "a8268a6257b1f0f36afddf568588462d201add1a7c6d9e32547a7bda73feb512"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libhashbrown-722ced2adb21adde.rlib",
+        "bytes": 19996,
+        "sha256": "ae180d4a7f22f95b1d0cef6282c05363c070f605951182eae97f086f4865f7cd"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libhashbrown-722ced2adb21adde.rmeta",
+        "bytes": 1766724,
+        "sha256": "3c14c44d6e572c6181863323e0caefcacf3bc2088456422dcc34eff1fcc73fe4"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/liblibc-a3c73e917dfde4e6.rlib",
+        "bytes": 3656,
+        "sha256": "c455033be49972733d8b22ded646b29752eda47c4acf3477b55650961cf02024"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/liblibc-a3c73e917dfde4e6.rmeta",
+        "bytes": 38231,
+        "sha256": "b760d63026d6415bc433bfbc20e0497b40cbd012078afdc6e3e80aa871f0bd14"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libmemchr-390e66b9c82fee7c.rlib",
+        "bytes": 124168,
+        "sha256": "c642989b2d2eafc9357e79aabf6cbd7fb0fd0fd92a64f7f3d7f242352468120b"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libmemchr-390e66b9c82fee7c.rmeta",
+        "bytes": 613765,
+        "sha256": "de6e9e41081eef93cc1087b253e6ffc9fece221dbecd858d60739fe04898d360"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libminiz_oxide-cefb99931a25ca25.rlib",
+        "bytes": 87678,
+        "sha256": "021ae7f06a769236c9276b2ae68a62868b6df5a12f3b1569fb1e786b657c5790"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libminiz_oxide-cefb99931a25ca25.rmeta",
+        "bytes": 131680,
+        "sha256": "d8f4d83de73d0fe1e94dfa384c211e14fe28cebb1cba442719ee6e35f9e830ef"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libobject-f3842dd3e11f84ba.rlib",
+        "bytes": 238888,
+        "sha256": "e9cc4897fd0378155c81393fda49bdeaa2b93e72ceb0e9b24ecface50051b738"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libobject-f3842dd3e11f84ba.rmeta",
+        "bytes": 8993257,
+        "sha256": "c668730afb70dbf2966f13055b3a5a83dfab9034d7d03302c0793a475374aa8e"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libpanic_abort-dd029e87cdb68d56.rlib",
+        "bytes": 7730,
+        "sha256": "a9224aa2d1f7857ee9c3a2774c2ae2b466c8c028a980cfd1badbb8641c684dde"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libpanic_abort-dd029e87cdb68d56.rmeta",
+        "bytes": 2743,
+        "sha256": "0db426bc70622cc2271586f45702c91e8bdda080e509ec0645d638b3a832b7b1"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libpanic_unwind-92f8bb4a6c469002.rlib",
+        "bytes": 24802,
+        "sha256": "8937983f3c166bd6b197d7e88657ca47ed278b4e4184112a0ff2e9eba1f73c65"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libpanic_unwind-92f8bb4a6c469002.rmeta",
+        "bytes": 7123,
+        "sha256": "22f3ae745d03a9c173e4952c3e694818f78a3426ca9e11b6954fccf4423b8e66"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libproc_macro-1ef320e5a90e81c2.rlib",
+        "bytes": 3342138,
+        "sha256": "aca66fce5741dcc7158d6c89dff8c697cb498dd06efef9e17b75d796205a84c1"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libproc_macro-1ef320e5a90e81c2.rmeta",
+        "bytes": 1180825,
+        "sha256": "17290f2eab0ce84b59bac4de578a741d4703140a0b4d2c50573299b4326e4dbd"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_demangle-9ea1fd13747588a0.rlib",
+        "bytes": 201456,
+        "sha256": "691c2893eede1eedc0733b8c075225451beb4a9e14ffe13c8c31473e5a11cdcc"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_demangle-9ea1fd13747588a0.rmeta",
+        "bytes": 92512,
+        "sha256": "677ef4aa0304fa2cb25817618adfb4a12d1b0208c4f0c26b9cbadff49d8888b3"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_literal_escaper-b0f46920a889d912.rlib",
+        "bytes": 3830,
+        "sha256": "6f10cfc63bf91a8fd292444b4ed741fcf726fe37a17eff900afdad20b62794bf"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_literal_escaper-b0f46920a889d912.rmeta",
+        "bytes": 124008,
+        "sha256": "062b93082384bab4590c4c94d124fa3fb8c75712ed269a90ab57d20fc08f2c00"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_alloc-f817ddeeaf4a731a.rlib",
+        "bytes": 3910,
+        "sha256": "de3733a5597de11ce474439ef9f0190b717a8b6800baa3efc200aaf57a9169a6"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_alloc-f817ddeeaf4a731a.rmeta",
+        "bytes": 2212,
+        "sha256": "d07615340e714b43409f55cddf6d0936eabe64327cfc21cf10465f984c87ac10"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_core-2fa5081e6e0caefd.rlib",
+        "bytes": 3902,
+        "sha256": "00ad014b8983003857c8c76dd08bda03f307e76e1e05a9b5941e5f9c9fbd5c77"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_core-2fa5081e6e0caefd.rmeta",
+        "bytes": 6110,
+        "sha256": "f9361ef5195f555de2ca7fdcbd557eabf933cf33e40551e52cd491c6f89894de"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_std-6068d5c494af0832.rlib",
+        "bytes": 3896,
+        "sha256": "9df83b4eb27e3c06371c8f277a20ca75f5508771210257857f636c9344040fdf"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_std-6068d5c494af0832.rmeta",
+        "bytes": 7003,
+        "sha256": "c2f394f7889b15030be8dc58936f98a4cd36cf464d164c06877df02c6c8eefc2"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libstd-ff219504bf6f71ca.rlib",
+        "bytes": 2857382,
+        "sha256": "62314904685d54280c8325e03fcd1400d06a2a4fb81ed40c4822a5daf2db1c7f"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libstd-ff219504bf6f71ca.rmeta",
+        "bytes": 5905857,
+        "sha256": "7bbc988467522e48843175ba858131b02283dbf62c3297204fdac01bbee13a07"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libstd_detect-4a8ba4cc3e52ae8b.rlib",
+        "bytes": 3788,
+        "sha256": "5f5df596a612a69a6481d20c0d15525b183e70bc3e050c5540bb17512d71a23f"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libstd_detect-4a8ba4cc3e52ae8b.rmeta",
+        "bytes": 222336,
+        "sha256": "f4a86ec5ab7836e4e1f120b852ebb1aa4a32e0385aee4918be822aa63dec9e15"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libsysroot-eb616c57c024a0f5.rlib",
+        "bytes": 3756,
+        "sha256": "15ebce0b534cdc1c55a1aee87d53b2a7a5c32d50a53cf0bc53f151126b52ad40"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libsysroot-eb616c57c024a0f5.rmeta",
+        "bytes": 2067,
+        "sha256": "052a333bd6cfb4c385e9d232bbe99196075baaea7b0e89e7d286d1dbce807a0f"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libtest-465aec5d0602f6e9.rlib",
+        "bytes": 3817798,
+        "sha256": "c910b1d30a57265ff465e9be040dfa97cfb9a314b70eb246266deb6f44b3adc1"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libtest-465aec5d0602f6e9.rmeta",
+        "bytes": 1028732,
+        "sha256": "423d8d378a6ee6c26e285ee4efb973ca3de895184610ecf89ad1d2512dbf4953"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libunwind-ac2729c88228403d.rlib",
+        "bytes": 5430,
+        "sha256": "4111a0ad1ee9728d572a0fda9210b7e08dd1a582ceb4196e5f151feac5079673"
+      },
+      {
+        "relativePath": "lib/rustlib/wasm32-unknown-unknown/lib/libunwind-ac2729c88228403d.rmeta",
+        "bytes": 16022,
+        "sha256": "599f1ba33f092c6f4f9f72e434f0ebd8431461a718e23c2f5f7fdf6cf7a7dcca"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/ld.lld",
+        "bytes": 371248,
+        "sha256": "ce0c705ade118b0de51c877112f08b312341a0e4127c057b77302748c7ce424d"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/ld64.lld",
+        "bytes": 371248,
+        "sha256": "ce0c705ade118b0de51c877112f08b312341a0e4127c057b77302748c7ce424d"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/lld-link",
+        "bytes": 371248,
+        "sha256": "ce0c705ade118b0de51c877112f08b312341a0e4127c057b77302748c7ce424d"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/wasm-ld",
+        "bytes": 371248,
+        "sha256": "ce0c705ade118b0de51c877112f08b312341a0e4127c057b77302748c7ce424d"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-lld",
+        "bytes": 11879600,
+        "sha256": "9b6f51f983a8184f5d47d224e336cdb35171ad5b138981bc62a22e6d65e7b214"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-objcopy",
+        "bytes": 296120,
+        "sha256": "973f626f5994c4983b23bbe68e8703d76635fa06679753f5f703f2bb829d4268"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/bin/wasm-component-ld",
+        "bytes": 5221440,
+        "sha256": "394fad5b002e16eac8cead786ce083049e569785e72d4bc8b2eddfd21b389d85"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libaddr2line-b2546485fb156a81.rlib",
+        "bytes": 28810,
+        "sha256": "b92a365bcad231e218121951e4761a962cb3a47cdbdfda527dc2e6f337f564ec"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libaddr2line-b2546485fb156a81.rmeta",
+        "bytes": 479983,
+        "sha256": "22f49702a2d9639b7e43bfee87f30e52abc47d5ed145a981a56b91aae1d9d056"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libadler2-e749a99f48dba5bc.rlib",
+        "bytes": 10604,
+        "sha256": "018c9ad5584ac4821eb9dacaa30a0220e62360b71a09b6b8b709069f34d7c911"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libadler2-e749a99f48dba5bc.rmeta",
+        "bytes": 20761,
+        "sha256": "1d99f767899aa7df2c8fbecfde416351882c8504982ea95d3fb2cdb5a1ee196a"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-3988244237fec6ee.rlib",
+        "bytes": 1027344,
+        "sha256": "1713afb7fc9da7a917293bafdede9562ceddd75700d5a5ff57d4eeb2e42ce9b1"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-3988244237fec6ee.rmeta",
+        "bytes": 8803290,
+        "sha256": "92fa3a38f8b43981aeb810e6be09f9b0a66f38439272f8ee1b7ddb832a8aa065"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcfg_if-77a19c181a6f6522.rlib",
+        "bytes": 5282,
+        "sha256": "b931e7312afe263b8993a35e9d9937e8dfccd4a556afadcf8f9a7427b6855075"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcfg_if-77a19c181a6f6522.rmeta",
+        "bytes": 5530,
+        "sha256": "47a8cc35d0e9288f5b737703a0ae5a143cfffa7bd09a53692e9d79073a1075dd"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-2d9557d6e902a200.rlib",
+        "bytes": 4612378,
+        "sha256": "a98391e40d69b94b5d63d4c4dcfcfa76612688ba93e93acd8c9f5e23232dc2b6"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-2d9557d6e902a200.rmeta",
+        "bytes": 2059762,
+        "sha256": "9462f23a8789d047933fc26cbdff2172961ee5c9bf994690b196ff9c3de5a5cf"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-1d288395a3394ed3.rlib",
+        "bytes": 3142652,
+        "sha256": "b346ce2305e13b1a5ec9ab6e093028caee38227c540cdaf78d7b253f59ae5913"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-1d288395a3394ed3.rmeta",
+        "bytes": 67966594,
+        "sha256": "f991bfdb98d878590ba8a11da984bc230a078ee8079e27fcfd65854803b436f5"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libgetopts-d370f30754c98ce9.rlib",
+        "bytes": 751220,
+        "sha256": "452b6eaed2774c50e3f635d0bd30801b501269abaf049281bb814ed04ce1ba7f"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libgetopts-d370f30754c98ce9.rmeta",
+        "bytes": 219695,
+        "sha256": "92dbce19b02b5be1169ea9135b41c704c2c57a232039fd79c88efee0cd020854"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libgimli-a024a39c5ca178d0.rlib",
+        "bytes": 1060062,
+        "sha256": "62cf1d74bc75f84bf5829ca3d01aedd52d6ab9264e376235f6e813e47e15d9b9"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libgimli-a024a39c5ca178d0.rmeta",
+        "bytes": 5942440,
+        "sha256": "fcb2f1c6f19201fd77e2ccc7857ebd6d3a46ab56c9939a8b27e0f67a9fb1ba44"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libhashbrown-bd00bf133bcf4229.rlib",
+        "bytes": 42400,
+        "sha256": "0851a5f28052a130ebb3a757e6de31c880bd493c47ad32a76d7a6ad57f6d427c"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libhashbrown-bd00bf133bcf4229.rmeta",
+        "bytes": 1733007,
+        "sha256": "ad0c77a408d20acc61c380aa60380d895759b0e6c8de69560986b38771f91198"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-6cf0fcd942b0e793.rlib",
+        "bytes": 32534,
+        "sha256": "08840e04dd64d4cf9985e659ebe553c8b8672544579588cca4d1999958beed59"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-6cf0fcd942b0e793.rmeta",
+        "bytes": 4455050,
+        "sha256": "aa43a4c7ea0c31d3d8bc7a06e73c9337c087062889fd12844396e0b0883d2814"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libmemchr-e57d23b4cf2c7093.rlib",
+        "bytes": 425658,
+        "sha256": "5fe7ac19bee9008929af78844623ba80aef51ff40c0144c50085dd0399b4c84f"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libmemchr-e57d23b4cf2c7093.rmeta",
+        "bytes": 1408328,
+        "sha256": "ab14125435c028eb23dc9959b4eaab4bf810ea9cc9971aa541964370ae06d5da"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libminiz_oxide-4ee1421476c1c513.rlib",
+        "bytes": 114206,
+        "sha256": "1c2cac3d6b897ebabffd00bd8104020f77566932f40257f344258e1e6031814c"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libminiz_oxide-4ee1421476c1c513.rmeta",
+        "bytes": 140141,
+        "sha256": "62205ba0666ad889eff95ecacdab5b7214ef4358f16ca572bfe2a2678e801a7a"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libobject-9ab214bf508f4fb2.rlib",
+        "bytes": 276552,
+        "sha256": "88eceffaef2d7006f2b47252107d2b257eacbb1fe8ad0c641200c21774bb1bb3"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libobject-9ab214bf508f4fb2.rmeta",
+        "bytes": 8930634,
+        "sha256": "8e1b829cb0e637f49a695216ce178bef299c0956be8ab7c55bb5816dd0e33eba"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_abort-5cae43b27ff5f42e.rlib",
+        "bytes": 11476,
+        "sha256": "0dc1179cdff5a02105da8a58e5459eb8d50d5d7ff42fbcb184abc2168b7d4697"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_abort-5cae43b27ff5f42e.rmeta",
+        "bytes": 2745,
+        "sha256": "fffa196e3023ccb1ead5d99a9de1a0f2100de5a5a2ed8fc9a807d16e75ec5bf3"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-4c962e8757b7fd52.rlib",
+        "bytes": 36798,
+        "sha256": "4405757e011b71607b273854035143dfc13d5390eadc65f228c68fb30dde51fc"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-4c962e8757b7fd52.rmeta",
+        "bytes": 7119,
+        "sha256": "ee7fd8068a9fe4b3b05e167d94dd5bb17cefa60722da0f7ed14e1c2d400f6ccc"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libproc_macro-012ffcc53aba0ce4.rlib",
+        "bytes": 4514384,
+        "sha256": "37d84ce6901277ee4582f1f147e17bb94b780cc3f409565cf005f8ee65049d4c"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libproc_macro-012ffcc53aba0ce4.rmeta",
+        "bytes": 1168118,
+        "sha256": "625c17bfcae472d1695795a92377e67715e9721480e52bcb1803f2734e1dc7c8"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libprofiler_builtins-1eed01feea74fabd.rlib",
+        "bytes": 499856,
+        "sha256": "d0c0c0625e5ef7023bce42c37178b1d6959d8191ddbd08f95ecbbc7f963aa22f"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libprofiler_builtins-1eed01feea74fabd.rmeta",
+        "bytes": 1354,
+        "sha256": "3600990ea9b84a79941af31b212383004dacd656f6a6030c212c157ecd8af967"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.asan.a",
+        "bytes": 3675706,
+        "sha256": "b7cfb860c2bc7906d5db4b1258da3943a8d1bb6fa21a1df43af5d3c7292e0f16"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.dfsan.a",
+        "bytes": 1190740,
+        "sha256": "33b00d043c34388e49202e43294864adb3dcccd67b8f22fdd574220aada35a36"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.lsan.a",
+        "bytes": 1249460,
+        "sha256": "f1359a2732d47191816714a3a4dc47ce66f46aebd98518457ac611136f491470"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.msan.a",
+        "bytes": 3023090,
+        "sha256": "3ddff9f86d2c6de29b3331f0078c9e0accb1288f48bfab4e71bbe4ce9c57f5da"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.rtsan.a",
+        "bytes": 1174488,
+        "sha256": "9930ebe77a314710392e3888fad648cb14840d93a4d1c04b6bc4a5997ecf82f9"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.safestack.a",
+        "bytes": 28554,
+        "sha256": "4759b5ca604104d6909d3c0966edb783494c473db3ed0c67796644aa9b18c06e"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.tsan.a",
+        "bytes": 3266760,
+        "sha256": "a24426ac26d91e95d9d769ef60fb2708e6a2f4c3fd518bf0866ea2654706a9f6"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.ubsan.a",
+        "bytes": 1079836,
+        "sha256": "9697096312e9a6139102cd763e3f39789267240ac419cbe9de735030a9208fa3"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-23edf219dcb73297.rlib",
+        "bytes": 241158,
+        "sha256": "abfa1e86e1aa11c927b76d8a250e80ef30679771ffdaedbae1e77c34f7a0e1bb"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-23edf219dcb73297.rmeta",
+        "bytes": 92745,
+        "sha256": "eb1566de09f4d2c5566f4cf4242e5d81516667483a2d89418cedfb112eb7d6a9"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_literal_escaper-0bcf9fe2451b4cf2.rlib",
+        "bytes": 5448,
+        "sha256": "3c0f6112624eed607f4e2a2be43fcdb3adf7b3c74c1d7e86b7a73bcd044fc9f4"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_literal_escaper-0bcf9fe2451b4cf2.rmeta",
+        "bytes": 124048,
+        "sha256": "ba297569b07810719c41d192e8e2651fb6def309003419a641ee9e1ae76c4c2d"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-e4d7e1d94de777fa.rlib",
+        "bytes": 5544,
+        "sha256": "c5d6935e127a89b363ea265e09c5559dd039676da6dec6aac0e81ac47d1e6248"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-e4d7e1d94de777fa.rmeta",
+        "bytes": 2213,
+        "sha256": "c1ef731629952508d01d0c00fbdc230ebb151bd1e1882215885cd673d59af3ce"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_core-fb3f24e4abf4be88.rlib",
+        "bytes": 5542,
+        "sha256": "d873f3613afe4256d60bcb722552d558f370e981431aca90b22d9df93f85b14a"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_core-fb3f24e4abf4be88.rmeta",
+        "bytes": 6113,
+        "sha256": "a25350da83feb41b7746e08a8dd337f1b8d44b2035067fe03c16f05d8b3d24a9"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_std-5437dec005526111.rlib",
+        "bytes": 5516,
+        "sha256": "276cd7b63b156775ef64c994c450bceaaa0a18ddb0a7009d35c68ea72be127c6"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_std-5437dec005526111.rmeta",
+        "bytes": 7186,
+        "sha256": "475bebec064fcd80468d899be7362e31ff92072917beed19be7e142bd34a001c"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-7e719de9c4abc98f.rlib",
+        "bytes": 12242318,
+        "sha256": "ea104615e69d068c8a12c749135c7138b3ec28c7275ae163f91169a03561f75b"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-7e719de9c4abc98f.rmeta",
+        "bytes": 7768332,
+        "sha256": "46c7a0a3626c5ed88986058f8d9fb4d312526c441feaffed0ed375b2073b2466"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-7e719de9c4abc98f.so",
+        "bytes": 2859784,
+        "sha256": "a6542f0e553640385e5dbe14978e82547127e157a7d260d03d23189cf73c906c"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd_detect-ce90372c8b94015d.rlib",
+        "bytes": 69418,
+        "sha256": "21fa7e8e6935292bd1a0071725492a967a99ea2b54129dc77297916f6570ca39"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd_detect-ce90372c8b94015d.rmeta",
+        "bytes": 581971,
+        "sha256": "f13f7415af81f7a310c149b9575eaa8d387822776b2fdd646a73cea227318bd1"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libsysroot-22c4bd49b12831db.rlib",
+        "bytes": 5356,
+        "sha256": "1e6ef82108df796bb91a414d42d9943cf0830e0e847ace39fbdc64f35f5e1643"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libsysroot-22c4bd49b12831db.rmeta",
+        "bytes": 2250,
+        "sha256": "7d10e6646430e6f18593a1428439079df8f05fa78e1450b5b360d809f5d11d38"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libtest-a1ccee9d65338c17.rlib",
+        "bytes": 7392984,
+        "sha256": "8ca3b6279ce3b436b6628c0f9a2eaea0283f46675474f1eaa819db7880971ca2"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libtest-a1ccee9d65338c17.rmeta",
+        "bytes": 1035543,
+        "sha256": "49f9431953990a5fd380882e0c7b0a224db0a03abe0f92795211d0c08168d59c"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-87f8da15080ba246.rlib",
+        "bytes": 5354,
+        "sha256": "cb05e3b32dc9ee1cc6ec6a9cba01c2ea81eb44cb8c655760d5243a66d1179c5d"
+      },
+      {
+        "relativePath": "lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-87f8da15080ba246.rmeta",
+        "bytes": 20158,
+        "sha256": "a23dac32843307a2afb45bfb864817d596bd184a2a29d7aadc600f628401fe84"
+      },
+      {
+        "relativePath": "libexec/rust-analyzer-proc-macro-srv",
+        "bytes": 1576328,
+        "sha256": "47fcf7b25469b952f94ce7db60488eba16e9fa93900a9b059f96d47d4efa5848"
+      },
+      {
+        "relativePath": "share/doc/cargo/LICENSE-APACHE",
+        "bytes": 10860,
+        "sha256": "8ada45cd9f843acf64e4722ae262c622a2b3b3007c7310ef36ac1061a30f6adb"
+      },
+      {
+        "relativePath": "share/doc/cargo/LICENSE-MIT",
+        "bytes": 1023,
+        "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      },
+      {
+        "relativePath": "share/doc/cargo/LICENSE-THIRD-PARTY",
+        "bytes": 68430,
+        "sha256": "cbc759b1f17a2ac38fe3eb9e9563b1a08ba0f900611c49faaf68b46907b6d898"
+      },
+      {
+        "relativePath": "share/doc/cargo/README.md",
+        "bytes": 4855,
+        "sha256": "d9b7b448fdd1bcdff86dc4034733602b8bcb60bdc1a14c37148525b67a157054"
+      },
+      {
+        "relativePath": "share/doc/rust/COPYRIGHT-library.html",
+        "bytes": 1499465,
+        "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+      },
+      {
+        "relativePath": "share/doc/rust/COPYRIGHT.html",
+        "bytes": 14423589,
+        "sha256": "d518ae2d76bc7a1f0cbf0069b8deafb56efc39c2614cab74a859ef0b467f8373"
+      },
+      {
+        "relativePath": "share/doc/rust/README.md",
+        "bytes": 3304,
+        "sha256": "b3f6ef2fef88b98cb9ec013a5c86213095e53e40eb228679574e4d06517f33c8"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/Apache-2.0.txt",
+        "bytes": 10280,
+        "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/BSD-2-Clause.txt",
+        "bytes": 1267,
+        "sha256": "f32fb3b417a194167cfad068223fc975ba96c5960513a10f66a3c28720aec1df"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/CC-BY-SA-4.0.txt",
+        "bytes": 20137,
+        "sha256": "23ee78c8bae49cf08ea2f0c84945c66b987ebe4520881fb51b3dad4fb43d07c2"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/GCC-exception-3.1.txt",
+        "bytes": 3320,
+        "sha256": "a3966c9410ef94a1efbfa9ec04e9c1994026a70623fbf0885ce36737bfba3b54"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/GPL-2.0-only.txt",
+        "bytes": 17642,
+        "sha256": "54b212ba1f97f6948fa5486239ab505dd820b02e50cbfd296b4062c8609a70af"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/GPL-3.0-or-later.txt",
+        "bytes": 34795,
+        "sha256": "05315fce6c35f79b8a35454828995fa26336f235895ac64557abc028f4ffcea2"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/ISC.txt",
+        "bytes": 730,
+        "sha256": "0ff61769b238634e042ab759dddfd104a8e69d091e3600ae3410e401a6164381"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/LLVM-exception.txt",
+        "bytes": 919,
+        "sha256": "e34c58338bd89d43e709e226610d8f32b3e3c47f4ad9a99a8dc1d4ac7842488e"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/MIT.txt",
+        "bytes": 1078,
+        "sha256": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/NCSA.txt",
+        "bytes": 1676,
+        "sha256": "39cb0234065c92b9e6cee3830cbb52b1aa289aa8fe9ba2e66730fec5cf05c630"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/OFL-1.1.txt",
+        "bytes": 4016,
+        "sha256": "8eea8287e5876b539670cadb82e99f9a7afddec6f6730811be1daf25d2e9bcfd"
+      },
+      {
+        "relativePath": "share/doc/rust/licenses/Unicode-3.0.txt",
+        "bytes": 1995,
+        "sha256": "f5062c9a188d81dfe66b56db4182dcf9e4b17c0d9b0d311a8e20b3a1b075c443"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-add.1",
+        "bytes": 10793,
+        "sha256": "e37eb5889856fcb19ff43dd2a7952aef092d8a5fc1f808b200a3c99d18c7dd79"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-bench.1",
+        "bytes": 20462,
+        "sha256": "0fe20c50e1252b7786ac4dce6ad38a5d3843f1dd24a740c0516514758d55c324"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-build.1",
+        "bytes": 16636,
+        "sha256": "ea0cb3adad4278bb427abb8fd7d2a96eff295d5b13a3f1d5c4b0933d5b3da9b0"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-check.1",
+        "bytes": 16316,
+        "sha256": "006c2a65dc3a8a5c56e351511678748c3bbdd3c3eeb5bfcf95b9e20828b04505"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-clean.1",
+        "bytes": 7810,
+        "sha256": "ac1056f03dccba5d6a082f4491e83498507e0984a34551d7be7d4c1b4dfc7273"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-doc.1",
+        "bytes": 15319,
+        "sha256": "f43d4c37fbf4aaacd50fd65a5e3527c4b06c16ece8e48cda1055b5a4f4ed171a"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-fetch.1",
+        "bytes": 6707,
+        "sha256": "d77bbb69048b7d1fc193b3644ac7ad96c5f000be98ad55e3e4ec896a1cf821c8"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-fix.1",
+        "bytes": 19437,
+        "sha256": "5c7c676229879e262a3135298c22800c5c1afb57710ec19cc6dd2c8d23224ea6"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-generate-lockfile.1",
+        "bytes": 5940,
+        "sha256": "9d673faf1b7c2bb645e1711592440da8d681c8a99744a8f8a927d6144446bc48"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-help.1",
+        "bytes": 5769,
+        "sha256": "86b2088f8914fd887f14d3a691110bcd4fa3727ba77d5ace13de2c7cc2860df7"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-info.1",
+        "bytes": 6117,
+        "sha256": "5e0b554a0d87716c2c3314289d225d8dfeaf2baad9ddc2b1666aed190b2761e4"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-init.1",
+        "bytes": 5324,
+        "sha256": "574759d2269dff096b1c04bc1ae906c3a80389830966e6b5b2130410181f3a9d"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-install.1",
+        "bytes": 18312,
+        "sha256": "f6e08bbcf49ece3d16866c122b6fc4102bf812c4e8adafa363a2cadeefba068e"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-locate-project.1",
+        "bytes": 4665,
+        "sha256": "021abaf05ac72ac32bb7373ed9805bba19e204db25675895d2d41c013646f8d4"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-login.1",
+        "bytes": 4791,
+        "sha256": "53a957a73cfcac30b751a5c6277f94b5a8511ce3cc2af144678a285a598c417a"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-logout.1",
+        "bytes": 4843,
+        "sha256": "0f98f10235921e4fd2dd82e76c7fbf551121bef88cf8ef28027072c5d3ff5857"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-metadata.1",
+        "bytes": 21988,
+        "sha256": "572a3e2f8d7753855d6dab6941961deb5ac9b99c9ad7d4d3423d8e5f6bc61196"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-new.1",
+        "bytes": 5136,
+        "sha256": "920fa6698c28a2f5c2b2cfe69d1e4599e2698a0bceb3d514f19d891ec23b446b"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-owner.1",
+        "bytes": 5750,
+        "sha256": "23e71b0c6b5f2701f978b818420835db0e74a938dccdc251ddb2f1c163f20d3d"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-package.1",
+        "bytes": 15808,
+        "sha256": "7c2c62f0aa11d7fbb4a5095377316b9a691deb594168ae886cd0a7aa9ea157ff"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-pkgid.1",
+        "bytes": 7457,
+        "sha256": "f9353443ca1c342f95845579e56dd69410e7517116dd76efda9ab3845c074058"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-publish.1",
+        "bytes": 12669,
+        "sha256": "6d4859d5a12d4a8c814cc50b389d2f3d286bc6baae59d5c70e4cebb40058216c"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-remove.1",
+        "bytes": 6289,
+        "sha256": "ba248f85986b141882454f3313eafb5a64a8f244b6abcbb1f9e7114c56fbfbf2"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-report-future-incompatibilities.1",
+        "bytes": 5917,
+        "sha256": "a7642c840631e5659ef653271035760b1dc6c3fcf998b8d347fb49965a3ad35a"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-report.1",
+        "bytes": 4918,
+        "sha256": "be9d8fe4a569a90e7e5d48c35c5daa74d1728133dc0f43240121654045b6f815"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-run.1",
+        "bytes": 12398,
+        "sha256": "85650a39631df37c75e2d894e723710c39f65b86096c4330ede6a99c3b4fd0be"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-rustc.1",
+        "bytes": 17558,
+        "sha256": "b7fba799920da5bb8c510e8c9e3c91bde56abb6feb705efeca9a3a42d15cccf2"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-rustdoc.1",
+        "bytes": 16140,
+        "sha256": "9c558ed0899cf8e966d417dc2fea86d837c88b854bcdb0c62c30656fc41949d0"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-search.1",
+        "bytes": 4200,
+        "sha256": "4761782dd91b5c471bf1b3fc5a3c7912c3c6935706383f3b2b44efb3a1893bea"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-test.1",
+        "bytes": 22407,
+        "sha256": "76453131dbcc0f2bbc98d554dbda232b6ce5ebd6b9017276e542958e3b231329"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-tree.1",
+        "bytes": 17052,
+        "sha256": "9b0213fbb4e50ccaffc3bf1ab5bd3f7a50204059262f3b194dc99c12535f0ebb"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-uninstall.1",
+        "bytes": 4467,
+        "sha256": "145d9580dc8a5e5a73cc4a8dd27827e0413e2bad589b2e62fa4dff8798ffc980"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-update.1",
+        "bytes": 8129,
+        "sha256": "5aa228e8695b9491ebb5e06ce6dc34a250b42be9be8254122eef8f9203ca8459"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-vendor.1",
+        "bytes": 7441,
+        "sha256": "a8c4742f6b0b6d46da8b9cdc69766412efa72e02bf307753242c51394815bce4"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-version.1",
+        "bytes": 664,
+        "sha256": "1dc8ad353b33ef871660f7d5af5e977b07a32bf718adce2deb85efdd5568e44b"
+      },
+      {
+        "relativePath": "share/man/man1/cargo-yank.1",
+        "bytes": 8274,
+        "sha256": "a324983332e33580330c0902af4ee7713940bf219c44a1e3a12fc9b8b0d58309"
+      },
+      {
+        "relativePath": "share/man/man1/cargo.1",
+        "bytes": 11180,
+        "sha256": "c483b800c9aceb307fb15ea4138783838cb379b6f4e306a8dabe84af8fd4b01d"
+      },
+      {
+        "relativePath": "share/man/man1/rustc.1",
+        "bytes": 9177,
+        "sha256": "e7addf9322a2b6f309385d485b16240d6e0145040301ea2c7504c773355eeba8"
+      },
+      {
+        "relativePath": "share/man/man1/rustdoc.1",
+        "bytes": 3609,
+        "sha256": "6e4c831240fa837219e4d5716da670f8c962ae3139e433579edca3adfbc9dcd2"
+      },
+      {
+        "relativePath": "share/zsh/site-functions/_cargo",
+        "bytes": 24571,
+        "sha256": "f2028837def4b25c8b22ef17ce88973805be697b9b7cc948bcc7cb5944981e78"
+      }
+    ],
+    "license": "MIT OR Apache-2.0 upstream Rust, with bundled third-party notices in installed share/doc; transitive legal/SBOM review remains unresolved.",
+    "targetPresence": [
+      {
+        "target": "x86_64-unknown-linux-gnu",
+        "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib",
+        "fileCount": 63,
+        "files": [
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libaddr2line-b2546485fb156a81.rlib",
+            "bytes": 28810,
+            "sha256": "b92a365bcad231e218121951e4761a962cb3a47cdbdfda527dc2e6f337f564ec",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libaddr2line-b2546485fb156a81.rmeta",
+            "bytes": 479983,
+            "sha256": "22f49702a2d9639b7e43bfee87f30e52abc47d5ed145a981a56b91aae1d9d056",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libadler2-e749a99f48dba5bc.rlib",
+            "bytes": 10604,
+            "sha256": "018c9ad5584ac4821eb9dacaa30a0220e62360b71a09b6b8b709069f34d7c911",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libadler2-e749a99f48dba5bc.rmeta",
+            "bytes": 20761,
+            "sha256": "1d99f767899aa7df2c8fbecfde416351882c8504982ea95d3fb2cdb5a1ee196a",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-3988244237fec6ee.rlib",
+            "bytes": 1027344,
+            "sha256": "1713afb7fc9da7a917293bafdede9562ceddd75700d5a5ff57d4eeb2e42ce9b1",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-3988244237fec6ee.rmeta",
+            "bytes": 8803290,
+            "sha256": "92fa3a38f8b43981aeb810e6be09f9b0a66f38439272f8ee1b7ddb832a8aa065",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcfg_if-77a19c181a6f6522.rlib",
+            "bytes": 5282,
+            "sha256": "b931e7312afe263b8993a35e9d9937e8dfccd4a556afadcf8f9a7427b6855075",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcfg_if-77a19c181a6f6522.rmeta",
+            "bytes": 5530,
+            "sha256": "47a8cc35d0e9288f5b737703a0ae5a143cfffa7bd09a53692e9d79073a1075dd",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-2d9557d6e902a200.rlib",
+            "bytes": 4612378,
+            "sha256": "a98391e40d69b94b5d63d4c4dcfcfa76612688ba93e93acd8c9f5e23232dc2b6",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-2d9557d6e902a200.rmeta",
+            "bytes": 2059762,
+            "sha256": "9462f23a8789d047933fc26cbdff2172961ee5c9bf994690b196ff9c3de5a5cf",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-1d288395a3394ed3.rlib",
+            "bytes": 3142652,
+            "sha256": "b346ce2305e13b1a5ec9ab6e093028caee38227c540cdaf78d7b253f59ae5913",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-1d288395a3394ed3.rmeta",
+            "bytes": 67966594,
+            "sha256": "f991bfdb98d878590ba8a11da984bc230a078ee8079e27fcfd65854803b436f5",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libgetopts-d370f30754c98ce9.rlib",
+            "bytes": 751220,
+            "sha256": "452b6eaed2774c50e3f635d0bd30801b501269abaf049281bb814ed04ce1ba7f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libgetopts-d370f30754c98ce9.rmeta",
+            "bytes": 219695,
+            "sha256": "92dbce19b02b5be1169ea9135b41c704c2c57a232039fd79c88efee0cd020854",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libgimli-a024a39c5ca178d0.rlib",
+            "bytes": 1060062,
+            "sha256": "62cf1d74bc75f84bf5829ca3d01aedd52d6ab9264e376235f6e813e47e15d9b9",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libgimli-a024a39c5ca178d0.rmeta",
+            "bytes": 5942440,
+            "sha256": "fcb2f1c6f19201fd77e2ccc7857ebd6d3a46ab56c9939a8b27e0f67a9fb1ba44",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libhashbrown-bd00bf133bcf4229.rlib",
+            "bytes": 42400,
+            "sha256": "0851a5f28052a130ebb3a757e6de31c880bd493c47ad32a76d7a6ad57f6d427c",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libhashbrown-bd00bf133bcf4229.rmeta",
+            "bytes": 1733007,
+            "sha256": "ad0c77a408d20acc61c380aa60380d895759b0e6c8de69560986b38771f91198",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-6cf0fcd942b0e793.rlib",
+            "bytes": 32534,
+            "sha256": "08840e04dd64d4cf9985e659ebe553c8b8672544579588cca4d1999958beed59",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-6cf0fcd942b0e793.rmeta",
+            "bytes": 4455050,
+            "sha256": "aa43a4c7ea0c31d3d8bc7a06e73c9337c087062889fd12844396e0b0883d2814",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libmemchr-e57d23b4cf2c7093.rlib",
+            "bytes": 425658,
+            "sha256": "5fe7ac19bee9008929af78844623ba80aef51ff40c0144c50085dd0399b4c84f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libmemchr-e57d23b4cf2c7093.rmeta",
+            "bytes": 1408328,
+            "sha256": "ab14125435c028eb23dc9959b4eaab4bf810ea9cc9971aa541964370ae06d5da",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libminiz_oxide-4ee1421476c1c513.rlib",
+            "bytes": 114206,
+            "sha256": "1c2cac3d6b897ebabffd00bd8104020f77566932f40257f344258e1e6031814c",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libminiz_oxide-4ee1421476c1c513.rmeta",
+            "bytes": 140141,
+            "sha256": "62205ba0666ad889eff95ecacdab5b7214ef4358f16ca572bfe2a2678e801a7a",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libobject-9ab214bf508f4fb2.rlib",
+            "bytes": 276552,
+            "sha256": "88eceffaef2d7006f2b47252107d2b257eacbb1fe8ad0c641200c21774bb1bb3",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libobject-9ab214bf508f4fb2.rmeta",
+            "bytes": 8930634,
+            "sha256": "8e1b829cb0e637f49a695216ce178bef299c0956be8ab7c55bb5816dd0e33eba",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_abort-5cae43b27ff5f42e.rlib",
+            "bytes": 11476,
+            "sha256": "0dc1179cdff5a02105da8a58e5459eb8d50d5d7ff42fbcb184abc2168b7d4697",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_abort-5cae43b27ff5f42e.rmeta",
+            "bytes": 2745,
+            "sha256": "fffa196e3023ccb1ead5d99a9de1a0f2100de5a5a2ed8fc9a807d16e75ec5bf3",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-4c962e8757b7fd52.rlib",
+            "bytes": 36798,
+            "sha256": "4405757e011b71607b273854035143dfc13d5390eadc65f228c68fb30dde51fc",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-4c962e8757b7fd52.rmeta",
+            "bytes": 7119,
+            "sha256": "ee7fd8068a9fe4b3b05e167d94dd5bb17cefa60722da0f7ed14e1c2d400f6ccc",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libproc_macro-012ffcc53aba0ce4.rlib",
+            "bytes": 4514384,
+            "sha256": "37d84ce6901277ee4582f1f147e17bb94b780cc3f409565cf005f8ee65049d4c",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libproc_macro-012ffcc53aba0ce4.rmeta",
+            "bytes": 1168118,
+            "sha256": "625c17bfcae472d1695795a92377e67715e9721480e52bcb1803f2734e1dc7c8",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libprofiler_builtins-1eed01feea74fabd.rlib",
+            "bytes": 499856,
+            "sha256": "d0c0c0625e5ef7023bce42c37178b1d6959d8191ddbd08f95ecbbc7f963aa22f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libprofiler_builtins-1eed01feea74fabd.rmeta",
+            "bytes": 1354,
+            "sha256": "3600990ea9b84a79941af31b212383004dacd656f6a6030c212c157ecd8af967",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.asan.a",
+            "bytes": 3675706,
+            "sha256": "b7cfb860c2bc7906d5db4b1258da3943a8d1bb6fa21a1df43af5d3c7292e0f16",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.dfsan.a",
+            "bytes": 1190740,
+            "sha256": "33b00d043c34388e49202e43294864adb3dcccd67b8f22fdd574220aada35a36",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.lsan.a",
+            "bytes": 1249460,
+            "sha256": "f1359a2732d47191816714a3a4dc47ce66f46aebd98518457ac611136f491470",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.msan.a",
+            "bytes": 3023090,
+            "sha256": "3ddff9f86d2c6de29b3331f0078c9e0accb1288f48bfab4e71bbe4ce9c57f5da",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.rtsan.a",
+            "bytes": 1174488,
+            "sha256": "9930ebe77a314710392e3888fad648cb14840d93a4d1c04b6bc4a5997ecf82f9",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.safestack.a",
+            "bytes": 28554,
+            "sha256": "4759b5ca604104d6909d3c0966edb783494c473db3ed0c67796644aa9b18c06e",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.tsan.a",
+            "bytes": 3266760,
+            "sha256": "a24426ac26d91e95d9d769ef60fb2708e6a2f4c3fd518bf0866ea2654706a9f6",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc-stable_rt.ubsan.a",
+            "bytes": 1079836,
+            "sha256": "9697096312e9a6139102cd763e3f39789267240ac419cbe9de735030a9208fa3",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-23edf219dcb73297.rlib",
+            "bytes": 241158,
+            "sha256": "abfa1e86e1aa11c927b76d8a250e80ef30679771ffdaedbae1e77c34f7a0e1bb",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-23edf219dcb73297.rmeta",
+            "bytes": 92745,
+            "sha256": "eb1566de09f4d2c5566f4cf4242e5d81516667483a2d89418cedfb112eb7d6a9",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_literal_escaper-0bcf9fe2451b4cf2.rlib",
+            "bytes": 5448,
+            "sha256": "3c0f6112624eed607f4e2a2be43fcdb3adf7b3c74c1d7e86b7a73bcd044fc9f4",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_literal_escaper-0bcf9fe2451b4cf2.rmeta",
+            "bytes": 124048,
+            "sha256": "ba297569b07810719c41d192e8e2651fb6def309003419a641ee9e1ae76c4c2d",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-e4d7e1d94de777fa.rlib",
+            "bytes": 5544,
+            "sha256": "c5d6935e127a89b363ea265e09c5559dd039676da6dec6aac0e81ac47d1e6248",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-e4d7e1d94de777fa.rmeta",
+            "bytes": 2213,
+            "sha256": "c1ef731629952508d01d0c00fbdc230ebb151bd1e1882215885cd673d59af3ce",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_core-fb3f24e4abf4be88.rlib",
+            "bytes": 5542,
+            "sha256": "d873f3613afe4256d60bcb722552d558f370e981431aca90b22d9df93f85b14a",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_core-fb3f24e4abf4be88.rmeta",
+            "bytes": 6113,
+            "sha256": "a25350da83feb41b7746e08a8dd337f1b8d44b2035067fe03c16f05d8b3d24a9",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_std-5437dec005526111.rlib",
+            "bytes": 5516,
+            "sha256": "276cd7b63b156775ef64c994c450bceaaa0a18ddb0a7009d35c68ea72be127c6",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_std-5437dec005526111.rmeta",
+            "bytes": 7186,
+            "sha256": "475bebec064fcd80468d899be7362e31ff92072917beed19be7e142bd34a001c",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-7e719de9c4abc98f.rlib",
+            "bytes": 12242318,
+            "sha256": "ea104615e69d068c8a12c749135c7138b3ec28c7275ae163f91169a03561f75b",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-7e719de9c4abc98f.rmeta",
+            "bytes": 7768332,
+            "sha256": "46c7a0a3626c5ed88986058f8d9fb4d312526c441feaffed0ed375b2073b2466",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-7e719de9c4abc98f.so",
+            "bytes": 2859784,
+            "sha256": "a6542f0e553640385e5dbe14978e82547127e157a7d260d03d23189cf73c906c",
+            "ownerUid": 1000,
+            "mode": "0o755"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd_detect-ce90372c8b94015d.rlib",
+            "bytes": 69418,
+            "sha256": "21fa7e8e6935292bd1a0071725492a967a99ea2b54129dc77297916f6570ca39",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd_detect-ce90372c8b94015d.rmeta",
+            "bytes": 581971,
+            "sha256": "f13f7415af81f7a310c149b9575eaa8d387822776b2fdd646a73cea227318bd1",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libsysroot-22c4bd49b12831db.rlib",
+            "bytes": 5356,
+            "sha256": "1e6ef82108df796bb91a414d42d9943cf0830e0e847ace39fbdc64f35f5e1643",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libsysroot-22c4bd49b12831db.rmeta",
+            "bytes": 2250,
+            "sha256": "7d10e6646430e6f18593a1428439079df8f05fa78e1450b5b360d809f5d11d38",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libtest-a1ccee9d65338c17.rlib",
+            "bytes": 7392984,
+            "sha256": "8ca3b6279ce3b436b6628c0f9a2eaea0283f46675474f1eaa819db7880971ca2",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libtest-a1ccee9d65338c17.rmeta",
+            "bytes": 1035543,
+            "sha256": "49f9431953990a5fd380882e0c7b0a224db0a03abe0f92795211d0c08168d59c",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-87f8da15080ba246.rlib",
+            "bytes": 5354,
+            "sha256": "cb05e3b32dc9ee1cc6ec6a9cba01c2ea81eb44cb8c655760d5243a66d1179c5d",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-87f8da15080ba246.rmeta",
+            "bytes": 20158,
+            "sha256": "a23dac32843307a2afb45bfb864817d596bd184a2a29d7aadc600f628401fe84",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          }
+        ]
+      },
+      {
+        "target": "wasm32-unknown-unknown",
+        "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib",
+        "fileCount": 54,
+        "files": [
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libaddr2line-31b5894fc0b82494.rlib",
+            "bytes": 22064,
+            "sha256": "b7dda5c25813e22c0816ee2eda762ca798aac30bd23588a5a2ce5bddd6df43ad",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libaddr2line-31b5894fc0b82494.rmeta",
+            "bytes": 499193,
+            "sha256": "e6e1278016e8c88c85bf187ab104b2bb318d0239b97394151ee33b53f0be2947",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libadler2-9e947446b7f6b482.rlib",
+            "bytes": 7606,
+            "sha256": "07fad3285e78543c2f7720a76ac618c68860a78f3180465ee948bc3bfcf4d04b",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libadler2-9e947446b7f6b482.rmeta",
+            "bytes": 20736,
+            "sha256": "46238d0ceb3f7eaf7873890759dc6a8b4c4d85dc38b10c18cd0cba311e19e00e",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/liballoc-327f5b6ac931bc6f.rlib",
+            "bytes": 778554,
+            "sha256": "a518d5ac00d92c0bc78fa8beaf4dfa5f6b1fbd052793ede5860d5098371f896e",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/liballoc-327f5b6ac931bc6f.rmeta",
+            "bytes": 8788883,
+            "sha256": "57c66e3a0e8ee06f031587d086a7e33c7d79e97ed40dd0d9c14ef14afa50a478",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libcfg_if-85f1fbe644584d09.rlib",
+            "bytes": 3678,
+            "sha256": "2feb48c6394cf8f7933b7ac6ce663901302e8d3cd9fa8a5e39c979ed97b44a17",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libcfg_if-85f1fbe644584d09.rmeta",
+            "bytes": 5529,
+            "sha256": "78924a13690c713f7099c13e143b40f6b69da0bf1bc889df3828bb04520e91c0",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libcompiler_builtins-7abd1d82b9fd7fae.rlib",
+            "bytes": 4299092,
+            "sha256": "4d12a9af4c78ec95c109605a8dc9aad0038103b5e8699117723107eb6e1f991f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libcompiler_builtins-7abd1d82b9fd7fae.rmeta",
+            "bytes": 2071382,
+            "sha256": "242327fa0ec3249874e5b4d2362adebed626294f54fa79486d12492b1afeb2d2",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libcore-a9f1907fcd7ae78a.rlib",
+            "bytes": 2599500,
+            "sha256": "56d8a1a6273ca4748c9fcaa4830027d3aae05673c8f6858866192c35492259a6",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libcore-a9f1907fcd7ae78a.rmeta",
+            "bytes": 45402362,
+            "sha256": "c59f6a3e451a60ec51eaaaf0742dec71cc7dc126312f2d2761fb54c2a986596a",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libdlmalloc-d93a4a60b619baf3.rlib",
+            "bytes": 9252,
+            "sha256": "bb8b1b0ec2da2732e4a7362d469620294b429ca47f37c964280aea6ad93f3d59",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libdlmalloc-d93a4a60b619baf3.rmeta",
+            "bytes": 506192,
+            "sha256": "e2822876620e903a015541585f926fdb798b995a5846fb43ba1c6a7db5165331",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libgetopts-5f1c3267982e5167.rlib",
+            "bytes": 522518,
+            "sha256": "10fef6a71a4286d15b6b982b4511d6c8f22b7f678a08c42e8e1a8600b4bc5d18",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libgetopts-5f1c3267982e5167.rmeta",
+            "bytes": 226615,
+            "sha256": "1f8de394bb84396b23225d63c2ecf240e221fbd9ab73c5cb4f557999548fe0ed",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libgimli-fe2bf0e27d517ecd.rlib",
+            "bytes": 909108,
+            "sha256": "4d9e447e5283a016a517518ddf2cfd0a2aa3599e4b564fbb364b990b74acb54a",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libgimli-fe2bf0e27d517ecd.rmeta",
+            "bytes": 5950198,
+            "sha256": "a8268a6257b1f0f36afddf568588462d201add1a7c6d9e32547a7bda73feb512",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libhashbrown-722ced2adb21adde.rlib",
+            "bytes": 19996,
+            "sha256": "ae180d4a7f22f95b1d0cef6282c05363c070f605951182eae97f086f4865f7cd",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libhashbrown-722ced2adb21adde.rmeta",
+            "bytes": 1766724,
+            "sha256": "3c14c44d6e572c6181863323e0caefcacf3bc2088456422dcc34eff1fcc73fe4",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/liblibc-a3c73e917dfde4e6.rlib",
+            "bytes": 3656,
+            "sha256": "c455033be49972733d8b22ded646b29752eda47c4acf3477b55650961cf02024",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/liblibc-a3c73e917dfde4e6.rmeta",
+            "bytes": 38231,
+            "sha256": "b760d63026d6415bc433bfbc20e0497b40cbd012078afdc6e3e80aa871f0bd14",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libmemchr-390e66b9c82fee7c.rlib",
+            "bytes": 124168,
+            "sha256": "c642989b2d2eafc9357e79aabf6cbd7fb0fd0fd92a64f7f3d7f242352468120b",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libmemchr-390e66b9c82fee7c.rmeta",
+            "bytes": 613765,
+            "sha256": "de6e9e41081eef93cc1087b253e6ffc9fece221dbecd858d60739fe04898d360",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libminiz_oxide-cefb99931a25ca25.rlib",
+            "bytes": 87678,
+            "sha256": "021ae7f06a769236c9276b2ae68a62868b6df5a12f3b1569fb1e786b657c5790",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libminiz_oxide-cefb99931a25ca25.rmeta",
+            "bytes": 131680,
+            "sha256": "d8f4d83de73d0fe1e94dfa384c211e14fe28cebb1cba442719ee6e35f9e830ef",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libobject-f3842dd3e11f84ba.rlib",
+            "bytes": 238888,
+            "sha256": "e9cc4897fd0378155c81393fda49bdeaa2b93e72ceb0e9b24ecface50051b738",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libobject-f3842dd3e11f84ba.rmeta",
+            "bytes": 8993257,
+            "sha256": "c668730afb70dbf2966f13055b3a5a83dfab9034d7d03302c0793a475374aa8e",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libpanic_abort-dd029e87cdb68d56.rlib",
+            "bytes": 7730,
+            "sha256": "a9224aa2d1f7857ee9c3a2774c2ae2b466c8c028a980cfd1badbb8641c684dde",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libpanic_abort-dd029e87cdb68d56.rmeta",
+            "bytes": 2743,
+            "sha256": "0db426bc70622cc2271586f45702c91e8bdda080e509ec0645d638b3a832b7b1",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libpanic_unwind-92f8bb4a6c469002.rlib",
+            "bytes": 24802,
+            "sha256": "8937983f3c166bd6b197d7e88657ca47ed278b4e4184112a0ff2e9eba1f73c65",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libpanic_unwind-92f8bb4a6c469002.rmeta",
+            "bytes": 7123,
+            "sha256": "22f3ae745d03a9c173e4952c3e694818f78a3426ca9e11b6954fccf4423b8e66",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libproc_macro-1ef320e5a90e81c2.rlib",
+            "bytes": 3342138,
+            "sha256": "aca66fce5741dcc7158d6c89dff8c697cb498dd06efef9e17b75d796205a84c1",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libproc_macro-1ef320e5a90e81c2.rmeta",
+            "bytes": 1180825,
+            "sha256": "17290f2eab0ce84b59bac4de578a741d4703140a0b4d2c50573299b4326e4dbd",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_demangle-9ea1fd13747588a0.rlib",
+            "bytes": 201456,
+            "sha256": "691c2893eede1eedc0733b8c075225451beb4a9e14ffe13c8c31473e5a11cdcc",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_demangle-9ea1fd13747588a0.rmeta",
+            "bytes": 92512,
+            "sha256": "677ef4aa0304fa2cb25817618adfb4a12d1b0208c4f0c26b9cbadff49d8888b3",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_literal_escaper-b0f46920a889d912.rlib",
+            "bytes": 3830,
+            "sha256": "6f10cfc63bf91a8fd292444b4ed741fcf726fe37a17eff900afdad20b62794bf",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_literal_escaper-b0f46920a889d912.rmeta",
+            "bytes": 124008,
+            "sha256": "062b93082384bab4590c4c94d124fa3fb8c75712ed269a90ab57d20fc08f2c00",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_alloc-f817ddeeaf4a731a.rlib",
+            "bytes": 3910,
+            "sha256": "de3733a5597de11ce474439ef9f0190b717a8b6800baa3efc200aaf57a9169a6",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_alloc-f817ddeeaf4a731a.rmeta",
+            "bytes": 2212,
+            "sha256": "d07615340e714b43409f55cddf6d0936eabe64327cfc21cf10465f984c87ac10",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_core-2fa5081e6e0caefd.rlib",
+            "bytes": 3902,
+            "sha256": "00ad014b8983003857c8c76dd08bda03f307e76e1e05a9b5941e5f9c9fbd5c77",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_core-2fa5081e6e0caefd.rmeta",
+            "bytes": 6110,
+            "sha256": "f9361ef5195f555de2ca7fdcbd557eabf933cf33e40551e52cd491c6f89894de",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_std-6068d5c494af0832.rlib",
+            "bytes": 3896,
+            "sha256": "9df83b4eb27e3c06371c8f277a20ca75f5508771210257857f636c9344040fdf",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/librustc_std_workspace_std-6068d5c494af0832.rmeta",
+            "bytes": 7003,
+            "sha256": "c2f394f7889b15030be8dc58936f98a4cd36cf464d164c06877df02c6c8eefc2",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libstd-ff219504bf6f71ca.rlib",
+            "bytes": 2857382,
+            "sha256": "62314904685d54280c8325e03fcd1400d06a2a4fb81ed40c4822a5daf2db1c7f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libstd-ff219504bf6f71ca.rmeta",
+            "bytes": 5905857,
+            "sha256": "7bbc988467522e48843175ba858131b02283dbf62c3297204fdac01bbee13a07",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libstd_detect-4a8ba4cc3e52ae8b.rlib",
+            "bytes": 3788,
+            "sha256": "5f5df596a612a69a6481d20c0d15525b183e70bc3e050c5540bb17512d71a23f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libstd_detect-4a8ba4cc3e52ae8b.rmeta",
+            "bytes": 222336,
+            "sha256": "f4a86ec5ab7836e4e1f120b852ebb1aa4a32e0385aee4918be822aa63dec9e15",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libsysroot-eb616c57c024a0f5.rlib",
+            "bytes": 3756,
+            "sha256": "15ebce0b534cdc1c55a1aee87d53b2a7a5c32d50a53cf0bc53f151126b52ad40",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libsysroot-eb616c57c024a0f5.rmeta",
+            "bytes": 2067,
+            "sha256": "052a333bd6cfb4c385e9d232bbe99196075baaea7b0e89e7d286d1dbce807a0f",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libtest-465aec5d0602f6e9.rlib",
+            "bytes": 3817798,
+            "sha256": "c910b1d30a57265ff465e9be040dfa97cfb9a314b70eb246266deb6f44b3adc1",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libtest-465aec5d0602f6e9.rmeta",
+            "bytes": 1028732,
+            "sha256": "423d8d378a6ee6c26e285ee4efb973ca3de895184610ecf89ad1d2512dbf4953",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libunwind-ac2729c88228403d.rlib",
+            "bytes": 5430,
+            "sha256": "4111a0ad1ee9728d572a0fda9210b7e08dd1a582ceb4196e5f151feac5079673",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          },
+          {
+            "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib/libunwind-ac2729c88228403d.rmeta",
+            "bytes": 16022,
+            "sha256": "599f1ba33f092c6f4f9f72e434f0ebd8431461a718e23c2f5f7fdf6cf7a7dcca",
+            "ownerUid": 1000,
+            "mode": "0o644"
+          }
+        ]
+      }
+    ],
+    "targetLimitations": "wasm32-unknown-unknown is Tier 2; limited OS APIs, no Rust CI target test guarantee; browser feature matrix and native/WASM semantic parity are not established by target presence."
+  },
+  "wasmBindgen": {
+    "selectedExactCrateVersion": "0.2.129",
+    "selectedExactCliVersion": "0.2.129",
+    "requiredFutureManifestPin": "wasm-bindgen = \"=0.2.129\"",
+    "crateOrLockFilesEdited": false,
+    "supportBasis": "Latest upstream non-draft, non-prerelease release and non-yanked exact crate/CLI metadata observed; MSRV crate 1.81 and CLI 1.86 satisfied by Rust 1.99.1. No LTS support promise inferred.",
+    "releaseApiUrl": "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/latest",
+    "releaseUrl": "https://github.com/wasm-bindgen/wasm-bindgen/releases/tag/0.2.129",
+    "releasePublishedAt": "2026-09-25T07:13:03Z",
+    "releaseDraft": false,
+    "releasePrerelease": false,
+    "releaseAsset": {
+      "id": 587769529,
+      "name": "wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz",
+      "size": 11695824,
+      "digest": "sha256:82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e",
+      "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz",
+      "created_at": "2026-09-25T07:11:34Z",
+      "updated_at": "2026-09-25T07:11:35Z"
+    },
+    "headContentLength": 11695824,
+    "downloadPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/downloads/rust-wasm/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz",
+    "actualArchiveSha256": "82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e",
+    "checksumAsset": {
+      "id": 587769518,
+      "name": "wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz.sha256sum",
+      "size": 131,
+      "digest": "sha256:2ed51cf79704934ae3b2ce3430e1844578660fee7a73cbb655b34fc8858f122a",
+      "browser_download_url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz.sha256sum"
+    },
+    "checksumText": "82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e  gh-release/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz\n",
+    "checksumAssetActualSha256": "2ed51cf79704934ae3b2ce3430e1844578660fee7a73cbb655b34fc8858f122a",
+    "checksumVerification": "Archive matches release API SHA256 digest and published .sha256sum; sidecar itself matches release API digest.",
+    "sourceTagCommit": "165586f854c852bcbc4d14d8a75a0a0e0d0abc12",
+    "tagSource": "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/git/ref/tags/0.2.129",
+    "commitSource": "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/commits/165586f854c852bcbc4d14d8a75a0a0e0d0abc12",
+    "upstreamCommitReportsVerified": true,
+    "artifactSignatureOrSlsaVerified": false,
+    "provenanceLimit": "Official repository release via HTTPS and GitHub release API digest; independent artifact signature/build attestation not verified.",
+    "license": "MIT OR Apache-2.0",
+    "licenseVerification": "Both release archive license files byte-match source-tag LICENSE-MIT/LICENSE-APACHE SHA256.",
+    "sourceFiles": {
+      "LICENSE-MIT": {
+        "url": "https://raw.githubusercontent.com/wasm-bindgen/wasm-bindgen/0.2.129/LICENSE-MIT",
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      },
+      "LICENSE-APACHE": {
+        "url": "https://raw.githubusercontent.com/wasm-bindgen/wasm-bindgen/0.2.129/LICENSE-APACHE",
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      "Cargo.toml": {
+        "url": "https://raw.githubusercontent.com/wasm-bindgen/wasm-bindgen/0.2.129/Cargo.toml",
+        "sha256": "e25c3ccce47e4ae863f242580abba630d8f2e4a62de87b3faebe93356096dd88"
+      },
+      "crates/cli/Cargo.toml": {
+        "url": "https://raw.githubusercontent.com/wasm-bindgen/wasm-bindgen/0.2.129/crates/cli/Cargo.toml",
+        "sha256": "eea876f566761c1dfba6ae5bb56fe606446c947bc88ad6bfbdbd5a75ee4058fc"
+      }
+    },
+    "crateMetadata": {
+      "wasm-bindgen": {
+        "url": "https://crates.io/api/v1/crates/wasm-bindgen/0.2.129",
+        "num": "0.2.129",
+        "rust_version": "1.81",
+        "license": "MIT OR Apache-2.0",
+        "checksum": "9bb54f33acc68fd454578d9820b0bde1a1a3d17aa17bb7b6595806d02886d409",
+        "yanked": false
+      },
+      "wasm-bindgen-cli": {
+        "url": "https://crates.io/api/v1/crates/wasm-bindgen-cli/0.2.129",
+        "num": "0.2.129",
+        "rust_version": "1.86",
+        "license": "MIT OR Apache-2.0",
+        "checksum": "5fd044ed178958a277eeaf21f3d384287b0f4428d38c019141df01da9c03168c",
+        "yanked": false
+      }
+    },
+    "installation": "Copied only verified wasm-bindgen CLI binary and both legal notices to new prefix. wasm-bindgen-test-runner and wasm2es6js not installed or executed. No cargo install/build or npm package used.",
+    "installedTreeFiles": [
+      {
+        "relativePath": "bin/wasm-bindgen",
+        "bytes": 8014800,
+        "sha256": "fb59da714982a04273e9e4b09a85e523e5dd04de35b1a4a8b1641785ee7a71cf"
+      },
+      {
+        "relativePath": "share/licenses/LICENSE-APACHE",
+        "bytes": 10847,
+        "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+      },
+      {
+        "relativePath": "share/licenses/LICENSE-MIT",
+        "bytes": 1057,
+        "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+      }
+    ],
+    "blocker": null
+  },
+  "verification": {
+    "scope": "Only version, hashes and target presence; no tests, builds, lint, browser execution, runtime canary or generated bindings.",
+    "commands": [
+      {
+        "command": [
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/rustc",
+          "--version",
+          "--verbose"
+        ],
+        "exitCode": 0,
+        "stdout": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/cargo",
+          "--version"
+        ],
+        "exitCode": 0,
+        "stdout": "cargo 1.99.1 (5f94df478 2026-08-27)\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/wasm-bindgen-0.2.129/bin/wasm-bindgen",
+          "--version"
+        ],
+        "exitCode": 0,
+        "stdout": "wasm-bindgen 0.2.129\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/rustc",
+          "--print",
+          "target-libdir",
+          "--target",
+          "wasm32-unknown-unknown"
+        ],
+        "exitCode": 0,
+        "stdout": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/wasm32-unknown-unknown/lib\n",
+        "stderr": ""
+      }
+    ],
+    "installedBinaries": [
+      {
+        "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/rustc",
+        "bytes": 648536,
+        "sha256": "b53b780f77f952062f8ca8a3b70aef2390b1e45ad91939be94afdc9543026853",
+        "ownerUid": 1000,
+        "mode": "0o755"
+      },
+      {
+        "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/bin/cargo",
+        "bytes": 36148320,
+        "sha256": "a670e02cfa39ac2e53f77a2d911ca1fc9e2c479b0603ec956625be1daf24e3af",
+        "ownerUid": 1000,
+        "mode": "0o755"
+      },
+      {
+        "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/rust-1.99.1/lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-lld",
+        "bytes": 11879600,
+        "sha256": "9b6f51f983a8184f5d47d224e336cdb35171ad5b138981bc62a22e6d65e7b214",
+        "ownerUid": 1000,
+        "mode": "0o755"
+      },
+      {
+        "path": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/toolchains/wasm-bindgen-0.2.129/bin/wasm-bindgen",
+        "bytes": 8014800,
+        "sha256": "fb59da714982a04273e9e4b09a85e523e5dd04de35b1a4a8b1641785ee7a71cf",
+        "ownerUid": 1000,
+        "mode": "0o755"
+      }
+    ]
+  },
+  "storage": {
+    "unit": "bytes",
+    "freeBefore": 27946905600,
+    "freeAfter": 27052429312,
+    "reservedFreeBytes": 10737418240,
+    "preDownloadConservativePeakEstimateBytes": 2147483648,
+    "rustInstalledAllocatedBytes": 724193280,
+    "bindgenInstalledAllocatedBytes": 8048640,
+    "retainedDownloadAllocatedBytes": 162455552,
+    "rustArchiveBytes": 149797916,
+    "rustUnpackedPayloadBytes": 723825102,
+    "bindgenArchiveBytes": 11695824,
+    "bindgenUnpackedPayloadBytes": 32927797,
+    "stagingPayloadRemoved": true,
+    "reserveSatisfied": true
+  },
+  "unresolvedClosure": [
+    "Crate and CLI exact pins must be integrated by the authorized Cargo/engine owner; no Cargo files modified here.",
+    "Native/WASM compilation, deterministic semantic parity and real browser/bundler integration remain unexercised.",
+    "Host GA6.8/Ubuntu24.04 compatibility and native linker/system-library closure not certified on this development host.",
+    "Rust/CLI full transitive dependency SBOM, license obligations, reproducibility and independent artifact signatures/attestations remain unclosed.",
+    "S01 remains in progress; these local tools do not establish G0/G1 or production readiness."
+  ]
+}

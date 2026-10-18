@@ -182,6 +182,34 @@ namespace json_lite {
         if (start == end) return default_val;
         return std::stoi(line.substr(start, end - start));
     }
+
+    inline std::vector<Piece> extract_pieces(const std::string& line) {
+        std::vector<Piece> pieces;
+        const size_t key = line.find("\"pieces\"");
+        if (key == std::string::npos) return pieces;
+        const size_t begin = line.find('[', key);
+        const size_t end = line.find(']', begin);
+        if (begin == std::string::npos || end == std::string::npos) return pieces;
+        size_t cur = begin;
+        while ((cur = line.find('{', cur + 1)) != std::string::npos && cur < end) {
+            const size_t close = line.find('}', cur);
+            if (close == std::string::npos || close > end) break;
+            const std::string object = line.substr(cur, close - cur + 1);
+            const size_t alive_key = object.find("\"is_alive\"");
+            const size_t colon = object.find(':', alive_key);
+            const size_t value = colon == std::string::npos ? colon : object.find_first_not_of(" \t\r\n", colon + 1);
+            pieces.push_back(Piece{
+                .id = extract_int(object, "id"),
+                .owner = extract_string(object, "owner"),
+                .type = extract_string(object, "type"),
+                .x = extract_int(object, "x"),
+                .y = extract_int(object, "y"),
+                .is_alive = value != std::string::npos && object.compare(value, 4, "true") == 0
+            });
+            cur = close;
+        }
+        return pieces;
+    }
 }
 
 class Bot {
@@ -256,7 +284,7 @@ public:
                     .match_id = json_lite::extract_string(line, "match_id"),
                     .my_side = my_side_,
                     .game_map = game_map_,
-                    .starting_pieces = {},
+                    .starting_pieces = json_lite::extract_pieces(line),
                     .turn_time_limit_ms = json_lite::extract_int(line, "turn_time_limit_ms", 100),
                     .max_turns = json_lite::extract_int(line, "max_turns", 300)
                 };
@@ -268,29 +296,7 @@ public:
                 int turn_number = json_lite::extract_int(line, "turn_number", 1);
                 int time_remaining = json_lite::extract_int(line, "time_remaining_ms", 100);
 
-                // Parse pieces array
-                std::vector<Piece> pieces;
-                size_t pieces_pos = line.find("\"pieces\":");
-                if (pieces_pos != std::string::npos) {
-                    size_t cur = pieces_pos;
-                    while ((cur = line.find('{', cur + 1)) != std::string::npos) {
-                        size_t end_obj = line.find('}', cur);
-                        if (end_obj == std::string::npos) break;
-                        std::string piece_str = line.substr(cur, end_obj - cur + 1);
-
-                        Piece p{
-                            .id = json_lite::extract_int(piece_str, "id"),
-                            .owner = json_lite::extract_string(piece_str, "owner"),
-                            .type = json_lite::extract_string(piece_str, "type"),
-                            .x = json_lite::extract_int(piece_str, "x"),
-                            .y = json_lite::extract_int(piece_str, "y"),
-                            .is_alive = piece_str.find("\"is_alive\":true") != std::string::npos ||
-                                        piece_str.find("\"is_alive\": true") != std::string::npos
-                        };
-                        pieces.push_back(p);
-                        cur = end_obj;
-                    }
-                }
+                std::vector<Piece> pieces = json_lite::extract_pieces(line);
 
                 TurnContext ctx{
                     .turn_number = turn_number,

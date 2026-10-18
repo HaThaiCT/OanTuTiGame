@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "status": "SHARED_ENGINE_PROXIMITY_WASM_PARITY_ONLY",
+  "crate": "arena-engine-wasm",
+  "sourceDependency": "arena-engine::proximity_contribution",
+  "target": "wasm32-unknown-unknown",
+  "artifactBytes": 20212,
+  "export": "oantuti_proximity",
+  "distances": [0, 1, 63, 251],
+  "actual": [25200, 12600, 393, 100],
+  "expected": [25200, 12600, 393, 100],
+  "execution": "Node WebAssembly.instantiate",
+  "exitCode": 0,
+  "fullGameplayParity": false,
+  "browserIntegration": false,
+  "resultAuthority": "server native verification only",
+  "releaseReady": false
+}

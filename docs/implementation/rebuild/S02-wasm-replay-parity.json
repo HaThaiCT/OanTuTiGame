@@ -1,0 +1,118 @@
+{
+ "schemaVersion": 1,
+ "generatedAt": "2026-10-17T19:30:59.197605+00:00",
+ "status": "SHARED_ENGINE_WASM_FULL_REPLAY_PARITY_VERIFIED_DEV_HOST",
+ "verificationCore": {
+  "crate": "arena-engine",
+  "module": "crates/arena-engine/src/replay.rs",
+  "exports": [
+   "verify_actions",
+   "ReplayAction",
+   "ReplayError",
+   "ReplayEvidence"
+  ],
+  "consumers": [
+   "arena-runner::verify_trace (native CLI verify-trace)",
+   "arena-verifier (JSON front-end: stdin/stdout CLI and WASM ABI)",
+   "arena-engine-wasm oantuti_verify_replay (browser)",
+   "packages/server TraceVerifier (TypeScript, independent second implementation)"
+  ]
+ },
+ "wasm": {
+  "crate": "arena-engine-wasm",
+  "target": "wasm32-unknown-unknown",
+  "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "artifact": "target/wasm32-unknown-unknown/release/arena_engine_wasm.wasm",
+  "artifactBytes": 206631,
+  "artifactSha256": "7994d3bfaa08bf529ea09bac2a6128420410431a327757af4e227eaddd84211f",
+  "exports": [
+   "oantuti_proximity",
+   "oantuti_alloc",
+   "oantuti_free",
+   "oantuti_verify_replay",
+   "oantuti_result_free"
+  ],
+  "memoryAbi": "caller-allocated input buffer; result is a little-endian u32 length prefix followed by that many UTF-8 bytes"
+ },
+ "nativeCli": {
+  "bin": "target/debug/verify-trace",
+  "sha256": "860d540acfecb721996b9e9e4b4fa5c6667152a533e5db57d50925578db1ffbb",
+  "path": "arena-runner bin verify-trace -> arena_verifier::verify_line -> arena_engine::replay"
+ },
+ "parity": {
+  "script": "deploy/linux/verify-replay-parity.ts --limit 1000",
+  "source": "replay_objects rows (OANTUTI2 objects, SHA-256 trailer re-verified during decode)",
+  "checked": 634,
+  "rustOk": 634,
+  "tsOk": 634,
+  "wasmChecked": 634,
+  "wasmOk": 634,
+  "mismatches": 0,
+  "skippedNoMap": 68,
+  "comparedFields": [
+   "ok",
+   "appliedPly",
+   "winner",
+   "reason"
+  ]
+ },
+ "regression": {
+  "beforeRefactor": "634 checked / 634 rustOk / 634 tsOk / 0 mismatches / 68 skippedNoMap",
+  "afterRefactor": "634 checked / 634 rustOk / 634 tsOk / 634 wasmOk / 0 mismatches / 68 skippedNoMap",
+  "meaning": "moving the replay loop into shared arena-engine code (and routing the CLI through arena-verifier) kept native behaviour byte-identical on every stored replay"
+ },
+ "negativeControls": [
+  {
+   "case": "wasm path missing",
+   "observed": "UsageError, exit 2, no silent pass"
+  },
+  {
+   "case": "random 4 KiB file as wasm module",
+   "observed": "WebAssembly.instantiate magic-word error, exit 2"
+  },
+  {
+   "case": "stub native verifier returning a fixed WINNER/EXTINCTION verdict",
+   "observed": "mismatch fields appliedPly/winner/reason plus wasm:appliedPly/wasm:winner/wasm:reason, proving the WASM verdict participates in the comparison"
+  },
+  {
+   "case": "unit tests: wrong side, malformed JSON, missing outcome, throne-breach accept, alloc/free round trip",
+   "observed": "cargo test -p arena-verifier (4 passed) and -p arena-engine-wasm (3 passed)"
+  }
+ ],
+ "testTotals": {
+  "command": "cargo test --workspace --offline",
+  "failures": 0
+ },
+ "limits": {
+  "browserIntegration": true,
+  "sandboxOrSupervisor": "PENDING",
+  "fullGameplayParityScope": "verification/gameplay of the shared engine core over real stored replays; not a supervisor, gVisor/cgroup, capacity or GA6.8 certification",
+  "releaseReady": false
+ },
+ "browserWiring": {
+  "panel": "packages/web/app/replays/WasmVerifierPanel.tsx (client component on /replays)",
+  "library": "packages/web/lib/wasm-verifier.ts (fetches the module, builds the trace document from the decoded OANTUTI2 payload, calls oantuti_verify_replay)",
+  "servedAsset": "packages/web/public/wasm/arena_engine_wasm.wasm",
+  "servedAssetBytes": 206631,
+  "servedAssetSha256": "7994d3bfaa08bf529ea09bac2a6128420410431a327757af4e227eaddd84211f",
+  "buildScript": "deploy/linux/build-wasm-verifier.sh (npm run build:wasm-verifier)",
+  "httpCheck": {
+   "url": "/wasm/arena_engine_wasm.wasm",
+   "status": 200,
+   "contentType": "application/wasm"
+  },
+  "observedInBrowser": [
+   {
+    "digest": "df45092c98ded8e1a7266b73a7f00badae1bab455b08f58c5f028a7505cb75ce",
+    "result": "Engine WASM ch\u1ea5p nh\u1eadn trace. 8 n\u01b0\u1edbc \u0111\u01b0\u1ee3c \u00e1p d\u1ee5ng \u00b7 k\u1ebft c\u1ee5c \u0110en \u00b7 THRONE_BREACH",
+    "agreesWith": "native rust + TS parity verdict for the same digest"
+   },
+   {
+    "digest": "12cf5f3f903681e2cc8c101438bd91f7b6d0483ce8673b57b10f4c25048574f6",
+    "result": "Replay c\u0169 kh\u00f4ng k\u00e8m b\u00e0n \u0111\u1ea5u n\u00ean engine WASM kh\u00f4ng th\u1ec3 d\u1ef1ng l\u1ea1i th\u1ebf c\u1edd; kh\u00f4ng c\u00f3 k\u1ebft lu\u1eadn x\u00e1c minh.",
+    "meaning": "legacy object without a board descriptor reports no verdict instead of a fabricated one"
+   }
+  ],
+  "capturedAt": "2026-10-17T19:35:54.369576+00:00"
+ }
+}

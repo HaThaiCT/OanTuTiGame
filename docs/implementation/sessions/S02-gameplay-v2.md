@@ -1,0 +1,13 @@
+# S02 — Versioned gameplay v2 cutover
+
+Status: IMPLEMENTED_AND_SMOKED for the named outcome changes; not full S02/G1 completion.
+
+`packages/engine/src/rules-v2.ts` exposes explicit v2 victory evaluation and move transition, while historical `rules.ts` entrypoints/WinReason values remain unchanged for v1 consumers/replays. The new game-host uses v2 initial evaluation and post-move outcome; generated result evidence carries string reason, disposition and ArenaGameplay/v2 revision.
+
+Implemented: extinction considers types present in retained starting roster; simultaneous loss at the same extinction/throne tier returns NO_CONTEST / INVALID_START_BOTH_SIDES; extinction precedes throne, then active-side stalemate, then max-ply material/proximity/draw. Material and proximity wins are no longer labelled DRAW. Movement/capture mechanics reuse existing engine; no altered v1 replay interpretation.
+
+Verification exercised: targeted v2 tests3/3 plus existing v1 rules13/13 passed. Covers simultaneous throne outcome versus unchanged v1 behavior, material/proximity distinctions, extinction precedence when capture also reaches throne. These targeted tests do not prove every arbitrary-map or SDK boundary. Agent ran actual existing scoped three-language action after game-host cutover: all Python/compiled TypeScript/C++ matches PASS, exit0; final evidence THRONE_BREACH / DECISIVE / ArenaGameplay/v2, independent reaper confirmed. [Exact output](S02-gameplay-v2-result.json). Kernel7.0 development only, gvisorCertified=false.
+
+Remaining S02/product integration: typed full GameManifest/BuildManifest and broker dispatch, complete lifecycle/error-to-forfeit versus infrastructure classification, v2 SDK request correlation and C++ INIT starting roster parity, clean caller cutover from v1 runner, supervisor-death integration under actual match failure and certification gates. One-ply trusted matches are not capacity/negative-canary/GA6.8 proof. No new root permissions, artifact promotion or exhaustive test cycle added for this change.
+
+C++ SDK source now shares one pieces-array decoder between INIT and TURN; on_init receives actual starting roster instead of unconditional empty vector. Actual compiled C++20 fixture received two INIT pieces, checked IDs and alive/dead flags, then emitted READY/exit0. This smoke used trusted local fixture only, not a sandbox proof. Existing root-owned compiled-starter image predates this SDK fix and has not been relabelled updated; its prior C++ match evidence remains historical for the old SDK. Full arbitrary JSON parser/requestId v2 SDK migration remains separate work. V2 applyMove nextState terminal flag/winner now matches returned outcome; targeted v1+v2 rules16/16 passed after change.

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-17T21:03:14.777Z",
+  "status": "DEV_BOUNDED_SOAK_NOT_72H",
+  "api": "http://127.0.0.1:4301",
+  "serverPid": 285950,
+  "workload": {
+    "kind": "PUBLIC_READS_PLUS_WS_CHURN",
+    "minutes": 5,
+    "rounds": 149,
+    "httpRequests": 596,
+    "httpFailures": 0,
+    "bytesRead": 3308837,
+    "wsClientsPerRound": 25,
+    "wsOpened": 3725,
+    "wsClosed": 3725,
+    "pollIntervalMs": 2000
+  },
+  "latencyMs": {
+    "p50": 1.6,
+    "p95": 2.3,
+    "p99": 3.9
+  },
+  "resources": {
+    "rssMbBefore": 142.8,
+    "rssMbAfter": 133.3,
+    "rssMbMin": 126.7,
+    "rssMbMax": 146.5,
+    "rssMbGrowth": -9.5,
+    "fdsBefore": 33,
+    "fdsAfter": 35,
+    "fdsMin": 35,
+    "fdsMax": 50,
+    "samples": 149
+  },
+  "criteria": {
+    "httpFailuresZero": true,
+    "wsSocketsAllClosed": true,
+    "fdGrowthBounded": true,
+    "rssGrowthBounded": true
+  },
+  "notMeasured": [
+    "official game execution, private TEST, build queue and job churn (needs submissions and the sandboxed executor)",
+    "backup/restore rotation during the soak",
+    "the 72-hour duration and the 7-day rehearsal required by S17",
+    "the declared GA 6.8 release host, its CPU quota and disk pressure",
+    "memory/FD behaviour while the real Bot processes run under cgroup limits"
+  ],
+  "note": "Bounded development soak only; it is not the S17 endurance gate."
+}

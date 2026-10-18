@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "status": "UNSAFE_LOCAL_REAL_BOT_SMOKE_ONLY",
+  "module": "arena-runner::dev_bot",
+  "bots": "two real python3 child processes",
+  "protocol": "NDJSON INIT/TURN over stdin/stdout",
+  "engine": "same validated Rust engine",
+  "observedOutcome": "WHITE / THRONE_BREACH",
+  "sandboxed": false,
+  "networkIsolation": false,
+  "cpuAccounting": false,
+  "productionReachable": false,
+  "test": "cargo test -p arena-runner --test dev_bot",
+  "workspaceTests": "71 passed across 20 suites",
+  "g1Certified": false,
+  "releaseReady": false
+}

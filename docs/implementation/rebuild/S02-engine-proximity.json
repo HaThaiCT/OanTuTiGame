@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "status": "S02_ENGINE_PROXIMITY_FIXED_TESTS_ONLY",
+  "redObserved": "proximity expected18900 got196, exit101",
+  "greenObserved": "targeted gameplay_contract1/1pass and workspace --tests 51passed13suites",
+  "commandLimit": "cargo test --workspace --tests --locked --offline; rustdoc absent from minimal profile so doctest execution unavailable",
+  "proximityFormula": "sum(25200/(Chebyshev+1)) integer division",
+  "nativeWasmParity": "PENDING",
+  "runtimeCertification": false,
+  "releaseReady": false
+}

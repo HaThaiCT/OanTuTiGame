@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "status": "ISOLATED_DEVELOPMENT_CLUSTER_ONLY",
+  "dataRoot": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/data",
+  "socketPath": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket",
+  "port": 55434,
+  "database": "arena_rebuild_c72cd5a74f33",
+  "serviceName": "arena-rebuild-pg",
+  "listenAddresses": "",
+  "dataChecksums": true,
+  "fsync": true,
+  "synchronousCommit": true,
+  "fullPageWrites": true,
+  "roles": {
+    "arena_rebuild_app": {
+      "login": true,
+      "superuser": false,
+      "createDb": false,
+      "createRole": false
+    },
+    "arena_rebuild_migrator": {
+      "login": true,
+      "superuser": false,
+      "createDb": false,
+      "createRole": false
+    },
+    "arena_rebuild_backup": {
+      "login": true,
+      "superuser": false,
+      "createDb": false,
+      "createRole": false
+    }
+  },
+  "applicationRoleAuthentication": "PEER_MAPPED_TO_CURRENT_OS_USER_DEVELOPMENT_ONLY",
+  "migrationsApplied": false,
+  "donorDatabaseAccessed": false,
+  "releaseReady": false,
+  "backupRestoreCertification": "PENDING_RUNTIME_PROOF",
+  "productionUidSeparation": "PENDING_TARGET_PROVISIONING",
+  "appDdlDeniedObserved": true
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "status": "ISOLATED_DEVELOPMENT_HTTPS_SMOKE_PASS",
+  "certificateHostname": "localhost",
+  "certificateAdditionalSan": "127.0.0.1",
+  "privateCredentialRoot": "/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/tls",
+  "privateKeyMode": "0600",
+  "chainAndHostnameVerificationExit": 0,
+  "httpsServerClientSmokeExit": 0,
+  "listener": "temporary loopback ephemeral port, closed after smoke",
+  "explicitCaVerification": true,
+  "systemTrustModified": false,
+  "coldBrowserTrustCertified": false,
+  "productionTlsCertified": false,
+  "releaseReady": false
+}

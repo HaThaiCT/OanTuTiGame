@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #151618;
+  --surface: #202123;
+  --surface-subtle: #292a2d;
+  --text-primary: #eeeeef;
+  --text-secondary: #a1a3a8;
+  --border-subtle: #303135;
+  --border-control: #53555b;
+  --action: #e4e5e9;
+  --action-hover: #ffffff;
+  --accent-primary: #e4e5e9;
+  --accent-secondary: #b4c4cf;
+  --live-accent: #75c9a5;
+  --focus: #adcbea;
+  --success-text: #BBF7D0;
+  --success-tint: #14532D;
+  --warning-text: #FDE68A;
+  --warning-tint: #451A03;
+  --danger-text: #FECACA;
+  --danger-tint: #450A0A;
+  --info-text: #BFDBFE;
+  --info-tint: #172554;
+}
+
+/* Light is an optional secondary theme with the same token hierarchy (04-UI-UX §4.1); the board
+   itself stays dark so piece/side contrast never changes with the theme. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --canvas: #f7f7f8;
+  --surface: #ffffff;
+  --surface-subtle: #ededf0;
+  --text-primary: #202123;
+  --text-secondary: #60636b;
+  --border-subtle: #dedfe3;
+  --border-control: #9699a1;
+  --action: #e4e5e9;
+  --action-hover: #d6d8de;
+  --accent-primary: #34373d;
+  --accent-secondary: #455d70;
+  --live-accent: #246e53;
+  --focus: #356587;
+  --success-text: #166534;
+  --success-tint: #F0FDF4;
+  --warning-text: #92400E;
+  --warning-tint: #FFFBEB;
+  --danger-text: #991B1B;
+  --danger-tint: #FEF2F2;
+  --info-text: #1E40AF;
+  --info-tint: #EFF6FF;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--canvas); color: var(--text-primary); }
+body { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.6; }
+a { text-decoration: none; }
+::selection { background: var(--action); color: #151618; }
+
+/* Keyboard focus must stay visible on the dark theme; the UA ring is easy to lose against navy. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.arena-header { border-bottom: 1px solid var(--border-subtle); background: var(--canvas); }
+.arena-header-row { min-height: 64px; padding: 0 32px; display: flex; align-items: center; gap: 32px; }
+.arena-wordmark { font-size: 20px; font-weight: 700; letter-spacing: -.7px; white-space: nowrap; }
+.arena-desktop-nav { display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--text-secondary); }
+.arena-desktop-nav a:hover, .arena-desktop-nav a[aria-current] { color: var(--text-primary); }
+.arena-header-controls { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.arena-menu-toggle { display: none; margin-left: auto; font-size: 26px; background: transparent; border: 0; cursor: pointer; }
+.arena-mobile-nav { padding: 16px 24px; border-top: 1px solid var(--border-subtle); }
+.arena-mobile-nav nav { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+.arena-main { max-width: 1440px; margin: 0 auto; padding: 32px 64px 64px; min-height: calc(100vh - 150px); }
+.arena-footer { border-top: 1px solid var(--border-subtle); padding: 24px 32px; display: flex; justify-content: space-between; gap: 20px; color: var(--text-secondary); font-size: 11px; }
+.arena-hero { display: grid; grid-template-columns: .92fr 1.08fr; gap: 56px; align-items: center; min-height: 535px; margin-bottom: 48px; }
+.arena-hero h1 { font-size: 30px; line-height: 36px; letter-spacing: 0; max-width: 500px; font-weight: 500; }
+.arena-hero-copy { padding: 32px 0; }
+.arena-hero-copy p { margin-top: 24px; max-width: 400px; color: var(--text-secondary); font-size: 12px; line-height: 1.8; }
+.arena-ranking { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 5px; min-width: 0; min-height: 535px; display: flex; flex-direction: column; }
+.arena-ranking-toolbar { padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); }
+.arena-ranking-toolbar select { width: 100%; min-width: 0; background: transparent; color: var(--text-secondary); font-size: 11px; border: 0; padding: 0; }
+.arena-ranking table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.arena-ranking th { font-size: 12px; font-weight: 400; color: var(--text-secondary); padding: 12px 16px; text-align: left; }
+.arena-ranking th button { display: flex; align-items: center; gap: 16px; cursor: pointer; }
+.arena-ranking th[aria-sort='ascending'], .arena-ranking th[aria-sort='descending'] { color: var(--text-primary); }
+.arena-ranking td { padding: 12px 16px; border-top: 1px solid var(--border-subtle); }
+.arena-ranking-footer { margin-top: auto; padding: 18px; text-align: center; font-size: 11px; color: var(--text-secondary); }
+.arena-empty { padding: 56px 24px; text-align: center; color: var(--text-secondary); }
+.arena-search { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 18px 16px; }
+.arena-search input { width: 100%; min-width: 0; background: transparent; border: 0; }
+.arena-search span { color: var(--text-secondary); white-space: nowrap; font-size: 11px; }
+.arena-filters { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 0 36px; font-size: 11px; }
+.arena-filters button { border: 0; background: none; cursor: pointer; padding: 4px 0; }
+.arena-filters button[aria-pressed='true'], .arena-filters button:hover { opacity: 1; text-decoration: underline; text-underline-offset: 5px; }
+:root[data-theme='light'] .arena-filters button { color: #42454d !important; }
+:root[data-theme='light'] .arena-filters button[aria-pressed='true'] { color: #151618 !important; }
+.arena-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; font-size: 20px; font-weight: 500; }
+.arena-pagination { display: flex; align-items: center; gap: 14px; font-size: 11px; color: var(--text-secondary); }
+.arena-pagination button { cursor: pointer; padding: 4px; font-size: 18px; color: var(--text-primary); }
+.arena-pagination button:disabled { opacity: .25; cursor: default; }
+.arena-catalog { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.arena-tournament-card { min-width: 0; border: 1px solid var(--border-subtle); border-radius: 5px; background: var(--surface); overflow: hidden; transition: border-color .15s; }
+.arena-tournament-card:hover { border-color: var(--border-control); }
+.arena-tournament-card-art { height: 200px; position: relative; overflow: hidden; background: #25262a; }
+.arena-tournament-card-art svg { width: 100%; height: 100%; }
+.arena-tournament-card-body { padding: 16px; }
+.arena-tournament-card h3 { font-size: 16px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.arena-card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; font-size: 10px; color: var(--text-secondary); }
+.arena-status { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-secondary); margin-bottom: 10px; }
+.arena-status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+main :is(input, select, textarea) { font-family: inherit; }
+main :is(h1, h2, h3) { letter-spacing: -.035em; }
+.arena-theme-selector { display: flex; align-items: center; gap: 2px; padding: 4px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 24px; }
+.arena-theme-selector button { display: grid; place-items: center; width: 28px; height: 28px; color: var(--text-secondary); border-radius: 50%; cursor: pointer; }
+.arena-theme-selector button[aria-pressed='true'] { color: var(--text-primary); background: var(--surface-subtle); }
+@media (min-width: 1001px) { .arena-mobile-nav { display: none; } }
+@media (max-width: 1200px) { .arena-desktop-nav { gap: 16px; } .arena-header-row { gap: 24px; } .arena-main { padding-inline: 32px; } .arena-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .arena-desktop-nav, .arena-header-controls { display: none; } .arena-menu-toggle { display: block; } .arena-hero { gap: 28px; } .arena-catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .arena-header-row { padding-inline: 20px; } .arena-main { padding: 32px 16px 48px; } .arena-hero { display: flex; flex-direction: column; align-items: stretch; gap: 32px; margin-bottom: 32px; } .arena-hero-copy { text-align: center; padding: 20px 16px; } .arena-hero h1 { font-size: 30px; margin: auto; } .arena-hero-copy p { margin-inline: auto; } .arena-ranking { min-height: 390px; } .arena-ranking td, .arena-ranking th { padding: 12px 10px; font-size: 11px; } .arena-catalog { grid-template-columns: 1fr; } .arena-tournament-card-art { height: 220px; } .arena-footer { flex-direction: column; padding: 24px 20px; } .arena-search span { display: none; } }

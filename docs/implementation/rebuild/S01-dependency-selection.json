@@ -1,0 +1,3420 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-10-17",
+  "retrievedAtUtc": "2026-10-17T10:17:53.998112+00:00",
+  "workspace": "/home/ha-thai/OanTuTi-rebuild",
+  "scope": "Read-only package/support/security metadata research; exact direct development selection only. No install, builds, tests, package edits, service changes, migrations or donor writes.",
+  "status": "DIRECT_SELECTION_RESOLVED_NOT_RELEASE_BOM",
+  "authority": [
+    "OANTUTI_ARENA_V2_PLAN.md S01.5,S02,S12",
+    "docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md section7.4"
+  ],
+  "phaseGates": {
+    "S02PureRust": "UNBLOCKED_BY_UNUSED_NPM_OR_UI_DEPENDENCIES; Rust/protoc/WASM toolchain gate owned by S01-rust-wasm-tools.json. This file neither certifies nor blocks sandbox execution.",
+    "S02TypeScriptContractGeneration": "Exact generator/schema/runtime selection available; installation/lock/generation proof required only when consuming TS tooling.",
+    "S03ControlPlane": "Exact direct pins available; isolated install/full dependency graph audit/nativeArgon2 proof required before relevant smoke.",
+    "S12UI": "Exact foundation pins available; source registry transitive closure, source licenses, owner checkpoint, offline assets and production build proof remain mandatory at UI consumption, not prerequisites for pureRust engine work.",
+    "G0Release": "PENDING exact full lock, all artifacts SHA256, verified provenance and SBOM/licenses/security closure; not RELEASE_READY."
+  },
+  "inputs": [
+    {
+      "path": "package.json",
+      "sha256": "0a7ea9c0a784cb718c1a36dbd2eeea4f78cc40182981dc7e3b825f2f04963035",
+      "dependencies": {},
+      "devDependencies": {
+        "@types/node": "^22.10.2",
+        "ajv": "^8.17.1",
+        "protobufjs": "^7.4.0",
+        "ts-proto": "2.15.3",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2",
+        "vitest": "^2.1.8"
+      }
+    },
+    {
+      "path": "packages/server/package.json",
+      "sha256": "866afc070f8d017b7f0f15b5191bf7e719f41fbdd81a0f28f4d6cf3b48176f42",
+      "dependencies": {
+        "@fastify/cors": "^11.0.1",
+        "@fastify/websocket": "^11.0.2",
+        "@oantuti/engine": "*",
+        "@oantuti/protocol": "*",
+        "@oantuti/runner": "*",
+        "fastify": "^5.2.1",
+        "pg": "8.23.1",
+        "ws": "^8.18.0"
+      },
+      "devDependencies": {
+        "@types/pg": "8.23.1",
+        "@types/ws": "^8.5.13"
+      }
+    },
+    {
+      "path": "packages/web/package.json",
+      "sha256": "de1121d7e4aec0e270ec71ec46a184744f45c72ed065e84ee5fdefed565de76d",
+      "dependencies": {
+        "@monaco-editor/react": "^4.7.0",
+        "@oantuti/engine": "*",
+        "@oantuti/protocol": "*",
+        "canvas-confetti": "^1.9.4",
+        "lucide-react": "^0.468.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+      },
+      "devDependencies": {
+        "@types/canvas-confetti": "^1.9.0",
+        "@types/react": "^18.3.18",
+        "@types/react-dom": "^18.3.5",
+        "@vitejs/plugin-react": "^4.3.4",
+        "typescript": "^5.7.2",
+        "vite": "^6.0.3"
+      }
+    },
+    {
+      "path": "packages/protocol/package.json",
+      "sha256": "bf3cbda60cb945193fb1c1a4c8d1f1e9de82836f4bd5814675d8c4952729cc24",
+      "dependencies": {
+        "@bufbuild/protobuf": "2.11.0",
+        "@oantuti/engine": "*",
+        "protobufjs": "^7.4.0"
+      },
+      "devDependencies": {}
+    },
+    {
+      "path": "packages/engine/package.json",
+      "sha256": "47339ee30a4a94e8abb3ed7a0113b54b80e49e747b0e7402aea0d5f219851425",
+      "dependencies": {},
+      "devDependencies": {}
+    },
+    {
+      "path": "packages/runner/package.json",
+      "sha256": "1458886dbd33134295156b302e4ac0f3775b36edcb17d881a70339867b39c75d",
+      "dependencies": {
+        "@oantuti/engine": "*",
+        "@oantuti/protocol": "*"
+      },
+      "devDependencies": {}
+    }
+  ],
+  "lockfile": {
+    "path": "package-lock.json",
+    "lockfileVersion": 3,
+    "sha256": "f8850d84dcb0a3fd2fa813bd41edfe99bdb0ac0141eb011476f7896149e4c7b4",
+    "status": "OBSERVED_ONLY_NOT_REGENERATED_NOT_FULL_SELECTION_LOCK"
+  },
+  "node": {
+    "version": "24.22.0",
+    "architecture": "linux-x64",
+    "ltsCodename": "Krypton",
+    "license": "MIT with bundled third-party notices; upstreamLICENSE captured",
+    "artifactUrl": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-linux-x64.tar.xz",
+    "publishedSha256": "cc2f601cee82d9a5a233302fe307abc600727035fd7d2c3a3571755989e95008",
+    "sha256Status": "UPSTREAM_SHASUMS_OBSERVED_BINARY_NOT_DOWNLOADED",
+    "signatureVerified": false,
+    "sources": [
+      "node_schedule",
+      "node_releases",
+      "node24_sha256",
+      "node24_license"
+    ],
+    "requiredForPureRustS02": false
+  },
+  "packages": [
+    {
+      "name": "fastify",
+      "version": "5.12.7",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Fastify supported 5.x line; 5.12.7 supersedes donor 5.12.5, which is affected by GHSA-389g-gv7q-r4x8 (fixed 5.12.6).",
+      "observedDonorLockVersion": "5.12.5",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-13T08:07:53.258Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "pino": "^9.14.0 || ^10.1.0",
+        "rfdc": "^1.3.1",
+        "avvio": "^9.0.0",
+        "semver": "^7.6.0",
+        "toad-cache": "^3.7.0",
+        "find-my-way": "^9.6.0",
+        "@fastify/error": "^4.0.0",
+        "process-warning": "^5.1.0",
+        "abstract-logging": "^2.0.1",
+        "light-my-request": "^6.0.0",
+        "secure-json-parse": "^4.0.0",
+        "@fastify/proxy-addr": "^5.0.0",
+        "fast-json-stringify": "^7.0.0",
+        "@fastify/ajv-compiler": "^4.0.5",
+        "@fastify/fast-json-stringify-compiler": "^5.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/fastify/fastify.git",
+        "type": "git"
+      },
+      "gitHead": "9f400035ebaf572b95989db5040ebb09c01e4e77",
+      "metadata": {
+        "url": "https://registry.npmjs.org/fastify/5.12.7",
+        "responseSha256": "eb67c50aee7551b3cdfb4300cdd132cb75e02bf3896431205fea08d22994610b"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/fastify/-/fastify-5.12.7.tgz",
+        "npmIntegrity": "sha512-v4pEPsTRPuqlDIYiQFB+BHjVN4SdHX9u0ABk0ZDUKbbdY1vsNryUd1j4Z+jQEZajvYIVk047Kimva9/AJ79GYw==",
+        "npmShasum": "e8f9859b1ae908ba38bbdb0572d358788c4a4b46",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "5.12.7",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@fastify/cors",
+      "version": "11.3.1",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "11.3.1",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-08T09:25:36.448Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "toad-cache": "^3.7.0",
+        "fastify-plugin": "^6.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/fastify/fastify-cors.git",
+        "type": "git"
+      },
+      "gitHead": "a4fb4823eaca3b99a960f7a341e332e2d47c140d",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@fastify/cors/11.3.1",
+        "responseSha256": "1b051f12590ed4b577a0ade45ba813b79639fa7f29adc710f041cc7072e81e0c"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@fastify/cors/-/cors-11.3.1.tgz",
+        "npmIntegrity": "sha512-gZXNzd6FLHzOIfvoK4+Az3Wko2V6Y0MIsLxpyo4AEYl7a9q1JBPwPaxLea4nkr++8FCiJiPpYYo6E02uZW0dqw==",
+        "npmShasum": "4897642f6b1d343497209447ec84e97d5dfc7a05",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@fastify%2fcors@11.3.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "11.3.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@fastify/websocket",
+      "version": "11.3.4",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "11.3.4",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-09T13:54:50.166Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "ws": "^8.16.0",
+        "duplexify": "^4.1.3",
+        "fastify-plugin": "^6.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/fastify/fastify-websocket.git",
+        "type": "git"
+      },
+      "gitHead": "a3e88955e1c583484ec3bf5917332b9c0cfac411",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@fastify/websocket/11.3.4",
+        "responseSha256": "99db5bd8d9384ba62973f7684c9fb940c456feb5cb8470059c671c6c989b0efb"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@fastify/websocket/-/websocket-11.3.4.tgz",
+        "npmIntegrity": "sha512-firnJtEOv6pfdoXIzFDMbd+omgWwFNfLtdM8JejNFr/9lT/9DHkEhjTShuRFeE4phqrevD2B3JRW0v6uyzWhHQ==",
+        "npmShasum": "af783dd1f2699d0da61869b0aabfd934d2990db9",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@fastify%2fwebsocket@11.3.4",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "11.3.4",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@fastify/cookie",
+      "version": "11.1.3",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-08T14:30:17.306Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "cookie": "^2.0.0",
+        "fastify-plugin": "^6.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/fastify/fastify-cookie.git",
+        "type": "git"
+      },
+      "gitHead": "576e0ddcacbd4cf652ba7228e5c1c44742091366",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@fastify/cookie/11.1.3",
+        "responseSha256": "25e1f34adb34889e327262689ac48fba3d77d071014a44999f7c2fc4a628204d"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@fastify/cookie/-/cookie-11.1.3.tgz",
+        "npmIntegrity": "sha512-RBhlMNsmSG6C5KGiTkhSXBF75xIrUMSytDDBcpnVewhJ8XVYnJTu+SV6FYKXClIRsBuRjOfKbBSULvnPD3X/mg==",
+        "npmShasum": "d1c679ad673e3882eed0f8221649dd0747fa8cec",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@fastify%2fcookie@11.1.3",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "11.1.3",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@fastify/rate-limit",
+      "version": "11.2.1",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-08T14:40:39.052Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@lukeed/ms": "^2.0.2",
+        "ip-address": "^10.2.0",
+        "toad-cache": "^3.7.0",
+        "fastify-plugin": "^6.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/fastify/fastify-rate-limit.git",
+        "type": "git"
+      },
+      "gitHead": "4cc3d70bbdb83b04c1f14063f88f815ee4b9f806",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@fastify/rate-limit/11.2.1",
+        "responseSha256": "49e853b9d651d34bc43045222d48fa22fa2486db20cfd1f740714d04bd996425"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@fastify/rate-limit/-/rate-limit-11.2.1.tgz",
+        "npmIntegrity": "sha512-uTQjii3tJUnb6ZyEMcunuvKE3FDKNZEaPpxdyWADDgthHnUV1swdvwuiZfi3DDDgxm1iBrhOkQ/w0yDBQ8qJtA==",
+        "npmShasum": "5fe437d2e71b27b459ca87c5372eb1e069030cf1",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@fastify%2frate-limit@11.2.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "11.2.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "pg",
+      "version": "8.23.1",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Preserve verified 8.23.1 pin; upstream explicitly lists Node 24 support; pg-native optional peer not selected.",
+      "observedDonorLockVersion": "8.23.1",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-30T15:39:58.489Z",
+      "engines": {
+        "node": ">= 16.0.0"
+      },
+      "peerDependencies": {
+        "pg-native": ">=3.0.1"
+      },
+      "peerDependenciesMeta": {
+        "pg-native": {
+          "optional": true
+        }
+      },
+      "dependencies": {
+        "pgpass": "1.0.5",
+        "pg-pool": "^3.14.0",
+        "pg-types": "2.2.0",
+        "pg-protocol": "^1.16.1",
+        "pg-cloudflare": "^1.4.1",
+        "pg-connection-string": "^2.14.1"
+      },
+      "repository": {
+        "url": "git://github.com/brianc/node-postgres.git",
+        "type": "git",
+        "directory": "packages/pg"
+      },
+      "gitHead": "0980cefebe0ae461da8883703be049fe13ca96cf",
+      "metadata": {
+        "url": "https://registry.npmjs.org/pg/8.23.1",
+        "responseSha256": "928cc53cd24d6e2ea6caa11d74422c9291d117d88c8cc4c1974b074f638b9d35"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/pg/-/pg-8.23.1.tgz",
+        "npmIntegrity": "sha512-aL96AHANtWjPLDOLqnhx+ngp9+UK7ETEU8VJrDCGvsSSi/mGLcWYsS6Herg7lmaBJe4uwrfqsa7gTEFaSizDoQ==",
+        "npmShasum": "e4848051a04aa2f968fd5671d075f89e5e7918b9",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.23.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@types/pg",
+      "version": "8.23.1",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Match existing verified pg 8.23.1 type package; do not invent package version correspondence beyond observed metadata.",
+      "observedDonorLockVersion": "8.23.1",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-08-17T20:10:18.296Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "pg-types": "^2.2.0",
+        "@types/node": "*",
+        "pg-protocol": "*"
+      },
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/pg"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@types/pg/8.23.1",
+        "responseSha256": "525a80df119f9acaaf577a38ec9eab0a331465f11ab7597862c10e447edf7ce5"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@types/pg/-/pg-8.23.1.tgz",
+        "npmIntegrity": "sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==",
+        "npmShasum": "7e712ce02cf44ad100862127f10f52e9c6b9d227",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.23.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "argon2",
+      "version": "0.45.1",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Password-oriented node-argon2 API; Node engine >=16.17.0 admits Node24; Linux amd64 glibc prebuild supported by upstream. Explicit Argon2id memoryCost=65536,timeCost=3,parallelism=1,salt>=16 bytes remain application requirements.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-07-21T23:55:28.189Z",
+      "engines": {
+        "node": ">=16.17.0"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "cross-env": "^10.1.0",
+        "@phc/format": "^1.0.0",
+        "node-addon-api": "^8.9.0",
+        "node-gyp-build": "^4.8.4"
+      },
+      "repository": {
+        "url": "git+https://github.com/ranisalt/node-argon2.git",
+        "type": "git"
+      },
+      "gitHead": "786de7152f95881b0683aea1d2ca60ed0d6d9e2f",
+      "metadata": {
+        "url": "https://registry.npmjs.org/argon2/0.45.1",
+        "responseSha256": "92f292cb139c7b595c07bd807fb1e7f7d5040bbfcce793e88384b9bc21dac127"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/argon2/-/argon2-0.45.1.tgz",
+        "npmIntegrity": "sha512-skm+/WCjkGqCQxF7FG1LuZXM5yvbFjgbfiCGsud2oLgaDhh6b6dbH0b1EkghbM+xx4Bj8Ape+KKgixoIlWZicQ==",
+        "npmShasum": "1f067fa1825b49e762b62d53b5386d40f96b11be",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/argon2@0.45.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "0.45.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "ajv",
+      "version": "8.20.0",
+      "phase": "S02_TS_CONTRACT_GENERATION_ONLY",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "8.20.0",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-04-24T15:22:16.529Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "fast-uri": "^3.0.1",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "gitHead": "0fba0b8e649909613cfce0999b149cd08f4a4987",
+      "metadata": {
+        "url": "https://registry.npmjs.org/ajv/8.20.0",
+        "responseSha256": "da1e811c437dcaed32870e5023e0a1fc6e672027023a0648fddfbc122fb84c58"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+        "npmIntegrity": "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
+        "npmShasum": "304b3636add88ba7d936760dd50ece006dea95f9",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.20.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "protobufjs",
+      "version": "7.6.6",
+      "phase": "S02_TS_CONTRACT_GENERATION_ONLY",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Remain on patched maintained latest-7 7.6.6 to preserve donor runtime APIs; upstream advisories explicitly provide fixes on 7.x including option parser infinite loop fixed 7.6.5. Do not jump to 8.x solely because latest tag moved.",
+      "observedDonorLockVersion": "7.6.6",
+      "licenseMetadata": "BSD-3-Clause",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-08-27T10:15:37.337Z",
+      "engines": {
+        "node": ">=12.0.0"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "long": "^5.3.2",
+        "@types/node": ">=13.7.0",
+        "@protobufjs/path": "^1.1.2",
+        "@protobufjs/pool": "^1.1.0",
+        "@protobufjs/utf8": "^1.1.1",
+        "@protobufjs/fetch": "^1.1.1",
+        "@protobufjs/float": "^1.0.2",
+        "@protobufjs/base64": "^1.1.2",
+        "@protobufjs/codegen": "^2.0.5",
+        "@protobufjs/aspromise": "^1.1.2",
+        "@protobufjs/eventemitter": "^1.1.1"
+      },
+      "repository": {
+        "url": "git+https://github.com/protobufjs/protobuf.js.git",
+        "type": "git"
+      },
+      "gitHead": "795704d36c4d7de5c12f10e08836697e9d3011b2",
+      "metadata": {
+        "url": "https://registry.npmjs.org/protobufjs/7.6.6",
+        "responseSha256": "c9be9707a368fa84259a6da17c825597c3956ecbc380441a410e07988d1c2f88"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/protobufjs/-/protobufjs-7.6.6.tgz",
+        "npmIntegrity": "sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==",
+        "npmShasum": "7a3923e8e32b0ee2ff689f8eed6e455c090ac67e",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/protobufjs@7.6.6",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "7.6.6",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "ts-proto",
+      "version": "2.15.3",
+      "phase": "S02_TS_CONTRACT_GENERATION_ONLY",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Preserve exact current generator 2.15.3, verified upstream release metadata; pair with compatible Buf v2 runtime.",
+      "observedDonorLockVersion": "2.15.3",
+      "licenseMetadata": "ISC",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-14T02:42:58.513Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "ts-poet": "^6.12.0",
+        "case-anything": "^2.1.13",
+        "@bufbuild/protobuf": "^2.14.1",
+        "ts-proto-descriptors": "2.1.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/stephenh/ts-proto.git",
+        "type": "git"
+      },
+      "gitHead": "9b630b8b8912dc5f1aaf75e03ff5299f1852e73d",
+      "metadata": {
+        "url": "https://registry.npmjs.org/ts-proto/2.15.3",
+        "responseSha256": "2d0b3a96e91c472e39421ec3d73098ec5dd7ab53a5acce5159f145f2fc697152"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/ts-proto/-/ts-proto-2.15.3.tgz",
+        "npmIntegrity": "sha512-UW+gnWgZtsYW0yyXgU39swauVcruCDYu1k7H1ldMYOZP4H/94UUt3RM2nV+6fi/Q0lSs/cM4/A7dzm5fqzptVQ==",
+        "npmShasum": "21e32d263a35d8c2bd3943cf2117ed47edb1a88d",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/ts-proto@2.15.3",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "2.15.3",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "next",
+      "version": "16.4.2",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Choose supported ActiveLTS16.x patch16.4.2, not unsupported14 or canary; Node>=20.9 peer satisfied. Recheck security at S12 integration.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-15T20:57:24.007Z",
+      "engines": {
+        "node": ">=20.9.0"
+      },
+      "peerDependencies": {
+        "sass": "^1.3.0",
+        "react": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0",
+        "react-dom": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0",
+        "@playwright/test": "^1.51.1",
+        "@opentelemetry/api": "^1.1.0",
+        "babel-plugin-react-compiler": "*"
+      },
+      "peerDependenciesMeta": {
+        "sass": {
+          "optional": true
+        },
+        "@playwright/test": {
+          "optional": true
+        },
+        "@opentelemetry/api": {
+          "optional": true
+        },
+        "babel-plugin-react-compiler": {
+          "optional": true
+        }
+      },
+      "dependencies": {
+        "postcss": "8.5.23",
+        "@next/env": "16.4.2",
+        "styled-jsx": "5.1.6",
+        "@swc/helpers": "0.5.23",
+        "caniuse-lite": "^1.0.30001579",
+        "baseline-browser-mapping": "^2.9.19"
+      },
+      "repository": {
+        "url": "git+https://github.com/vercel/next.js.git",
+        "type": "git"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/next/16.4.2",
+        "responseSha256": "e47d24a73b3696f2c42f995b7879cf3cc54cae563c5123e6481d6210fc1c4aec"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/next/-/next-16.4.2.tgz",
+        "npmIntegrity": "sha512-r+oBJojfefUjOiWkBhXgLS+igxX/7BWyK59uHnyOyplMSLtBZ+QLP3okrdYTbrfrbrmNTVWLBPaHDX9KRaIt3w==",
+        "npmShasum": "5b35585834dd7ed338099723eefe117eb6ab497b",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/next@16.4.2",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "16.4.2",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "react",
+      "version": "19.3.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Use same stable19.3.1 as react-dom; Next16 peer admits ^19 and Monaco/shadcn/Radix admit19.",
+      "observedDonorLockVersion": "18.3.1",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-14T16:47:15.290Z",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/react/react.git",
+        "type": "git",
+        "directory": "packages/react"
+      },
+      "gitHead": "61aa00df822d0eb76d0362eb8b6fdd3527693efe",
+      "metadata": {
+        "url": "https://registry.npmjs.org/react/19.3.1",
+        "responseSha256": "ecf8c02b9096a7813842d87fae50a707a8809c5c3d0ec6b359ac51d40188ff6f"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
+        "npmIntegrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
+        "npmShasum": "26e9523fc36ea06be5050ebb780249a133260ad7",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/react@19.3.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "19.3.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "react-dom",
+      "version": "19.3.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact19.3.1 pair with react19.3.1 meets required ^19.3.1 peer.",
+      "observedDonorLockVersion": "18.3.1",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-14T16:49:10.081Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^19.3.1"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "scheduler": "^0.28.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/react/react.git",
+        "type": "git",
+        "directory": "packages/react-dom"
+      },
+      "gitHead": "61aa00df822d0eb76d0362eb8b6fdd3527693efe",
+      "metadata": {
+        "url": "https://registry.npmjs.org/react-dom/19.3.1",
+        "responseSha256": "2d72d7d33a8b0fea5614e1b415d06470877efa8eebbdf638cee04e5b83c2c7a5"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
+        "npmIntegrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
+        "npmShasum": "b384c53cfcbe9c2a5d09d863b98455de9d68afe2",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/react-dom@19.3.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "19.3.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Tailwind4 foundation explicitly supported by shadcn React19 migration guidance; keep @tailwindcss/postcss on identical4.3.3.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-07-16T12:03:35.267Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "https://github.com/tailwindlabs/tailwindcss.git",
+        "type": "git",
+        "directory": "packages/tailwindcss"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/tailwindcss/4.3.3",
+        "responseSha256": "e15224dd87d06dc360946ad675dd59d36c1409206c0d34289625bc4d648c1ebb"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.3.3.tgz",
+        "npmIntegrity": "sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==",
+        "npmShasum": "c006861611c213c1877893ab5b23daa16be2bb55",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/tailwindcss@4.3.3",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "4.3.3",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@tailwindcss/postcss",
+      "version": "4.3.3",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-07-16T12:03:56.054Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "postcss": "^8.5.16",
+        "tailwindcss": "4.3.3",
+        "@alloc/quick-lru": "^5.2.0",
+        "@tailwindcss/node": "4.3.3",
+        "@tailwindcss/oxide": "4.3.3"
+      },
+      "repository": {
+        "url": "https://github.com/tailwindlabs/tailwindcss.git",
+        "type": "git",
+        "directory": "packages/@tailwindcss-postcss"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@tailwindcss/postcss/4.3.3",
+        "responseSha256": "98dc010ee4421d0c47b926f6b88a318c2bce743457bf9f773fd77b4ae3c917c0"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.3.3.tgz",
+        "npmIntegrity": "sha512-JTSZZGQi1AyKirbLN3azmjVzef92tcX7h+iSqPdaeStyFpGpDlKvvpxeOE8njhbUanbRwr3z8DyzhICWnMtQeg==",
+        "npmShasum": "dc14df6477edc16087df1663617ee23bc1042610",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@tailwindcss%2fpostcss@4.3.3",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "4.3.3",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "postcss",
+      "version": "8.5.30",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "8.5.29",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-12T20:38:43.212Z",
+      "engines": {
+        "node": "^10 || ^12 || >=14"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "nanoid": "^3.3.20",
+        "picocolors": "^1.1.1",
+        "source-map-js": "^1.2.2"
+      },
+      "repository": {
+        "url": "git+https://github.com/postcss/postcss.git",
+        "type": "git"
+      },
+      "gitHead": "f1aca7ec68ab0cfb96cc9e69520a87f641c5a9e4",
+      "metadata": {
+        "url": "https://registry.npmjs.org/postcss/8.5.30",
+        "responseSha256": "da8e296169e0c55e2cb5c9d6f49a570e57315ec72bb529976b80e4a0ec1f921c"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/postcss/-/postcss-8.5.30.tgz",
+        "npmIntegrity": "sha512-zkd+e9S1AQHhmaBKye9zlFHWjOwVgqXl1q3ECYy8561K7qxR2cREf/STLskulBFd78k6AOFeA+ff1TtEzk9bAA==",
+        "npmShasum": "f76f192357d2b7026b651fd2c7baa60d05325a9e",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/postcss@8.5.30",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.5.30",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "monaco-editor",
+      "version": "0.57.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Retain verified donor0.57.0 compatible with wrapper; browser worker/selfhost/license bundling proof pending, not a pureRust dependency.",
+      "observedDonorLockVersion": "0.57.0",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-24T21:33:55.189Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "marked": "14.0.0",
+        "dompurify": "3.4.15"
+      },
+      "repository": {
+        "url": "git+https://github.com/microsoft/monaco-editor.git",
+        "type": "git"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/monaco-editor/0.57.0",
+        "responseSha256": "3ca51d8747b1cd8cb799d3da998d0d194d15f11209b8716c5a7505229be00e76"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.57.0.tgz",
+        "npmIntegrity": "sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==",
+        "npmShasum": "9889fb51ddc27fe90e6da0e96c237c852adc4654",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "0.57.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@monaco-editor/react",
+      "version": "4.7.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Retain4.7.0 with published React19 and monaco>=0.25<1 peers. CDN defaults must be overridden; lazy client-only selfhost workers are mandatory S12 work.",
+      "observedDonorLockVersion": "4.7.0",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-02-13T16:13:41.390Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "monaco-editor": ">= 0.25.0 < 1"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@monaco-editor/loader": "^1.5.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/suren-atoyan/monaco-react.git",
+        "type": "git"
+      },
+      "gitHead": "eb120e66378471315620fe5339b73ba003f199ad",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@monaco-editor/react/4.7.0",
+        "responseSha256": "a1042362e528e5aeb054b28a45bb242b002f8a8a5826d743d88b365403d8552a"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@monaco-editor/react/-/react-4.7.0.tgz",
+        "npmIntegrity": "sha512-cyzXQCtO47ydzxpQtCGSQGOC8Gk3ZUeBXFAxD+CWXYFo5OqZyZUonFl0DwUlTyAfRHntBfw2p3w4s9R6oe1eCA==",
+        "npmShasum": "35a1ec01bfe729f38bfc025df7b7bac145602a60",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "4.7.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "brackets-viewer",
+      "version": "1.9.1",
+      "phase": "S13_BRACKET_UI",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Actual npm identity is brackets-viewer, not brackets-viewer.js. npm1.9.1 metadata says ISC whereas v1.9.1 upstream LICENSE says MIT; retain both observations, no unsupported assertion of license clearance.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "ISC",
+      "licenseStatus": "CONFLICT_REQUIRES_TARBALL_LICENSE_REVIEW",
+      "publishedAt": "2026-05-17T21:21:50.838Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "util": "^0.12.4",
+        "i18next": "^21.6.14",
+        "process": "^0.11.10",
+        "brackets-model": "^1.7.0",
+        "path-browserify": "^1.0.1",
+        "brackets-manager": "^1.11.0",
+        "brackets-memory-db": "^1.0.6",
+        "i18next-browser-languagedetector": "^6.1.4"
+      },
+      "repository": {
+        "url": "git+https://github.com/Drarig29/brackets-viewer.js.git",
+        "type": "git"
+      },
+      "gitHead": "6adf2909e286fc3b6b3bba6cf2e8c75244b8796e",
+      "metadata": {
+        "url": "https://registry.npmjs.org/brackets-viewer/1.9.1",
+        "responseSha256": "b6f4d462094c98a58f0c10315b581b557904f92da9ea579c948d58782051b96e"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/brackets-viewer/-/brackets-viewer-1.9.1.tgz",
+        "npmIntegrity": "sha512-+B29mJBsc2G4yWGQAve4HukmETQgm27TshwOKaXJfl3zCKO5yji+fLQdP1/bSWB0LulF9QzBKGPsiWYU8NYcow==",
+        "npmShasum": "48fda351a071ebc55b21785b0cf1fde16bfad6d3",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/brackets-viewer@1.9.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "1.9.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "shadcn",
+      "version": "4.22.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact CLI4.22.0 is generation tooling only, not a versioned shadcn/ui runtime. Generated source and registry closure are independently pinned below.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-16T13:26:29.531Z",
+      "engines": {
+        "node": ">=20.18.1"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "cn": "^0.2.4",
+        "ora": "^8.2.0",
+        "zod": "^4.2.0",
+        "diff": "^8.0.2",
+        "open": "^11.0.4",
+        "execa": "^9.6.0",
+        "kleur": "^4.1.5",
+        "socks": "^2.8.8",
+        "dedent": "^1.6.0",
+        "recast": "^0.23.11",
+        "undici": "^7.29.1",
+        "postcss": "^8.5.23",
+        "prompts": "^2.4.2",
+        "fs-extra": "^11.3.1",
+        "ts-morph": "^26.0.0",
+        "commander": "^14.0.0",
+        "deepmerge": "^4.3.1",
+        "fast-glob": "^3.3.3",
+        "fuzzysort": "^3.1.0",
+        "@babel/core": "^7.28.0",
+        "browserslist": "^4.29.3",
+        "@babel/parser": "^7.28.0",
+        "tsconfig-paths": "^4.2.0",
+        "@dotenvx/dotenvx": "^1.48.4",
+        "@shadcn/registry": "0.2.0",
+        "stringify-object": "^5.0.0",
+        "postcss-selector-parser": "^7.1.6",
+        "@babel/preset-typescript": "^7.27.1",
+        "@modelcontextprotocol/sdk": "^1.32.0",
+        "validate-npm-package-name": "^7.0.1",
+        "@types/validate-npm-package-name": "^4.0.2",
+        "@babel/plugin-transform-typescript": "^7.28.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/shadcn-ui/ui.git",
+        "type": "git",
+        "directory": "packages/shadcn"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/shadcn/4.22.0",
+        "responseSha256": "100d9d8bf4db8faf43107fb01e9c7e074ecac996c84873ec6968c00fdf1e77bd"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/shadcn/-/shadcn-4.22.0.tgz",
+        "npmIntegrity": "sha512-QKR3XUnatWlgo8IbZqGHrpsxjgdsfpPSAvJvLntQqAxPEf5U2sNsjDYLAS2xmFrOkC9lpj5UpZbrh/BuHrE2CQ==",
+        "npmShasum": "c0708e91b09703138fb81544da1329c2cdf0d315",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/shadcn@4.22.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "4.22.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "typescript",
+      "version": "5.9.3",
+      "phase": "SHARED_TS_TOOLING",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Retain verified donor 5.9.3 compiler instead of unrequested TypeScript7 migration; actual generated-code and Next typecheck compatibility proof remains required at consumption.",
+      "observedDonorLockVersion": "5.9.3",
+      "licenseMetadata": "Apache-2.0",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-09-30T21:19:38.784Z",
+      "engines": {
+        "node": ">=14.17"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/microsoft/TypeScript.git",
+        "type": "git"
+      },
+      "gitHead": "c63de15a992d37f0d6cec03ac7631872838602cb",
+      "metadata": {
+        "url": "https://registry.npmjs.org/typescript/5.9.3",
+        "responseSha256": "80f0d5d237c08c433b4cee823d75c4f54469beee86cc2fad5e1800f86b6243d8"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+        "npmIntegrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+        "npmShasum": "5b4f59e15310ab17a216f5d6cf53ee476ede670f",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "5.9.3",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "tsx",
+      "version": "4.23.15",
+      "phase": "SHARED_TS_TOOLING",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "4.23.15",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-20T07:22:17.792Z",
+      "engines": {
+        "node": ">=18.0.0"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "esbuild": "~0.28.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/privatenumber/tsx.git",
+        "type": "git"
+      },
+      "gitHead": "ca66105a17a2a4c6503fe3a12b5b9ec408286011",
+      "metadata": {
+        "url": "https://registry.npmjs.org/tsx/4.23.15",
+        "responseSha256": "45091304122fbbf3b69f1a8d516f97425a6ce8c66527a7e677566bcddd5ebf44"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/tsx/-/tsx-4.23.15.tgz",
+        "npmIntegrity": "sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==",
+        "npmShasum": "f53901695685ad567fed0f08532f7782e631c251",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/tsx@4.23.15",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "4.23.15",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "vitest",
+      "version": "5.0.5",
+      "phase": "SHARED_TS_TOOLING",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Move off legacy2.1.9 to maintained current5.0.5; Node24 and Vite8 satisfy published peers. Existing tests/config migration remains unexecuted.",
+      "observedDonorLockVersion": "2.1.9",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-15T14:29:01.396Z",
+      "engines": {
+        "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+      },
+      "peerDependencies": {
+        "vite": "^6.4.0 || ^7.0.0 || ^8.0.0",
+        "jsdom": "*",
+        "happy-dom": "*",
+        "@vitest/ui": "5.0.5",
+        "@types/node": "^22.0.0 || >=24.0.0",
+        "@edge-runtime/vm": "*",
+        "@opentelemetry/api": "^1.9.0",
+        "@vitest/coverage-v8": "5.0.5",
+        "@vitest/browser-preview": "5.0.5",
+        "@vitest/coverage-istanbul": "5.0.5",
+        "@vitest/browser-playwright": "5.0.5",
+        "@vitest/browser-webdriverio": "^5.0.0-beta.5 || >=5.0.0"
+      },
+      "peerDependenciesMeta": {
+        "vite": {
+          "optional": false
+        },
+        "jsdom": {
+          "optional": true
+        },
+        "happy-dom": {
+          "optional": true
+        },
+        "@vitest/ui": {
+          "optional": true
+        },
+        "@types/node": {
+          "optional": true
+        },
+        "@edge-runtime/vm": {
+          "optional": true
+        },
+        "@opentelemetry/api": {
+          "optional": true
+        },
+        "@vitest/coverage-v8": {
+          "optional": true
+        },
+        "@vitest/browser-preview": {
+          "optional": true
+        },
+        "@vitest/coverage-istanbul": {
+          "optional": true
+        },
+        "@vitest/browser-playwright": {
+          "optional": true
+        },
+        "@vitest/browser-webdriverio": {
+          "optional": true
+        }
+      },
+      "dependencies": {
+        "chai": "^6.3.0",
+        "obug": "^3.0.0",
+        "std-env": "^4.3.0",
+        "tinyexec": "^1.3.1",
+        "picomatch": "^4.0.7",
+        "tinybench": "^6.2.2",
+        "tinyglobby": "^0.2.17",
+        "@types/chai": "^5.2.2",
+        "expect-type": "^1.4.0",
+        "magic-string": "^1.4.3",
+        "@vitest/mocker": "5.0.5",
+        "es-module-lexer": "^2.3.2",
+        "why-is-node-running": "3.2.1"
+      },
+      "repository": {
+        "url": "git+https://github.com/vitest-dev/vitest.git",
+        "type": "git",
+        "directory": "packages/vitest"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/vitest/5.0.5",
+        "responseSha256": "161da05d413b8aca31ebb7763625d66086cb47057057f00d24d69147a343ef62"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/vitest/-/vitest-5.0.5.tgz",
+        "npmIntegrity": "sha512-cPODOMF8YnkiiYtDdHo6n4wWmBrOBBbOIYH2d33M4l3CdNn72h+qMmO6uXffUN6A5AZFXNND/d+krS9mgkXRfg==",
+        "npmShasum": "266e335f4177541e3e60f876e0694f966a9601f2",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/vitest@5.0.5",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "5.0.5",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@types/node",
+      "version": "24.19.2",
+      "phase": "SHARED_TS_TOOLING",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Choose latest published 24.x types matching Node24, not registry latest26.",
+      "observedDonorLockVersion": "22.20.5",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-09T18:44:25.189Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "undici-types": ">=7.24.0 <7.24.7"
+      },
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/node"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@types/node/24.19.2",
+        "responseSha256": "208f2b8105302901160a596229d995f8cd53044cb6c32ff98f271dba50677f09"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@types/node/-/node-24.19.2.tgz",
+        "npmIntegrity": "sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==",
+        "npmShasum": "8718eedbc0f89648de6525be9f4a9c61cdbaa502",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "24.19.2",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@types/react",
+      "version": "19.3.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "18.3.31",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-09T18:08:49.750Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "csstype": "^3.2.2"
+      },
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/react"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@types/react/19.3.0",
+        "responseSha256": "eec8e8dd1f72955d2fa12e256cd5ab96d476342594cd2034398679a76cfdcac8"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz",
+        "npmIntegrity": "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==",
+        "npmShasum": "3b3ce8d8c1627fb5ccd4dadd57ef445c5a153b77",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "19.3.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "19.3.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "18.3.7",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-09T18:07:51.886Z",
+      "engines": {},
+      "peerDependencies": {
+        "@types/react": "^19.3.0"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/react-dom"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@types/react-dom/19.3.0",
+        "responseSha256": "4d8ed45d8ca1673b9e27017726cc0f97f65a177cb1499efd9d09f484d4e81f5c"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz",
+        "npmIntegrity": "sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==",
+        "npmShasum": "90294a9266efd928a5266f2110d60d5dba5015d2",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "19.3.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "ws",
+      "version": "8.22.0",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "8.22.0",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-26T15:00:57.748Z",
+      "engines": {
+        "node": ">=10.0.0"
+      },
+      "peerDependencies": {
+        "bufferutil": "^4.0.1",
+        "utf-8-validate": ">=5.0.2"
+      },
+      "peerDependenciesMeta": {
+        "bufferutil": {
+          "optional": true
+        },
+        "utf-8-validate": {
+          "optional": true
+        }
+      },
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/websockets/ws.git",
+        "type": "git"
+      },
+      "gitHead": "297202cdae9b0590629821373b3b679c407f3431",
+      "metadata": {
+        "url": "https://registry.npmjs.org/ws/8.22.0",
+        "responseSha256": "19e46c25aee0f363b5ee023af66ac3800482c18741cc95f236ba1fe15f1db039"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/ws/-/ws-8.22.0.tgz",
+        "npmIntegrity": "sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==",
+        "npmShasum": "40f16e1d7588ac0575041be5c49b8eb261c28e73",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.22.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@types/ws",
+      "version": "8.18.2",
+      "phase": "S03_CONTROL_PLANE",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "8.18.2",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-29T08:07:45.655Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@types/node": "*"
+      },
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/ws"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@types/ws/8.18.2",
+        "responseSha256": "1375bb310e0bea17cdde97b9c3e662b6ca5116fe0b1f3f1d8c27f43c029c1fd4"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@types/ws/-/ws-8.18.2.tgz",
+        "npmIntegrity": "sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==",
+        "npmShasum": "25d6321b30ef0fddf6cc7052b4eef9ce4e412b6e",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.18.2",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "lucide-react",
+      "version": "1.59.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "0.468.0",
+      "licenseMetadata": "ISC",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-17T06:15:48.758Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "@types/react": "*"
+      },
+      "peerDependenciesMeta": {
+        "@types/react": {
+          "optional": true
+        }
+      },
+      "dependencies": {},
+      "repository": {
+        "url": "https://github.com/lucide-icons/lucide.git",
+        "type": "git",
+        "directory": "packages/lucide-react"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/lucide-react/1.59.0",
+        "responseSha256": "f6f889087cb0e12865f6e20f5393b6e01bed19995acbcf7d9e7d2b3b5502e814"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/lucide-react/-/lucide-react-1.59.0.tgz",
+        "npmIntegrity": "sha512-5qgMyyCPU6OvnKpLS2t693+ZtiqA8oaSweWoUows0BLFKFf6V75m4+CptpmohZHpD5IuOVIBXHBBiv2vpLJmtw==",
+        "npmShasum": "6ae4ef53a70718e2e6793f958eac2f8012bfa80a",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/lucide-react@1.59.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "1.59.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "class-variance-authority",
+      "version": "0.7.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "Apache-2.0",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2024-11-26T08:20:34.604Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "clsx": "^2.1.1"
+      },
+      "repository": {
+        "url": "git+https://github.com/joe-bell/cva.git",
+        "type": "git"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/class-variance-authority/0.7.1",
+        "responseSha256": "db80b4d418696ce4d7c3f37fe2c2d7321b5340af3cff66e10ae49721fb61f520"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/class-variance-authority/-/class-variance-authority-0.7.1.tgz",
+        "npmIntegrity": "sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==",
+        "npmShasum": "4008a798a0e4553a781a57ac5177c9fb5d043787",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "0.7.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "clsx",
+      "version": "2.1.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2024-04-23T05:26:04.645Z",
+      "engines": {
+        "node": ">=6"
+      },
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/lukeed/clsx.git",
+        "type": "git"
+      },
+      "gitHead": "925494cf31bcd97d3337aacd34e659e80cae7fe2",
+      "metadata": {
+        "url": "https://registry.npmjs.org/clsx/2.1.1",
+        "responseSha256": "9c31182e5608173479a064c05a10bfe600724781ae83fad18336a0945839b70a"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz",
+        "npmIntegrity": "sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==",
+        "npmShasum": "eed397c9fd8bd882bfb18deab7102049a2f32999",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "2.1.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "tailwind-merge",
+      "version": "3.7.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-12T20:10:15.257Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "https://github.com/dcastil/tailwind-merge.git",
+        "type": "git",
+        "directory": "packages/tailwind-merge"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/tailwind-merge/3.7.0",
+        "responseSha256": "beda7bf5a977088019dcd0d522c8d4fa43e168062748d9df126c7ffe67ede17a"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/tailwind-merge/-/tailwind-merge-3.7.0.tgz",
+        "npmIntegrity": "sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==",
+        "npmShasum": "61e9a67ab11b64138dea7d4fa5b74a33e17f2c87",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/tailwind-merge@3.7.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "3.7.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "tw-animate-css",
+      "version": "1.4.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-09-24T05:25:53.055Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/Wombosvideo/tw-animate-css.git",
+        "type": "git"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/tw-animate-css/1.4.0",
+        "responseSha256": "67f23e96bde86b44ffedd3cb2c83d442f0122272dbacc38e35e6facb31d7ff37"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/tw-animate-css/-/tw-animate-css-1.4.0.tgz",
+        "npmIntegrity": "sha512-7bziOlRqH0hJx80h/3mbicLW7o8qLsH5+RaLR2t+OHM3D0JlWGODQKQ4cxbK7WlvmUxpcj6Kgu6EKqjrGFe3QQ==",
+        "npmShasum": "b4a06f68244cba39428aa47e65e6e4c0babc21ee",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/tw-animate-css@1.4.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "1.4.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "radix-ui",
+      "version": "1.8.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-12T21:03:38.918Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc",
+        "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc",
+        "@types/react": "*",
+        "@types/react-dom": "*"
+      },
+      "peerDependenciesMeta": {
+        "@types/react": {
+          "optional": true
+        },
+        "@types/react-dom": {
+          "optional": true
+        }
+      },
+      "dependencies": {
+        "@radix-ui/primitive": "1.2.0",
+        "@radix-ui/react-form": "0.3.0",
+        "@radix-ui/react-menu": "2.2.1",
+        "@radix-ui/react-slot": "1.5.0",
+        "@radix-ui/react-tabs": "1.2.1",
+        "@radix-ui/react-arrow": "1.1.17",
+        "@radix-ui/react-label": "2.1.17",
+        "@radix-ui/react-toast": "1.3.1",
+        "@radix-ui/react-avatar": "1.3.1",
+        "@radix-ui/react-dialog": "1.3.1",
+        "@radix-ui/react-popper": "1.4.0",
+        "@radix-ui/react-portal": "1.2.0",
+        "@radix-ui/react-select": "2.4.1",
+        "@radix-ui/react-slider": "1.6.1",
+        "@radix-ui/react-switch": "1.4.1",
+        "@radix-ui/react-toggle": "1.2.1",
+        "@radix-ui/react-context": "1.3.0",
+        "@radix-ui/react-menubar": "1.2.1",
+        "@radix-ui/react-popover": "1.3.1",
+        "@radix-ui/react-toolbar": "1.2.1",
+        "@radix-ui/react-tooltip": "1.4.1",
+        "@radix-ui/react-checkbox": "1.4.1",
+        "@radix-ui/react-presence": "1.1.11",
+        "@radix-ui/react-progress": "1.2.1",
+        "@radix-ui/react-use-size": "1.1.5",
+        "@radix-ui/react-accordion": "1.3.1",
+        "@radix-ui/react-direction": "1.2.0",
+        "@radix-ui/react-primitive": "2.2.0",
+        "@radix-ui/react-separator": "1.2.0",
+        "@radix-ui/react-collection": "1.2.0",
+        "@radix-ui/react-hover-card": "1.2.1",
+        "@radix-ui/react-collapsible": "1.2.1",
+        "@radix-ui/react-focus-scope": "1.3.1",
+        "@radix-ui/react-radio-group": "1.5.1",
+        "@radix-ui/react-scroll-area": "1.4.0",
+        "@radix-ui/react-alert-dialog": "1.2.1",
+        "@radix-ui/react-aspect-ratio": "1.2.0",
+        "@radix-ui/react-compose-refs": "1.1.5",
+        "@radix-ui/react-context-menu": "2.4.1",
+        "@radix-ui/react-focus-guards": "1.2.0",
+        "@radix-ui/react-roving-focus": "1.2.1",
+        "@radix-ui/react-toggle-group": "1.2.1",
+        "@radix-ui/react-dropdown-menu": "2.2.1",
+        "@radix-ui/react-accessible-icon": "1.2.0",
+        "@radix-ui/react-navigation-menu": "1.4.1",
+        "@radix-ui/react-use-is-hydrated": "0.1.3",
+        "@radix-ui/react-visually-hidden": "1.2.13",
+        "@radix-ui/react-use-callback-ref": "1.1.5",
+        "@radix-ui/react-use-effect-event": "0.0.5",
+        "@radix-ui/react-dismissable-layer": "1.2.1",
+        "@radix-ui/react-use-layout-effect": "1.1.4",
+        "@radix-ui/react-use-escape-keydown": "1.1.6",
+        "@radix-ui/react-password-toggle-field": "0.2.1",
+        "@radix-ui/react-use-controllable-state": "1.3.0",
+        "@radix-ui/react-one-time-password-field": "0.2.1"
+      },
+      "repository": {
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "type": "git",
+        "directory": "packages/react/radix-ui"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/radix-ui/1.8.1",
+        "responseSha256": "7210c6684f62181908610525579e42852ec2a66b8465b74c6a97dead94c38f6b"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/radix-ui/-/radix-ui-1.8.1.tgz",
+        "npmIntegrity": "sha512-HPfpVGizO9xANlsFSauruLhRe/3+iOt3vPX0MXYle/UQi3gorQrSYtBcdiv0BZYewcl2rvL59qrIuLFMGAmUrw==",
+        "npmShasum": "c9cbf62fd9e97d9a35c2b5fafacf34994cf99781",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/radix-ui@1.8.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "1.8.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "vite",
+      "version": "8.3.4",
+      "phase": "SHARED_TS_TOOLING",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Test-runner peer only for Vitest5.0.5, not a second web app. Keep donor Vite portal until atomic S12 Next cutover; no new Vite portal.",
+      "observedDonorLockVersion": "5.4.21",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-08T12:07:04.441Z",
+      "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "peerDependencies": {
+        "tsx": "^4.8.1",
+        "jiti": ">=1.21.0",
+        "less": "^4.0.0",
+        "sass": "^1.70.0",
+        "yaml": "^2.4.2",
+        "stylus": ">=0.54.8",
+        "terser": "^5.16.0",
+        "esbuild": "^0.27.0 || ^0.28.0",
+        "sugarss": "^5.0.0",
+        "@types/node": "^20.19.0 || >=22.12.0",
+        "sass-embedded": "^1.70.0",
+        "@vitejs/devtools": "^0.7.1"
+      },
+      "peerDependenciesMeta": {
+        "tsx": {
+          "optional": true
+        },
+        "jiti": {
+          "optional": true
+        },
+        "less": {
+          "optional": true
+        },
+        "sass": {
+          "optional": true
+        },
+        "yaml": {
+          "optional": true
+        },
+        "stylus": {
+          "optional": true
+        },
+        "terser": {
+          "optional": true
+        },
+        "esbuild": {
+          "optional": true
+        },
+        "sugarss": {
+          "optional": true
+        },
+        "@types/node": {
+          "optional": true
+        },
+        "sass-embedded": {
+          "optional": true
+        },
+        "@vitejs/devtools": {
+          "optional": true
+        }
+      },
+      "dependencies": {
+        "postcss": "^8.5.29",
+        "rolldown": "~1.2.12",
+        "picomatch": "^4.0.7",
+        "tinyglobby": "^0.2.17",
+        "lightningcss": "^1.33.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/vitejs/vite.git",
+        "type": "git",
+        "directory": "packages/vite"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/vite/8.3.4",
+        "responseSha256": "ae9186d2b69f66661dcc272f4b9a02e1eb858b92f63061af16ed981b29da2596"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/vite/-/vite-8.3.4.tgz",
+        "npmIntegrity": "sha512-IftLE8phJhdNRIGNEV4JCCvfNScoZQVfcXaN8TQropWGJtOHcu+iAB9pHcuGvmEb/kddw0LBe/jS8ztdC6xdiQ==",
+        "npmShasum": "ba08678ba41ba53f41c251b1772946c27b1c874e",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/vite@8.3.4",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.3.4",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@bufbuild/protobuf",
+      "version": "2.16.0",
+      "phase": "S02_TS_CONTRACT_GENERATION_ONLY",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "ts-proto 2.15.3 declares ^2.14.1; donor 2.11.0 is below that generator dependency floor. Choose current compatible 2.x 2.16.0 and regenerate/verify imports later.",
+      "observedDonorLockVersion": "2.16.0",
+      "licenseMetadata": "(Apache-2.0 AND BSD-3-Clause)",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-09-29T09:24:15.887Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/bufbuild/protobuf-es.git",
+        "type": "git",
+        "directory": "packages/protobuf"
+      },
+      "gitHead": "b3b232f7f466eda27c66e8f63c82f930578b6cc6",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@bufbuild/protobuf/2.16.0",
+        "responseSha256": "e64328022ab29462001df573a55c953a466eab15b702a5796e45deba6f93da9d"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.16.0.tgz",
+        "npmIntegrity": "sha512-FWa0sPlqYGJgpTs6OxBRcL/AW4JT0OIO+W1ajerluoTVh8CV0B7XM1qsNCRgnkSCkRCgOICKHRQlY17jrsm0+Q==",
+        "npmShasum": "130eff69a232f29fb4e2b3f8ebbb0b3e0adf5a36",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@bufbuild%2fprotobuf@2.16.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "2.16.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "ts-proto-descriptors",
+      "version": "2.1.0",
+      "phase": "S02_TS_CONTRACT_GENERATION_ONLY",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "2.1.0",
+      "licenseMetadata": "ISC",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-12-19T16:17:00.636Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@bufbuild/protobuf": "^2.0.0"
+      },
+      "repository": "github:stephenh/ts-proto",
+      "gitHead": "377a52c5c7ec14e990f0a1ceb5946e389e380577",
+      "metadata": {
+        "url": "https://registry.npmjs.org/ts-proto-descriptors/2.1.0",
+        "responseSha256": "a4e8a721605d48c5501413df9637173e3cbed24f0c8b36bff844a776b0fdcbe9"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/ts-proto-descriptors/-/ts-proto-descriptors-2.1.0.tgz",
+        "npmIntegrity": "sha512-S5EZYEQ6L9KLFfjSRpZWDIXDV/W7tAj8uW7pLsihIxyr62EAVSiKuVPwE8iWnr849Bqa53enex1jhDUcpgquzA==",
+        "npmShasum": "0c60525ea94748f7b3f394dc10d6eb8eeac4fe39",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "2.1.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@monaco-editor/loader",
+      "version": "1.7.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": "1.7.0",
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-11-21T07:15:47.432Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "state-local": "^1.0.6"
+      },
+      "repository": {
+        "url": "git+https://github.com/suren-atoyan/monaco-loader.git",
+        "type": "git"
+      },
+      "gitHead": "49397b07c84a764a239012e784fae9372af8949a",
+      "metadata": {
+        "url": "https://registry.npmjs.org/@monaco-editor/loader/1.7.0",
+        "responseSha256": "6e779025bac1affc5fe38bbb345b096aef86fb7c8962f166bfa6e52fa85082eb"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@monaco-editor/loader/-/loader-1.7.0.tgz",
+        "npmIntegrity": "sha512-gIwR1HrJrrx+vfyOhYmCZ0/JcWqG5kbfG7+d3f/C1LXk2EvzAbHSg3MQ5lO2sMlo9izoAZ04shohfKLVT6crVA==",
+        "npmShasum": "967aaa4601b19e913627688dfe8159d57549e793",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "1.7.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@dnd-kit/core",
+      "version": "6.3.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2024-12-05T17:10:19.974Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": ">=16.8.0",
+        "react-dom": ">=16.8.0"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "tslib": "^2.0.0",
+        "@dnd-kit/utilities": "^3.2.2",
+        "@dnd-kit/accessibility": "^3.1.1"
+      },
+      "repository": {
+        "url": "git+https://github.com/clauderic/dnd-kit.git",
+        "type": "git",
+        "directory": "packages/core"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@dnd-kit/core/6.3.1",
+        "responseSha256": "439df9d017fbdd3903fc75a3396f4c46ac852887c9723db87e85df67e7dc2c51"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@dnd-kit/core/-/core-6.3.1.tgz",
+        "npmIntegrity": "sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==",
+        "npmShasum": "4c36406a62c7baac499726f899935f93f0e6d003",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "6.3.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@dnd-kit/modifiers",
+      "version": "9.0.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2024-12-04T18:39:11.172Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": ">=16.8.0",
+        "@dnd-kit/core": "^6.3.0"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "tslib": "^2.0.0",
+        "@dnd-kit/utilities": "^3.2.2"
+      },
+      "repository": {
+        "url": "git+https://github.com/clauderic/dnd-kit.git",
+        "type": "git",
+        "directory": "packages/modifiers"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@dnd-kit/modifiers/9.0.0",
+        "responseSha256": "06bc20e93b35bdcec18127055d3dace2f7c01f8371f2ff1180cddb6fb5095239"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@dnd-kit/modifiers/-/modifiers-9.0.0.tgz",
+        "npmIntegrity": "sha512-ybiLc66qRGuZoC20wdSSG6pDXFikui/dCNGthxv4Ndy8ylErY0N3KVxY2bgo7AWwIbxDmXDg3ylAFmnrjcbVvw==",
+        "npmShasum": "96a0280c77b10c716ef79d9792ce7ad04370771d",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "9.0.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@dnd-kit/sortable",
+      "version": "10.0.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2024-12-04T18:39:12.664Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": ">=16.8.0",
+        "@dnd-kit/core": "^6.3.0"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "tslib": "^2.0.0",
+        "@dnd-kit/utilities": "^3.2.2"
+      },
+      "repository": {
+        "url": "git+https://github.com/clauderic/dnd-kit.git",
+        "type": "git",
+        "directory": "packages/sortable"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@dnd-kit/sortable/10.0.0",
+        "responseSha256": "9086b106322c162c7303ff41cbf5319286ff9ce74d8ab15a542b6a6744c2184e"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@dnd-kit/sortable/-/sortable-10.0.0.tgz",
+        "npmIntegrity": "sha512-+xqhmIIzvAYMGfBYYnbKuNicfSsk4RksY2XdmJhT+HAC01nix6fHCztU68jooFiMUB01Ky3F0FyOvhG/BZrWkg==",
+        "npmShasum": "1f9382b90d835cd5c65d92824fa9dafb78c4c3e8",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "10.0.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@dnd-kit/utilities",
+      "version": "3.2.2",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2023-11-06T22:20:07.149Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": ">=16.8.0"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "tslib": "^2.0.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/clauderic/dnd-kit.git",
+        "type": "git",
+        "directory": "packages/utilities"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@dnd-kit/utilities/3.2.2",
+        "responseSha256": "61607320921f7dfc91dbb092725f4bade48fb60e6a6975368bac8b66d6e69619"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@dnd-kit/utilities/-/utilities-3.2.2.tgz",
+        "npmIntegrity": "sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==",
+        "npmShasum": "5a32b6af356dc5f74d61b37d6f7129a4040ced7b",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "3.2.2",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@tabler/icons-react",
+      "version": "3.49.0",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-05T14:29:53.474Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": ">= 16"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@tabler/icons": "3.49.0"
+      },
+      "repository": {
+        "url": "git+https://github.com/tabler/tabler-icons.git",
+        "type": "git",
+        "directory": "packages/icons-react"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@tabler/icons-react/3.49.0",
+        "responseSha256": "6d380b0abccd4ed27c15da69fe5cecc5ba524e3f8040068b7c01457b4874c77b"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@tabler/icons-react/-/icons-react-3.49.0.tgz",
+        "npmIntegrity": "sha512-Um59pm5RVNUaQjFUtG0r4oYJbZuBS3tGugAA2tgBg0WufMk34Eio3nsO30RUkLuL2giYPQUNdY9HvqltLLYyNA==",
+        "npmShasum": "bdfbd8fb2ede00dd17e91e9d7eff6f306d59f55f",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@tabler%2ficons-react@3.49.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "3.49.0",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "@tanstack/react-table",
+      "version": "8.21.3",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Select compatible8.21.3 for dashboard-01 v8 useReactTable/getCoreRowModel APIs; reject registry latest9.3.1 as an unverified major migration.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-04-14T20:20:18.966Z",
+      "engines": {
+        "node": ">=12"
+      },
+      "peerDependencies": {
+        "react": ">=16.8",
+        "react-dom": ">=16.8"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@tanstack/table-core": "8.21.3"
+      },
+      "repository": {
+        "url": "git+https://github.com/TanStack/table.git",
+        "type": "git",
+        "directory": "packages/react-table"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/@tanstack/react-table/8.21.3",
+        "responseSha256": "bba52b79a62e1de990a0e87d5056591d01c20b99c0c61c7999f83626a494047b"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/@tanstack/react-table/-/react-table-8.21.3.tgz",
+        "npmIntegrity": "sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==",
+        "npmShasum": "2c38c747a5731c1a07174fda764b9c2b1fb5e91b",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@tanstack%2freact-table@8.21.3",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "8.21.3",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "zod",
+      "version": "4.6.7",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-12T16:29:37.778Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/colinhacks/zod.git",
+        "type": "git"
+      },
+      "gitHead": "b500a2ee95134f81d74da7911d7378dd2853d042",
+      "metadata": {
+        "url": "https://registry.npmjs.org/zod/4.6.7",
+        "responseSha256": "d6eac84f6c13cbef91acd6ee6b4c1ccbaef774a2f5e7147a0166880ca30ccbbb"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+        "npmIntegrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+        "npmShasum": "e806cf64a7f4e37635ce9f2f52c04c3766f75e5b",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/zod@4.6.7",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "4.6.7",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "recharts",
+      "version": "3.10.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-07-25T15:23:05.240Z",
+      "engines": {
+        "node": ">=18"
+      },
+      "peerDependencies": {
+        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-is": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "clsx": "^2.1.1",
+        "immer": "^11.1.8",
+        "reselect": "5.2.0",
+        "es-toolkit": "^1.39.3",
+        "react-redux": "8.x.x || 9.x.x",
+        "eventemitter3": "^5.0.1",
+        "tiny-invariant": "^1.3.3",
+        "victory-vendor": "^37.0.2",
+        "@reduxjs/toolkit": "^1.9.0 || 2.x.x",
+        "decimal.js-light": "^2.5.1",
+        "use-sync-external-store": "^1.2.2"
+      },
+      "repository": {
+        "url": "git+https://github.com/recharts/recharts.git",
+        "type": "git"
+      },
+      "gitHead": "ffb918798051ef040bb7f9922d3850c9c189f39f",
+      "metadata": {
+        "url": "https://registry.npmjs.org/recharts/3.10.1",
+        "responseSha256": "4f66e813a97ed16f061c6bd49a7d7da9cd989d86b4d867d748fe4a0448fa3520"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/recharts/-/recharts-3.10.1.tgz",
+        "npmIntegrity": "sha512-QXFrvt6IVcw7eeZCoyXTwkIJAX3Dv1nyVhMicXJ47GsGDDpcN8z6o644DibE9XjpBTThtsomLKnTV6lc+cVFUA==",
+        "npmShasum": "e6f52c2604a38f728b6d47f95881595fa6604c6c",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/recharts@3.10.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "3.10.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "sonner",
+      "version": "2.0.8",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-08-09T08:46:10.174Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+        "react-dom": "^18.0.0 || ^19.0.0 || ^19.0.0-rc",
+        "@types/react": "^18.0.0 || ^19.0.0"
+      },
+      "peerDependenciesMeta": {
+        "@types/react": {
+          "optional": true
+        }
+      },
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/emilkowalski/sonner.git",
+        "type": "git"
+      },
+      "gitHead": "ecce1841c55e4a72dfe139a8992b56498660125e",
+      "metadata": {
+        "url": "https://registry.npmjs.org/sonner/2.0.8",
+        "responseSha256": "a0cb8df08d3119e47b2eed6c3c90aa902b267611e9db1fa1c61b7a9da5963f91"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/sonner/-/sonner-2.0.8.tgz",
+        "npmIntegrity": "sha512-UM/ByIoFra8yzV75n1o0Puu0bw5U/9UNnDacrJNspekBewIfsQ3D6ez1nvlWpt7aTsO6rujQtifBpycwIivqlg==",
+        "npmShasum": "dbfa02bb4eb0924616800a4594e9a455a9a195ac",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "2.0.8",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "vaul",
+      "version": "1.1.2",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2024-12-14T00:56:00.863Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc",
+        "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {
+        "@radix-ui/react-dialog": "^1.1.1"
+      },
+      "repository": {
+        "url": "git+https://github.com/emilkowalski/vaul.git",
+        "type": "git"
+      },
+      "gitHead": "6ba4c44ad99fdfec7def4fa47cabd229fc261965",
+      "metadata": {
+        "url": "https://registry.npmjs.org/vaul/1.1.2",
+        "responseSha256": "a22e6e3b18235809d8292a48026768afd8e5c7df596e87cf90e8dabbf9a95740"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/vaul/-/vaul-1.1.2.tgz",
+        "npmIntegrity": "sha512-ZFkClGpWyI2WUQjdLJ/BaGuV6AVQiJ3uELGk3OYtP+B6yCO7Cmn9vPFXVJkRaGkOJu3m8bQMgtyzNHixULceQA==",
+        "npmShasum": "c959f8b9dc2ed4f7d99366caee433fbef91f5ba9",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "1.1.2",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "next-themes",
+      "version": "0.4.6",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Exact stable version in compatible selected major; published peer and engine constraints captured, not a claim of runtime certification.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2025-03-11T21:02:05.882Z",
+      "engines": {},
+      "peerDependencies": {
+        "react": "^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc",
+        "react-dom": "^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc"
+      },
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/pacocoursey/next-themes.git",
+        "type": "git"
+      },
+      "gitHead": null,
+      "metadata": {
+        "url": "https://registry.npmjs.org/next-themes/0.4.6",
+        "responseSha256": "dc113f96951d9b11c824ad5060a7e0ae622c86b31580657b91402458fcb55863"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/next-themes/-/next-themes-0.4.6.tgz",
+        "npmIntegrity": "sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==",
+        "npmShasum": "8d7e92d03b8fea6582892a50a928c9b23502e8b6",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": null,
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "0.4.6",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    },
+    {
+      "name": "react-is",
+      "version": "19.3.1",
+      "phase": "S12_UI_CHECKPOINT_AND_PORTAL",
+      "requiredForPureRustS02": false,
+      "selectionRationale": "Explicit19.3.1 peer for Recharts3.10.1, aligned to React19.3.1.",
+      "observedDonorLockVersion": null,
+      "licenseMetadata": "MIT",
+      "licenseStatus": "REGISTRY_METADATA_VERIFIED_ARTIFACT_NOTICES_PENDING",
+      "publishedAt": "2026-10-14T16:47:50.866Z",
+      "engines": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "dependencies": {},
+      "repository": {
+        "url": "git+https://github.com/react/react.git",
+        "type": "git",
+        "directory": "packages/react-is"
+      },
+      "gitHead": "61aa00df822d0eb76d0362eb8b6fdd3527693efe",
+      "metadata": {
+        "url": "https://registry.npmjs.org/react-is/19.3.1",
+        "responseSha256": "cd2243166b45b2806c5f3ff774f4fa26b349eb9ce1b95d7bf09d6a0aa6453eea"
+      },
+      "artifact": {
+        "url": "https://registry.npmjs.org/react-is/-/react-is-19.3.1.tgz",
+        "npmIntegrity": "sha512-RRieF6IyxQBkcK6pP8xOHprLTPW6QjRkbGdImtqNme+/hYVwCZkLQLdlZGOhUqXwkS9IEynaGvPJtv6XB/cz0Q==",
+        "npmShasum": "81f7f7e431fc9b5bd9781b0a9f19997f08dee51b",
+        "sha256": null,
+        "artifactDownloaded": false,
+        "npmSignaturesPresent": true,
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/react-is@19.3.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "provenanceVerified": false
+      },
+      "security": {
+        "osvQueryVersion": "19.3.1",
+        "osvReturnedVulnerabilities": [],
+        "fullTransitiveClosureScanned": false
+      }
+    }
+  ],
+  "shadcnSource": {
+    "cli": {
+      "name": "shadcn",
+      "version": "4.22.0"
+    },
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "d2fba50ee5b9113008b5bb908563527b7efd2f27",
+    "license": "MIT",
+    "licenseSource": {
+      "url": "https://raw.githubusercontent.com/shadcn-ui/ui/d2fba50ee5b9113008b5bb908563527b7efd2f27/LICENSE.md",
+      "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
+      "bytes": 1063
+    },
+    "registrySources": [
+      {
+        "block": "dashboard01",
+        "url": "https://ui.shadcn.com/r/styles/new-york-v4/dashboard-01.json",
+        "responseSha256": "ec8e10eb0dc64e8c2a3077ca6abb771efc03c8499aa8044811f7a8525141ec0d",
+        "dependencies": [
+          "@dnd-kit/core",
+          "@dnd-kit/modifiers",
+          "@dnd-kit/sortable",
+          "@dnd-kit/utilities",
+          "@tabler/icons-react",
+          "@tanstack/react-table",
+          "zod"
+        ],
+        "registryDependencies": [
+          "sidebar",
+          "breadcrumb",
+          "separator",
+          "label",
+          "chart",
+          "card",
+          "select",
+          "tabs",
+          "table",
+          "toggle-group",
+          "badge",
+          "button",
+          "checkbox",
+          "dropdown-menu",
+          "drawer",
+          "input",
+          "avatar",
+          "sheet",
+          "sonner"
+        ]
+      },
+      {
+        "block": "sidebar07",
+        "url": "https://ui.shadcn.com/r/styles/new-york-v4/sidebar-07.json",
+        "responseSha256": "54789cc67edf51a0da25a80c4d68910373edb4354142fdc6dcb2c059aed5f11c",
+        "dependencies": [],
+        "registryDependencies": [
+          "sidebar",
+          "breadcrumb",
+          "separator",
+          "collapsible",
+          "dropdown-menu",
+          "avatar"
+        ]
+      }
+    ],
+    "status": "APPROVED_BLOCK_RESPONSES_HASHED; recursive registry items/source file tree not downloaded or fully locked. Block endpoint responses are mutable and must match recorded hashes if consumed. Repository commit alone does not prove hosted registry responses came from it.",
+    "closure": "Before S12 obtain recursively referenced registry items, hash source/asset bytes and preserve MIT notices, exact per-component dependency set; reject incompatible newer majors. No floating npx shadcn@latest at implementation."
+  },
+  "compatibilityNotes": [
+    "Peer metadata is a necessary constraint check, not build/runtime evidence. Optional next sass/Playwright/OTel/compiler peers and pg-native are not silently installed by this selection.",
+    "TypeScript5.9.3 deliberately retained; Vitest5/Vite8 test-tool upgrade requires existing config/test migration proof later. Vite8 here serves Vitest only; donor Vite portal removed only on Next cutover.",
+    "Dashboard block dependencies are exact candidates, not permission to add unused chart/DnD/table libraries. Actual generated component imports determine final direct set.",
+    "Next bundles its own postcss8.5.23; direct postcss8.5.30 does not replace that transitive version. Full selected graph, native SWC/Tailwind oxide packages and all platform artifacts remain unscanned/unhashed.",
+    "brackets-viewer is presentation-only. Application tournament/Swiss/rating authority must not move into this package."
+  ],
+  "securityReview": {
+    "method": "Read primary support/security pages and Fastify/protobuf GitHub advisory JSON; exact npm direct versions queried via OSV batch. No npm audit/install executed.",
+    "osv": {
+      "url": "https://api.osv.dev/v1/querybatch",
+      "request": {
+        "queries": [
+          {
+            "package": {
+              "name": "fastify",
+              "ecosystem": "npm"
+            },
+            "version": "5.12.7"
+          },
+          {
+            "package": {
+              "name": "@fastify/cors",
+              "ecosystem": "npm"
+            },
+            "version": "11.3.1"
+          },
+          {
+            "package": {
+              "name": "@fastify/websocket",
+              "ecosystem": "npm"
+            },
+            "version": "11.3.4"
+          },
+          {
+            "package": {
+              "name": "@fastify/cookie",
+              "ecosystem": "npm"
+            },
+            "version": "11.1.3"
+          },
+          {
+            "package": {
+              "name": "@fastify/rate-limit",
+              "ecosystem": "npm"
+            },
+            "version": "11.2.1"
+          },
+          {
+            "package": {
+              "name": "pg",
+              "ecosystem": "npm"
+            },
+            "version": "8.23.1"
+          },
+          {
+            "package": {
+              "name": "@types/pg",
+              "ecosystem": "npm"
+            },
+            "version": "8.23.1"
+          },
+          {
+            "package": {
+              "name": "argon2",
+              "ecosystem": "npm"
+            },
+            "version": "0.45.1"
+          },
+          {
+            "package": {
+              "name": "ajv",
+              "ecosystem": "npm"
+            },
+            "version": "8.20.0"
+          },
+          {
+            "package": {
+              "name": "protobufjs",
+              "ecosystem": "npm"
+            },
+            "version": "7.6.6"
+          },
+          {
+            "package": {
+              "name": "ts-proto",
+              "ecosystem": "npm"
+            },
+            "version": "2.15.3"
+          },
+          {
+            "package": {
+              "name": "next",
+              "ecosystem": "npm"
+            },
+            "version": "16.4.2"
+          },
+          {
+            "package": {
+              "name": "react",
+              "ecosystem": "npm"
+            },
+            "version": "19.3.1"
+          },
+          {
+            "package": {
+              "name": "react-dom",
+              "ecosystem": "npm"
+            },
+            "version": "19.3.1"
+          },
+          {
+            "package": {
+              "name": "tailwindcss",
+              "ecosystem": "npm"
+            },
+            "version": "4.3.3"
+          },
+          {
+            "package": {
+              "name": "@tailwindcss/postcss",
+              "ecosystem": "npm"
+            },
+            "version": "4.3.3"
+          },
+          {
+            "package": {
+              "name": "postcss",
+              "ecosystem": "npm"
+            },
+            "version": "8.5.30"
+          },
+          {
+            "package": {
+              "name": "monaco-editor",
+              "ecosystem": "npm"
+            },
+            "version": "0.57.0"
+          },
+          {
+            "package": {
+              "name": "@monaco-editor/react",
+              "ecosystem": "npm"
+            },
+            "version": "4.7.0"
+          },
+          {
+            "package": {
+              "name": "brackets-viewer",
+              "ecosystem": "npm"
+            },
+            "version": "1.9.1"
+          },
+          {
+            "package": {
+              "name": "shadcn",
+              "ecosystem": "npm"
+            },
+            "version": "4.22.0"
+          },
+          {
+            "package": {
+              "name": "typescript",
+              "ecosystem": "npm"
+            },
+            "version": "5.9.3"
+          },
+          {
+            "package": {
+              "name": "tsx",
+              "ecosystem": "npm"
+            },
+            "version": "4.23.15"
+          },
+          {
+            "package": {
+              "name": "vitest",
+              "ecosystem": "npm"
+            },
+            "version": "5.0.5"
+          },
+          {
+            "package": {
+              "name": "@types/node",
+              "ecosystem": "npm"
+            },
+            "version": "24.19.2"
+          },
+          {
+            "package": {
+              "name": "@types/react",
+              "ecosystem": "npm"
+            },
+            "version": "19.3.0"
+          },
+          {
+            "package": {
+              "name": "@types/react-dom",
+              "ecosystem": "npm"
+            },
+            "version": "19.3.0"
+          },
+          {
+            "package": {
+              "name": "ws",
+              "ecosystem": "npm"
+            },
+            "version": "8.22.0"
+          },
+          {
+            "package": {
+              "name": "@types/ws",
+              "ecosystem": "npm"
+            },
+            "version": "8.18.2"
+          },
+          {
+            "package": {
+              "name": "lucide-react",
+              "ecosystem": "npm"
+            },
+            "version": "1.59.0"
+          },
+          {
+            "package": {
+              "name": "class-variance-authority",
+              "ecosystem": "npm"
+            },
+            "version": "0.7.1"
+          },
+          {
+            "package": {
+              "name": "clsx",
+              "ecosystem": "npm"
+            },
+            "version": "2.1.1"
+          },
+          {
+            "package": {
+              "name": "tailwind-merge",
+              "ecosystem": "npm"
+            },
+            "version": "3.7.0"
+          },
+          {
+            "package": {
+              "name": "tw-animate-css",
+              "ecosystem": "npm"
+            },
+            "version": "1.4.0"
+          },
+          {
+            "package": {
+              "name": "radix-ui",
+              "ecosystem": "npm"
+            },
+            "version": "1.8.1"
+          },
+          {
+            "package": {
+              "name": "vite",
+              "ecosystem": "npm"
+            },
+            "version": "8.3.4"
+          },
+          {
+            "package": {
+              "name": "@bufbuild/protobuf",
+              "ecosystem": "npm"
+            },
+            "version": "2.16.0"
+          },
+          {
+            "package": {
+              "name": "ts-proto-descriptors",
+              "ecosystem": "npm"
+            },
+            "version": "2.1.0"
+          },
+          {
+            "package": {
+              "name": "@monaco-editor/loader",
+              "ecosystem": "npm"
+            },
+            "version": "1.7.0"
+          },
+          {
+            "package": {
+              "name": "@dnd-kit/core",
+              "ecosystem": "npm"
+            },
+            "version": "6.3.1"
+          },
+          {
+            "package": {
+              "name": "@dnd-kit/modifiers",
+              "ecosystem": "npm"
+            },
+            "version": "9.0.0"
+          },
+          {
+            "package": {
+              "name": "@dnd-kit/sortable",
+              "ecosystem": "npm"
+            },
+            "version": "10.0.0"
+          },
+          {
+            "package": {
+              "name": "@dnd-kit/utilities",
+              "ecosystem": "npm"
+            },
+            "version": "3.2.2"
+          },
+          {
+            "package": {
+              "name": "@tabler/icons-react",
+              "ecosystem": "npm"
+            },
+            "version": "3.49.0"
+          },
+          {
+            "package": {
+              "name": "@tanstack/react-table",
+              "ecosystem": "npm"
+            },
+            "version": "8.21.3"
+          },
+          {
+            "package": {
+              "name": "zod",
+              "ecosystem": "npm"
+            },
+            "version": "4.6.7"
+          },
+          {
+            "package": {
+              "name": "recharts",
+              "ecosystem": "npm"
+            },
+            "version": "3.10.1"
+          },
+          {
+            "package": {
+              "name": "sonner",
+              "ecosystem": "npm"
+            },
+            "version": "2.0.8"
+          },
+          {
+            "package": {
+              "name": "vaul",
+              "ecosystem": "npm"
+            },
+            "version": "1.1.2"
+          },
+          {
+            "package": {
+              "name": "next-themes",
+              "ecosystem": "npm"
+            },
+            "version": "0.4.6"
+          },
+          {
+            "package": {
+              "name": "react-is",
+              "ecosystem": "npm"
+            },
+            "version": "19.3.1"
+          }
+        ]
+      },
+      "responseSha256": "ed7d79ee52f247ad58fb30e51762ca7cc68b3eca6fd0761e05e60abbb74922e9",
+      "resultCount": 51,
+      "returnedVulnerabilityCount": 0,
+      "limitations": "No returned advisory is not proof of no vulnerabilities; direct versions only, ecosystem database coverage/time lag apply. Full resolved transitive graph review required before use."
+    },
+    "knownDonorFinding": {
+      "package": "fastify",
+      "observedVersion": "5.12.5",
+      "advisory": "GHSA-389g-gv7q-r4x8",
+      "url": "https://github.com/fastify/fastify/security/advisories/GHSA-389g-gv7q-r4x8",
+      "affected": ">=5.12.2,<5.12.6",
+      "fixed": "5.12.6",
+      "selected": "5.12.7"
+    },
+    "independentSecurityApproval": "PENDING_PHASE_APPROPRIATE_REVIEW"
+  },
+  "sources": {
+    "node_schedule": {
+      "url": "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json",
+      "sha256": "1cf0432ceb9dfde7f1fd4cce43206519942cfdfad5a26039c2f4bb20fde8549c",
+      "bytes": 3255,
+      "finding": "Node24 LTS starts2025-10-28, maintenance2026-10-20, ends2028-04-30; activeLTS on review date2026-10-17."
+    },
+    "node_releases": {
+      "url": "https://nodejs.org/dist/index.json",
+      "sha256": "b52f521b8e24898364b74f03596afef1f97c1448014df7c2b5ebdcd2b69ca4a9",
+      "bytes": 333611
+    },
+    "node_security": {
+      "url": "https://nodejs.org/en/blog/vulnerability",
+      "sha256": "a20ac2a709c1b6c8260571a38ab13adfb2ecb954bf1833b12dc679f8c0ddbfe8",
+      "bytes": 831763
+    },
+    "fastify_lts": {
+      "url": "https://fastify.dev/docs/latest/Reference/LTS/",
+      "sha256": "d72400bdd8f77fd61694678572446bd808b0754d03f2716b526a5f2a53ead12b",
+      "bytes": 61310,
+      "finding": "Major tested against supported Node LTS lines, latest patch per line. Static v5 table lists20/22 and is not independent Node24 execution proof."
+    },
+    "fastify_security": {
+      "url": "https://github.com/fastify/fastify/security/advisories",
+      "sha256": "566fdceb82fc8c5ebe798c20fcb7a41865fc0cf5a04cb9e5b2d6317a0cf560a1",
+      "bytes": 206369
+    },
+    "fastify_cors_matrix": {
+      "url": "https://raw.githubusercontent.com/fastify/fastify-cors/main/README.md",
+      "sha256": "46846debf763cbc72766bbd5d87caa2addffa7eff5e1d3b42467fc5358c93400",
+      "bytes": 8983,
+      "finding": "Plugin11.x -> Fastify5.x."
+    },
+    "fastify_ws_matrix": {
+      "url": "https://raw.githubusercontent.com/fastify/fastify-websocket/main/README.md",
+      "sha256": "3578a865193d88f9764ae99b8e1d49126c5ac2c0b3c6a1a5857cce9f9843a92d",
+      "bytes": 14464
+    },
+    "pg_support": {
+      "url": "https://raw.githubusercontent.com/brianc/node-postgres/master/docs/pages/index.mdx",
+      "sha256": "12f42726ff8f34a59f26d6befb3cc0c9c45fb1ca5c40e7d7df213b8ab6e8208b",
+      "bytes": 3337,
+      "finding": "Upstream documentation explicitly lists18,20,22,24 compatibility."
+    },
+    "argon2_support": {
+      "url": "https://raw.githubusercontent.com/ranisalt/node-argon2/master/README.md",
+      "sha256": "d336d4de9710ffff2477e72a64fb89c305211f2e2812e888c5e47bf84713cadb",
+      "bytes": 9693,
+      "finding": "Prebuilds Ubuntu22.04x86-64 and newer glibc systems; native load and options proof pending on actual target."
+    },
+    "next_support": {
+      "url": "https://nextjs.org/support-policy",
+      "sha256": "e93fdbf475f168316580b6127362ad82cb9fdc21fbcb02c09b431a009aedf2e5",
+      "bytes": 160356,
+      "finding": "16.x ActiveLTS,15.x MaintenanceLTS; no assertion all future advisories are closed."
+    },
+    "next_security": {
+      "url": "https://nextjs.org/blog/security-update-2025-12-11",
+      "sha256": "27432c3f6902cf202f747a0ec32d23869dc188a2323ed86eaa08682964e8778b",
+      "bytes": 192291,
+      "finding": "Historical RSC denial/source exposure advisory; selected16.4.2 is not proof against all later vulnerabilities."
+    },
+    "react_security": {
+      "url": "https://react.dev/blog/2025/12/11/denial-of-service-and-source-code-exposure-in-react-server-components",
+      "sha256": "57bc16ee3ae8b8dece9a1a53a555f1877c2f7c452a183aeb559570d34aaa991a",
+      "bytes": 133478,
+      "finding": "Historical advisory updated2026-01-26 warns some initial fixes incomplete; do not certify based only on older minimum patched versions."
+    },
+    "monaco_support": {
+      "url": "https://raw.githubusercontent.com/suren-atoyan/monaco-react/master/README.md",
+      "sha256": "3cf17cffed4e1a5671626087de8cc2e3440777246f67358f78fbf1de5a7da05f",
+      "bytes": 40139
+    },
+    "brackets_license": {
+      "url": "https://raw.githubusercontent.com/Drarig29/brackets-viewer.js/master/LICENSE",
+      "sha256": "1599fa2d5e7465c02df0bbc2ce16465ebf38431b730d152b5f91a56132d327d2",
+      "bytes": 1072
+    },
+    "shadcn_license": {
+      "url": "https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md",
+      "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
+      "bytes": 1063
+    },
+    "shadcn_next": {
+      "url": "https://ui.shadcn.com/docs/installation/next",
+      "sha256": "462f85befc5e75590e22f6987bedef493b7faa5704f4297c8ab2571b5ba93b6e",
+      "bytes": 802580
+    },
+    "shadcn_tailwind": {
+      "url": "https://ui.shadcn.com/docs/tailwind-v4",
+      "sha256": "d6fdb56b81ff0fdbdce0b0e1c9f91003feed4ceebea763ddcacf72d7e53fa7c8",
+      "bytes": 741427,
+      "finding": "Official docs explicitly support Tailwindv4 and React19."
+    },
+    "ajv_security": {
+      "url": "https://ajv.js.org/security.html",
+      "sha256": "34ab34fe7b9a1373c49f78f785268415d3f5a501fa23c8f8e863e372c2468e7c",
+      "bytes": 39071
+    },
+    "protobuf_security": {
+      "url": "https://github.com/protobufjs/protobuf.js/security/advisories",
+      "sha256": "cdd712d630c3e1e889f1e812dde24b05ca41ab74e92c7ebf62fdcfe3e83c4266",
+      "bytes": 206163
+    },
+    "fastify_websocket_package": {
+      "url": "https://raw.githubusercontent.com/fastify/fastify-websocket/v11.3.4/package.json",
+      "sha256": "8a2feb745ccf2906e5436b8013fc077e2026c0fe32be9097195db897cdf18a8a",
+      "bytes": 1882
+    },
+    "fastify_cookie_matrix": {
+      "url": "https://raw.githubusercontent.com/fastify/fastify-cookie/main/README.md",
+      "sha256": "29fa25fdc8ed65728af47b6a9c85ce803684d089e990bb947ae2ccb27a101adb",
+      "bytes": 16307
+    },
+    "fastify_rate_limit_matrix": {
+      "url": "https://raw.githubusercontent.com/fastify/fastify-rate-limit/main/README.md",
+      "sha256": "04efb513cd4d36baa79f8216b9b839c7765a57800aa647111efcc53e065f8130",
+      "bytes": 23858
+    },
+    "protobuf7_security": {
+      "url": "https://api.github.com/repos/protobufjs/protobuf.js/security-advisories?per_page=100",
+      "sha256": "03b2122510474a2c30e8640886f39f082e7fda85213be049286f5fa7728b230f",
+      "bytes": 109329
+    },
+    "fastify_advisories_api": {
+      "url": "https://api.github.com/repos/fastify/fastify/security-advisories?per_page=100",
+      "sha256": "8eefdd89ad4ca0ddb7543198076918e8c0891a850722115541ab7541a4d45ca2",
+      "bytes": 117416
+    },
+    "node24_sha256": {
+      "url": "https://nodejs.org/dist/v24.22.0/SHASUMS256.txt",
+      "sha256": "8912ada1431af8390bb3e30328d30bca701b59c7a6d5396b491293515c092c46",
+      "bytes": 3171
+    },
+    "node24_license": {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v24.22.0/LICENSE",
+      "sha256": "5888dbb9a1d2b18f2c3e6c5f6af1b39de658372b402a0577b002777f14c62ace",
+      "bytes": 157609
+    },
+    "shadcn_commit": {
+      "url": "https://api.github.com/repos/shadcn-ui/ui/commits/main",
+      "sha256": "3def0692f0ca180173da448f0fa92dbba694de3b0768812c7ac217c33c76eda5",
+      "bytes": 13321
+    },
+    "brackets_tag_license": {
+      "url": "https://raw.githubusercontent.com/Drarig29/brackets-viewer.js/v1.9.1/LICENSE",
+      "sha256": "1599fa2d5e7465c02df0bbc2ce16465ebf38431b730d152b5f91a56132d327d2",
+      "bytes": 1072,
+      "finding": "Exactv1.9.1 upstreamLICENSE is MIT; conflicts with ISC in npm package metadata."
+    },
+    "next_release": {
+      "url": "https://api.github.com/repos/vercel/next.js/releases/tags/v16.4.2",
+      "sha256": "ed09115a6401ce36686ea8a3876e34a9e5d96d67c84abf14008027d25612fd26",
+      "bytes": 3253
+    },
+    "react_release": {
+      "url": "https://api.github.com/repos/facebook/react/releases/tags/v19.3.1",
+      "sha256": "2a49a4b8b327780ca178a5ba874870f07baf065229ad3d659b7ab0dabc365115",
+      "bytes": 2061
+    },
+    "shadcn_pinned_license": {
+      "url": "https://raw.githubusercontent.com/shadcn-ui/ui/d2fba50ee5b9113008b5bb908563527b7efd2f27/LICENSE.md",
+      "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
+      "bytes": 1063
+    },
+    "dashboard01": {
+      "url": "https://ui.shadcn.com/r/styles/new-york-v4/dashboard-01.json",
+      "sha256": "ec8e10eb0dc64e8c2a3077ca6abb771efc03c8499aa8044811f7a8525141ec0d",
+      "bytes": 76987
+    },
+    "sidebar07": {
+      "url": "https://ui.shadcn.com/r/styles/new-york-v4/sidebar-07.json",
+      "sha256": "54789cc67edf51a0da25a80c4d68910373edb4354142fdc6dcb2c059aed5f11c",
+      "bytes": 18416
+    },
+    "ws_plugin_source": {
+      "url": "https://raw.githubusercontent.com/fastify/fastify-websocket/v11.3.4/index.js",
+      "sha256": "72215076fa0535f1f6d644f3e92fbded7067f33c5037cfd1825989ecd6f7e77c",
+      "bytes": 8613,
+      "finding": "Tagged11.3.4 source declares fastify-plugin fastify:'5.x'."
+    }
+  },
+  "remainingClosure": [
+    {
+      "phase": "BEFORE_NPM_CONSUMPTION",
+      "item": "Integrating owner updates canonical manifests and regenerates isolated lock from exact selected pins; inspect all transitive/optional dependencies, hash final lock. No manifests changed by this assignment."
+    },
+    {
+      "phase": "BEFORE_NPM_CONSUMPTION",
+      "item": "Fetch packages/binaries only within authorized disk budget; verify npm SRI, compute actual artifact SHA256, verify provenance/signatures when provided, record architecture and complete SBOM/third-party notices. Registry response hashes are NOT artifact hashes."
+    },
+    {
+      "phase": "S03",
+      "item": "Verify Fastify plugin/nativeArgon2 startup under pinnedNode24/Linux target, Argon2id parameters and limits; scan full selected control-plane graph and close exploitable critical/high findings before exposure."
+    },
+    {
+      "phase": "S12_S13",
+      "item": "Resolve brackets ISC metadata versus exact-tagMITLICENSE by tarball LICENSE inspection; preserve actual notice. UI transitive licenses/registry/components/assets/offline worker closure remains phase-specific."
+    },
+    {
+      "phase": "S12",
+      "item": "Recheck upstream support/advisories at implementation; validate React19/Next16 AppRouter/Monaco client boundaries/Tailwind4 and noJS/privatecache/selfhost behavior with actual integration. No UI compatibility runtime proof claimed."
+    },
+    {
+      "phase": "RELEASE",
+      "item": "Full G0-G4 runtime, independent security, capacity, backup, deployment receipts remain outside this metadata selection; do not derive readiness from exactpins alone."
+    }
+  ]
+}

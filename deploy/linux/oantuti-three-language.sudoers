@@ -1,0 +1,2 @@
+# Fixed starter matches only; no caller arguments.
+ha-thai ALL=(root) NOPASSWD:NOSETENV: /usr/local/libexec/oantuti/three-language-v1/three-language-match.py ""

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "DEVELOPMENT_BUDGET_ONLY",
+  "observedFreeGiB": 27,
+  "observedFilesystem": "/home ext4",
+  "sourceSnapshotVerifiedBytes": 2307344,
+  "existingMeasuredFootprints": {
+    "donorNodeModulesMiB": 280,
+    "installedToolchainsGiB": 2.1,
+    "cargoRegistryMiB": 65,
+    "donorWorkspaceRustTargetMiB": 289,
+    "donorSupervisorRustTargetMiB": 374,
+    "donorPostgresDataMiB": 67,
+    "donorObjectsKiB": 320
+  },
+  "developmentWriteBudgetGiB": {
+    "dependenciesAndFrontendBuild": 4,
+    "rustAndWasmBuild": 3,
+    "isolatedPostgresWalAndFixtures": 2,
+    "sandboxImagesAndEphemeral": 3,
+    "evidenceAndPreservation": 1
+  },
+  "reservedFreeGiB": 10,
+  "initialBudgetFitsObservedFreeSpace": true,
+  "capacityCertification": "PENDING_RUNTIME_PROOF",
+  "notes": [
+    "Write budgets are conservative development reservations, not measured production requirements or capacity claims.",
+    "Recheck free space and projected download/extraction size immediately before every provisioning batch.",
+    "Existing toolchains may be reused read-only only after exact hash/version/provenance review; do not duplicate automatically.",
+    "No cache, build output, donor storage or database is authorized for deletion.",
+    "Full RR, soak, retention and off-host restore budgets require S16/S17 measured growth; this budget does not authorize those workloads."
+  ]
+}

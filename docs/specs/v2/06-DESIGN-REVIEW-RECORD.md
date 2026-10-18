@@ -2,6 +2,15 @@
 
 > Documentation-only, 2026-10-13. Không chứng nhận triển khai, security, tải hoặc SLO. Hồ sơ này ghi quyết định sau review để người triển khai không quay lại các cách hiểu đã bị loại.
 
+## Rebuild authority — 2026-10-17
+
+**SUPERSEDED / NOT_ACCEPTED:** review, inventory, smoke và completion claims bên dưới là lịch sử theo thời điểm, không current runtime state hoặc acceptance rebuild. Giữ nguyên bằng chứng/report để truy vết; không kế thừa COMPLETE/CONTRACT_HANDOFF/G0–G4 hoặc suy checks cũ chứng nhận implementation mới. S01 đang chỉnh authority/config trong workspace cô lập, donor được bảo toàn; chưa đóng S01/G0/G1. Canonical S01–S17 giữ nguyên; S10=T3b, S11=T7, S12=Next, S13=viewer, S14=admin, S15=ops, S16=capacity, S17=endurance; S04 ONLINE không được bỏ.
+
+Delta được chủ sản phẩm duyệt: Rust engine tại `crates/arena-engine`, native authoritative runner tại `crates/arena-runner`, cùng engine qua WASM browser replay/visualization; thay Node/TS v2 game-host/engine. Rust supervisor vẫn sở hữu sandbox/CPU/freezer/watchdog/reaper, runner không đặc quyền; TypeScript/Fastify giữ control plane/tournament policies, Next/React giữ web. Browser không chạy Bot thí sinh/accept results; không native/runc Bot fallback. Source proto generated Rust/TS, native inspect VERIFY_TRACE/ANALYZE_MAP và một typed build/game completion acceptance theo03. Research/review giữ TS engine trước đây đã superseded, không là rationale hiện hành.
+
+Product/privacy/rules/UX/security/resource/SLO requirements01–05 giữ nguyên. Owner đã chọn duyệt ba màn đại diện trước integrated S12; fixture preview phải có nhãn minh họa, không feature proof. G1 exact-target, real mailbox/offhost restore/capacity/72h+7day/human usability/reviewer sign-off còn phải có evidence mới; không tự ký từ docs hoặc microbench.
+
+
 ## Quyết định bổ sung từ chủ sản phẩm
 
 - Mỗi đội chỉ khóa một Bot cho mỗi giải; cùng phiên bản/artifact dùng toàn giải, không đổi giữa vòng, stage hoặc Elo epoch.

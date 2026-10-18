@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "crates/arena-supervisor",
+    "crates/arena-engine",
+    "crates/arena-runner",
+    "crates/arena-verifier",
+    "crates/arena-execution",
+    "crates/arena-engine-wasm",
+]
+resolver = "2"

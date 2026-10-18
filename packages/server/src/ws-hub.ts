@@ -146,6 +146,11 @@ export class WebSocketHub {
 
   private sendBinary(socket: WebSocket, data: Uint8Array): void {
     if (socket.readyState === WebSocket.OPEN) {
+      // Bounded buffer protection: disconnect slow clients with > 1 MiB pending buffer
+      if (socket.bufferedAmount > 1024 * 1024) {
+        socket.terminate();
+        return;
+      }
       socket.send(data, { binary: true });
     }
   }

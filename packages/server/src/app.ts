@@ -11,6 +11,38 @@ import { WebSocketHub } from './ws-hub.js';
 import { TournamentService } from './tournament-service.js';
 import { AuthService, HttpError, botSourceFields, mapIdField, maxTurnsField, objectPayload, protectMutations, textField } from './auth.js';
 import { migrateBotSourceFiles, registerBotRoutes } from './bot-routes.js';
+import { PostgresDatabase } from './persistence/db.js';
+import { IdentityService } from './identity/service.js';
+import { registerIdentityRoutes } from './identity/routes.js';
+import { TeamService } from './teams/service.js';
+import { registerTeamRoutes } from './teams/routes.js';
+import { ArtifactStore } from './submissions/artifact-store.js';
+import { BuildPipeline } from './builds/build-pipeline.js';
+import { PrivateTestRunner } from './builds/private-test-runner.js';
+import { SubmissionService } from './submissions/service.js';
+import { registerSubmissionRoutes } from './submissions/routes.js';
+import { ReplayStore } from './results/replay-store.js';
+import { ResultService } from './results/service.js';
+import { registerResultRoutes } from './results/routes.js';
+import { MapValidator } from './tournaments/map-validator.js';
+import { MapService } from './tournaments/map-service.js';
+import { TournamentLifecycleService } from './tournaments/lifecycle-service.js';
+import { TournamentAdmissionService } from './tournaments/admission-service.js';
+import { TournamentEntryCodeService } from './tournaments/entry-code-service.js';
+import { registerTournamentRoutes, registerAdmissionRoutes, registerExecutionRoutes, registerEntryCodeRoutes } from './tournaments/routes.js';
+import { MatchExecutionService } from './tournaments/execution-service.js';
+import { LiveMatchHub } from './live/live-match-hub.js';
+import { registerLiveRoutes } from './live/live-routes.js';
+import { TournamentAutoRunner } from './tournaments/auto-runner.js';
+import { JobBroker } from './jobs/broker.js';
+import { JobReconciler } from './jobs/reconciler.js';
+import { DisputeService } from './adjudication/dispute-service.js';
+import { CorrectionService } from './adjudication/correction-service.js';
+import { registerAdjudicationRoutes } from './adjudication/routes.js';
+import { TournamentSchedulerService } from './tournaments/scheduler-service.js';
+import { RetentionService } from './operations/retention-service.js';
+import { BackupFence, backupFenceConfigFromEnv } from './operations/backup-fence.js';
+import { registerOperationsRoutes } from './operations/routes.js';
 
 export interface ServerOptions {
   readonly dbLocation?: string;
@@ -18,16 +50,18 @@ export interface ServerOptions {
   readonly replaysDir?: string;
   readonly botsDir?: string;
   readonly allowedOrigins?: readonly string[];
+  readonly pgDb?: PostgresDatabase;
+  /** Scratch root for the dev-only match executor (see MatchExecutionService). */
+  readonly executionSpoolDir?: string;
 }
-
 export interface AppContext {
   readonly app: FastifyInstance;
   readonly db: Database;
   readonly matchService: MatchService;
   readonly wsHub: WebSocketHub;
   readonly tournamentService: TournamentService;
+  readonly pgDb?: PostgresDatabase;
 }
-
 export async function createApp(options?: ServerOptions): Promise<AppContext> {
   const db = new Database(options?.dbLocation ?? ':memory:');
   const matchService = new MatchService(db, options?.mapsDir, options?.replaysDir);
@@ -86,9 +120,11 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
 
   const app = Fastify({ logger: false });
   const auth = new AuthService(db);
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error: unknown, _request, reply) => {
     if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
-    if (error.statusCode && error.statusCode < 500) return reply.code(error.statusCode).send({ error: 'Invalid request payload' });
+    if (error && typeof error === 'object' && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500) {
+      return reply.code(error.statusCode).send({ error: 'Invalid request payload' });
+    }
     return reply.code(500).send({ error: 'Internal server error' });
   });
   app.addHook('onRequest', async (request) => {
@@ -99,8 +135,104 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   auth.registerRoutes(app);
   registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
   await app.register(fastifyWebsocket);
-
-  // Health check
+  if (options?.pgDb) {
+    const identityService = new IdentityService(options.pgDb);
+    const teamService = new TeamService(options.pgDb);
+    const artifactStore = new ArtifactStore(options.pgDb, options.botsDir ?? path.resolve(process.cwd(), 'storage/submissions'));
+    // Durable queue: intake/scheduler enqueue BUILD/GAME work, the worker claims/executes/
+    // completes it, and the reconciler requeues expired leases. It is built before the
+    // submission service, which enqueues the BUILD job for every accepted receipt.
+    const jobBroker = new JobBroker(options.pgDb);
+    const jobReconciler = new JobReconciler(options.pgDb);
+    const backupFence = new BackupFence(options.pgDb, backupFenceConfigFromEnv());
+    const submissionService = new SubmissionService(options.pgDb, artifactStore, jobBroker, backupFence);
+    // Replays must live under this workspace's storage, never a neighbouring install's default.
+    const replayObjectsDir = options.replaysDir ?? path.resolve(process.cwd(), 'storage/replays');
+    const replayStore = new ReplayStore(replayObjectsDir, path.resolve(process.cwd(), 'storage/replay-staging'));
+    // Scratch root for the dev-only executors (the match executor and the private-test runner).
+    const executionSpoolDir = options.executionSpoolDir ?? path.resolve(process.cwd(), 'storage/execution');
+    // Private practice runs: real matches that touch no official table (migration 011).
+    const privateTestRunner = new PrivateTestRunner(options.pgDb, artifactStore, replayStore, {
+      spoolDir: path.join(executionSpoolDir, 'tests'),
+    });
+    registerIdentityRoutes(app, identityService, options.allowedOrigins);
+    registerTeamRoutes(app, teamService, identityService);
+    registerSubmissionRoutes(app, submissionService, identityService, privateTestRunner);
+    const resultService = new ResultService(options.pgDb, replayStore);
+    registerResultRoutes(app, resultService);
+    const mapService = new MapService(options.pgDb);
+    const tournamentLifecycleService = new TournamentLifecycleService(options.pgDb, backupFence);
+    const tournamentAdmissionService = new TournamentAdmissionService(
+      options.pgDb,
+      async (tournamentId) => {
+        // Withdrawals resolve encounters without game completions; let the scheduler notice.
+        await schedulerService.markTerminalRounds(tournamentId);
+      },
+      backupFence
+    );
+    const schedulerService = new TournamentSchedulerService(options.pgDb, jobBroker);
+    registerTournamentRoutes(
+      app,
+      options.pgDb,
+      mapService,
+      tournamentLifecycleService,
+      schedulerService,
+      identityService
+    );
+    registerAdmissionRoutes(app, tournamentAdmissionService, identityService);
+    registerEntryCodeRoutes(app, new TournamentEntryCodeService(options.pgDb), identityService);
+    // Compile + smoke-test gate: a receipt only becomes READY here.
+    const buildPipeline = new BuildPipeline(options.pgDb, artifactStore, {
+      spoolDir: path.join(executionSpoolDir, 'builds'),
+    });
+    // Public live spectator stream: the executor publishes each official game into this hub,
+    // `GET /api/v2/live/:gameId` fans it out. Private practice tests never reach the executor,
+    // so they are never published.
+    const liveMatchHub = new LiveMatchHub();
+    registerLiveRoutes(app, liveMatchHub);
+    // Development-only, unsandboxed executor: refuses to run unless OANTUTI_DEV_EXECUTION=1.
+    const executionService = new MatchExecutionService(
+      options.pgDb,
+      mapService,
+      artifactStore,
+      replayStore,
+      resultService,
+      schedulerService,
+      jobBroker,
+      { spoolDir: executionSpoolDir },
+      liveMatchHub
+    );
+    // Autonomous durable worker: inert unless OANTUTI_DEV_EXECUTION=1 (same flag as the executor).
+    const retentionService = new RetentionService(options.pgDb);
+    const autoRunner = new TournamentAutoRunner(
+      options.pgDb,
+      executionService,
+      jobBroker,
+      jobReconciler,
+      buildPipeline,
+      privateTestRunner,
+      schedulerService,
+      { retentionService }
+    );
+    registerExecutionRoutes(app, executionService, autoRunner, identityService);
+    autoRunner.start();
+    app.addHook('onClose', () => {
+      autoRunner.stop();
+      liveMatchHub.dispose();
+    });
+    const disputeService = new DisputeService(options.pgDb);
+    const correctionService = new CorrectionService(options.pgDb, async (gameId) => {
+      // A corrected result invalidates the rounds that depended on it before the encounter is
+      // rescored, so the worker re-dispatches from the corrected round.
+      await schedulerService.invalidateAfterGame(gameId);
+      await schedulerService.handleGameCompletion(gameId);
+    }, async (tournamentId, stage, roundOrdinal) => {
+      // Disqualification voids encounters and rebuilds the schedule from the affected round.
+      return schedulerService.invalidateAfterRound(tournamentId, stage, roundOrdinal);
+    });
+    registerAdjudicationRoutes(app, disputeService, correctionService, identityService);
+    registerOperationsRoutes(app, retentionService, identityService);
+  }
   app.get('/api/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
@@ -286,5 +418,5 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     }
   );
 
-  return { app, db, matchService, wsHub, tournamentService };
+  return { app, db, matchService, wsHub, tournamentService, pgDb: options?.pgDb };
 }
