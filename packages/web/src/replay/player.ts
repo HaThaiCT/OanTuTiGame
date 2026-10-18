@@ -121,6 +121,60 @@ export function buildSnapshotsFromReplay(
 }
 
 export function parseReplayBinary(buffer: Uint8Array): LoadedReplay {
+  const magic = new TextDecoder('ascii').decode(buffer.subarray(0, 8));
+  if (magic === 'OANTUTI2') {
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const manifestLen = view.getUint16(12, false);
+    let offset = 14 + manifestLen;
+    const jsonLen = view.getUint32(offset, false);
+    offset += 4;
+    const jsonStr = new TextDecoder('utf8').decode(buffer.subarray(offset, offset + jsonLen));
+    const payload = JSON.parse(jsonStr) as {
+      gameId: string;
+      mapId: string;
+      rulesRevision: string;
+      manifestDigest: string;
+      totalTurns: number;
+      winner: number;
+      reason: string;
+      disposition: string;
+      trace: readonly any[];
+    };
+
+    const dummyInit: MatchInitFrameMessage = {
+      matchId: payload.gameId,
+      map: {
+        width: 5,
+        height: 5,
+        validTilesBitmask: new Uint8Array([0xff]),
+        whiteThrone: { x: 0, y: 0 },
+        blackThrone: { x: 4, y: 4 },
+        mapName: payload.mapId,
+      },
+      pieces: [],
+      maxTurns: 300,
+      turnTimeLimitMs: 50,
+      whiteBotName: 'Side A',
+      blackBotName: 'Side B',
+    };
+
+    const dummyEnd: MatchEndFrameMessage = {
+      matchId: payload.gameId,
+      winner: payload.winner as any,
+      reason: 1,
+      whiteRemainingPieces: 0,
+      blackRemainingPieces: 0,
+      totalTurns: payload.totalTurns,
+    };
+
+    return {
+      init: dummyInit,
+      deltas: [],
+      end: dummyEnd,
+      snapshots: [],
+    };
+  }
+
   const { init, deltas, end } = unpackReplay(buffer);
   const snapshots = buildSnapshotsFromReplay(init, deltas, end);
   return { init, deltas, end, snapshots };

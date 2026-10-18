@@ -1,0 +1,69 @@
+syntax = "proto3";
+package oantuti.execution.v2;
+
+// Transport is u32 big-endian length plus this envelope, capped at 1 MiB.
+// Identity, sequence, digest and payload validation is mandatory after decode.
+message Envelope {
+  uint32 protocol_version = 1;
+  string game_id = 2;
+  string attempt_id = 3;
+  uint64 sequence = 4;
+  string request_id = 5;
+  bytes manifest_sha256 = 6;
+  oneof message {
+    StartGame start_game = 10;
+    RunBotTurn run_bot_turn = 11;
+    TurnObservation turn_observation = 12;
+    TurnCommitted turn_committed = 13;
+    GameFinished game_finished = 14;
+    ExecutionFault execution_fault = 15;
+    StopGame stop_game = 16;
+  }
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  WHITE = 1;
+  BLACK = 2;
+}
+
+// Manifest payload is immutable canonical JSON identified by manifest_sha256;
+// it is not arbitrary launcher argv, executable paths or mutable quotas.
+message StartGame {
+  bytes canonical_game_manifest = 1;
+}
+message RunBotTurn {
+  Side side = 1;
+  uint32 ply = 2;
+  bytes request_ndjson = 3;
+}
+message TurnObservation {
+  Side side = 1;
+  uint32 ply = 2;
+  bytes response_ndjson = 3;
+  uint64 cpu_usage_usec = 4;
+  uint64 wall_elapsed_usec = 5;
+  bool freeze_confirmed = 6;
+}
+message TurnCommitted {
+  uint32 ply = 1;
+  bytes state_sha256 = 2;
+}
+message GameFinished {
+  bytes canonical_game_evidence = 1;
+}
+message ExecutionFault {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    PROTOCOL_ERROR = 1;
+    CPU_TIMEOUT = 2;
+    WALL_TIMEOUT = 3;
+    OUTPUT_LIMIT = 4;
+    UNRESOLVED_INFRA = 5;
+  }
+  Kind kind = 1;
+  Side side = 2;
+}
+message StopGame {
+  string reason_code = 1;
+}

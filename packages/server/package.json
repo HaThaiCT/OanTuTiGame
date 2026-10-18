@@ -18,9 +18,11 @@
     "@oantuti/protocol": "*",
     "@oantuti/runner": "*",
     "fastify": "^5.2.1",
+    "pg": "8.23.1",
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/pg": "8.23.1",
     "@types/ws": "^8.5.13"
   }
 }

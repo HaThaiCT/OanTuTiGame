@@ -1,0 +1,2 @@
+# Development only. Revoke this exact file to remove unattended helper access.
+ha-thai ALL=(root) NOPASSWD:NOSETENV: /usr/local/sbin/oantuti-dev-helper-v1 verify-rootfs, /usr/local/sbin/oantuti-dev-helper-v1 smoke-controller, /usr/local/sbin/oantuti-dev-helper-v1 smoke-reaper

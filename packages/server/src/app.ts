@@ -11,6 +11,25 @@ import { WebSocketHub } from './ws-hub.js';
 import { TournamentService } from './tournament-service.js';
 import { AuthService, HttpError, botSourceFields, mapIdField, maxTurnsField, objectPayload, protectMutations, textField } from './auth.js';
 import { migrateBotSourceFiles, registerBotRoutes } from './bot-routes.js';
+import { PostgresDatabase } from './persistence/db.js';
+import { IdentityService } from './identity/service.js';
+import { registerIdentityRoutes } from './identity/routes.js';
+import { TeamService } from './teams/service.js';
+import { registerTeamRoutes } from './teams/routes.js';
+import { ArtifactStore } from './submissions/artifact-store.js';
+import { SubmissionService } from './submissions/service.js';
+import { registerSubmissionRoutes } from './submissions/routes.js';
+import { ReplayStore } from './results/replay-store.js';
+import { ResultService } from './results/service.js';
+import { registerResultRoutes } from './results/routes.js';
+import { MapValidator } from './tournaments/map-validator.js';
+import { MapService } from './tournaments/map-service.js';
+import { TournamentLifecycleService } from './tournaments/lifecycle-service.js';
+import { registerTournamentRoutes } from './tournaments/routes.js';
+import { DisputeService } from './adjudication/dispute-service.js';
+import { CorrectionService } from './adjudication/correction-service.js';
+import { registerAdjudicationRoutes } from './adjudication/routes.js';
+import { TournamentSchedulerService } from './tournaments/scheduler-service.js';
 
 export interface ServerOptions {
   readonly dbLocation?: string;
@@ -18,16 +37,16 @@ export interface ServerOptions {
   readonly replaysDir?: string;
   readonly botsDir?: string;
   readonly allowedOrigins?: readonly string[];
+  readonly pgDb?: PostgresDatabase;
 }
-
 export interface AppContext {
   readonly app: FastifyInstance;
   readonly db: Database;
   readonly matchService: MatchService;
   readonly wsHub: WebSocketHub;
   readonly tournamentService: TournamentService;
+  readonly pgDb?: PostgresDatabase;
 }
-
 export async function createApp(options?: ServerOptions): Promise<AppContext> {
   const db = new Database(options?.dbLocation ?? ':memory:');
   const matchService = new MatchService(db, options?.mapsDir, options?.replaysDir);
@@ -86,9 +105,11 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
 
   const app = Fastify({ logger: false });
   const auth = new AuthService(db);
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error: unknown, _request, reply) => {
     if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
-    if (error.statusCode && error.statusCode < 500) return reply.code(error.statusCode).send({ error: 'Invalid request payload' });
+    if (error && typeof error === 'object' && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500) {
+      return reply.code(error.statusCode).send({ error: 'Invalid request payload' });
+    }
     return reply.code(500).send({ error: 'Internal server error' });
   });
   app.addHook('onRequest', async (request) => {
@@ -99,8 +120,27 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   auth.registerRoutes(app);
   registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
   await app.register(fastifyWebsocket);
-
-  // Health check
+  if (options?.pgDb) {
+    const identityService = new IdentityService(options.pgDb);
+    const teamService = new TeamService(options.pgDb);
+    const artifactStore = new ArtifactStore(options.pgDb, options.botsDir ?? path.resolve(process.cwd(), 'storage/submissions'));
+    const submissionService = new SubmissionService(options.pgDb, artifactStore);
+    registerIdentityRoutes(app, identityService, options.allowedOrigins);
+    registerTeamRoutes(app, teamService, identityService);
+    registerSubmissionRoutes(app, submissionService, identityService);
+    const replayStore = new ReplayStore(options.replaysDir);
+    const resultService = new ResultService(options.pgDb, replayStore);
+    registerResultRoutes(app, resultService);
+    const mapService = new MapService(options.pgDb);
+    const tournamentLifecycleService = new TournamentLifecycleService(options.pgDb);
+    registerTournamentRoutes(app, options.pgDb, mapService, tournamentLifecycleService, identityService);
+    const schedulerService = new TournamentSchedulerService(options.pgDb);
+    const disputeService = new DisputeService(options.pgDb);
+    const correctionService = new CorrectionService(options.pgDb, async (gameId) => {
+      await schedulerService.handleGameCompletion(gameId);
+    });
+    registerAdjudicationRoutes(app, disputeService, correctionService, tournamentLifecycleService, identityService);
+  }
   app.get('/api/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
@@ -286,5 +326,5 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     }
   );
 
-  return { app, db, matchService, wsHub, tournamentService };
+  return { app, db, matchService, wsHub, tournamentService, pgDb: options?.pgDb };
 }

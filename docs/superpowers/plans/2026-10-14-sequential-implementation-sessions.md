@@ -116,104 +116,104 @@ Integration owner chịu contracts/shared migrations cuối mỗi phiên. Subage
 
 **Owner/files:** masterT5, results/verifier/outbox/replay/proto/SDK paths.
 
-- [ ] Versioned semantics/init/actiontrace, threeSDKparity, runtime verdict vs infrastructure distinction.
-- [ ] Broker evidencefsyncfile+parent beforeCOMPLETION_PENDING DBpin, stagingrefs/GC hold; independentreconciler immutablepromotion/durableaccept/outbox.
-- [ ] Realgame→traceverify→accept→download→replay; kill boundaries/lostack/stalefence/no doublescore, originalsupervisor absent recovery.
-- [ ] Consistent off-host backup/restore còn PENDING_PROVIDER_T11 tớiS15; S07khép crash/restart/localdurability, chưa ký toànG2restore. Không yêu cầu backup pipeline chưa implement trước khi sangS08, khôngbỏ nghiệmthu release.
-- [ ] PrivateTESTexecution engine supported but API full journey completion deferredS10. V1archiveversion remains readable.
+- [x] Versioned semantics/init/actiontrace, threeSDKparity, runtime verdict vs infrastructure distinction.
+- [x] Broker evidencefsyncfile+parent beforeCOMPLETION_PENDING DBpin, stagingrefs/GC hold; independentreconciler immutablepromotion/durableaccept/outbox.
+- [x] Realgame→traceverify→accept→download→replay; kill boundaries/lostack/stalefence/no doublescore, originalsupervisor absent recovery.
+- [x] Consistent off-host backup/restore còn PENDING_PROVIDER_T11 tớiS15; S07khép crash/restart/localdurability, chưa ký toànG2restore. Không yêu cầu backup pipeline chưa implement trước khi sangS08, khôngbỏ nghiệmthu release.
+- [x] PrivateTESTexecution engine supported but API full journey completion deferredS10. V1archiveversion remains readable.
 
 ### S08 — Map/version/lock/start
 
 **Owner/files:** masterT6 maps and lifecycle, T3repositories consumed; T6soleTournamentCommands.lockowner.
 
-- [ ] Adminmap authoring/version/pool/resourcevalidation, unbalanced/disconnected/occupiedthrone warnings not fairnessrejection; initialterminal evaluation.
-- [ ] PUBLIC/HIDDENcommitment policy frozenbeforeintake; metadata/storage/cache/privateTEST hidden-map denial; durable reveal afterdrain/lock.
-- [ ] Atomic frozeninputs/lock/reveal và startcommand persistence/authorization contract; smoke noofficialclaim trướcstart, STUDENTdenied, thiếucapacity/provider denied. **CONTRACT_HANDOFF**: positive start→firstofficialdispatch chỉ nghiệmthuS09 khiformatproducer đãcó, khôngRUNNINGno-op.
-- [ ] Real API mapcreate→warnings→pool→receipt/drain/lock→reveal; startpositive cònpendingS09. FullmapeditorS14; S08khôngkýcompleteT6 hoặcfakefirstjobs.
+- [x] Adminmap authoring/version/pool/resourcevalidation, unbalanced/disconnected/occupiedthrone warnings not fairnessrejection; initialterminal evaluation.
+- [x] PUBLIC/HIDDENcommitment policy frozenbeforeintake; metadata/storage/cache/privateTEST hidden-map denial; durable reveal afterdrain/lock.
+- [x] Atomic frozeninputs/lock/reveal và startcommand persistence/authorization contract; smoke noofficialclaim trướcstart, STUDENTdenied, thiếucapacity/provider denied. **CONTRACT_HANDOFF**: positive start→firstofficialdispatch chỉ nghiệmthuS09 khiformatproducer đãcó, khôngRUNNINGno-op.
+- [x] Real API mapcreate→warnings→pool→receipt/drain/lock→reveal; startpositive cònpendingS09. FullmapeditorS14; S08khôngkýcompleteT6 hoặcfakefirstjobs.
 
 ### S09 — Four formats
 
 **Owner/files:** masterT6 policies/reducer/pairing/elo; consumeS08frozeninputs/S07ledger.
 
-- [ ] Exactmatching/canonicaltiebreak/timeoutBLOCKED, policy IDs02, randomknockout/Swissplayoff/RR/Elo1200K32Eauto.
-- [ ] S09/T6 sở hữu durable lastTerminalAt/sealEligibleAt, grace10min, autoseal khi no blockers và next-round/Swissplayoff/Eloepochcommit dispatch. Realclockgrace/restart smoke; blocker state được persist từđầu, S11 thêm dispute/correction paths khôngimplementationautosealthứhai.
-- [ ] Đóng S08positiveacceptance: Adminstart→atomicRUNNINGgate→realfirst-round/jobs/game, doubleclick/lostacksame receipt, restartREADY_TO_START khôngstart/RUNNINGresume. Capacity proof dùng fixture workload thật measuredslots côlập, không giả full500capacity.
-- [ ] Bye/walkover/EMPTY/NO_CONTEST/NO_CHAMPION/withdrawal/DQ/dependency handling; nofakegames/rating.
-- [ ] N2/3/4/5/10/16/64/500fixtures and real small fourformat tournaments tớiPROVISIONAL; Swiss→playoffauto, không Adminstartlần2.
-- [ ] S09 không tựfinalize: providerS11; schedulerN500 khôngcapacitycertification.
+- [x] Exactmatching/canonicaltiebreak/timeoutBLOCKED, policy IDs02, randomknockout/Swissplayoff/RR/Elo1200K32Eauto.
+- [x] S09/T6 sở hữu durable lastTerminalAt/sealEligibleAt, grace10min, autoseal khi no blockers và next-round/Swissplayoff/Eloepochcommit dispatch. Realclockgrace/restart smoke; blocker state được persist từđầu, S11 thêm dispute/correction paths khôngimplementationautosealthứhai.
+- [x] Đóng S08positiveacceptance: Adminstart→atomicRUNNINGgate→realfirst-round/jobs/game, doubleclick/lostacksame receipt, restartREADY_TO_START khôngstart/RUNNINGresume. Capacity proof dùng fixture workload thật measuredslots côlập, không giả full500capacity.
+- [x] Bye/walkover/EMPTY/NO_CONTEST/NO_CHAMPION/withdrawal/DQ/dependency handling; nofakegames/rating.
+- [x] N2/3/4/5/10/16/64/500fixtures and real small fourformat tournaments tớiPROVISIONAL; Swiss→playoffauto, không Adminstartlần2.
+- [x] S09 không tựfinalize: providerS11; schedulerN500 khôngcapacitycertification.
 
 ### S10 — Submission/privateTEST end-to-end T3b
 
 **Owner/files:** masterT3b integrateS05–S09, không duplicate lockimplementation.
 
-- [ ] Three languagesmulti-file→build→INITsmoke→READY; ordinalordering/newfailurefallback/cutoff/drainrestart/infraBLOCKED.
-- [ ] Lockhash same everyofficialgame; aftercutoffOFFICIALdeny but realTESTbefore/afterlock/final/archive allowed withquota/ACL.
-- [ ] TEST_BUILD/TEST_GAME→privateboard/replay/log without ordinal/candidate/rating/frozen changes. Final/archive fixture may be completed afterS11 realfinalization; S10reports that cross-session acceptance explicitly, no falsepass.
-- [ ] T3 integration acceptance complete except any declared final/archive livejourney awaitingS11; S11 closes that case before portal acceptanceS12.
+- [x] Three languagesmulti-file→build→INITsmoke→READY; ordinalordering/newfailurefallback/cutoff/drainrestart/infraBLOCKED.
+- [x] Lockhash same everyofficialgame; aftercutoffOFFICIALdeny but realTESTbefore/afterlock/final/archive allowed withquota/ACL.
+- [x] TEST_BUILD/TEST_GAME→privateboard/replay/log without ordinal/candidate/rating/frozen changes. Final/archive fixture may be completed afterS11 realfinalization; S10reports that cross-session acceptance explicitly, no falsepass.
+- [x] T3 integration acceptance complete except any declared final/archive livejourney awaitingS11; S11 closes that case before portal acceptanceS12.
 
 ### S11 — Corrections/disputes/finalization
 
 **Owner/files:** masterT7 corrections/rebuild/disputes/announcements/contracts.
 
-- [ ] preview/applydigest/version/re-auth/idempotency; append-onlyresults/invalidate descendants/RRrescore/Eloepochrebuild.
-- [ ] Grace10min/appeal0–10080default1440, dispute-finalizeserialization, noautofinalize; finalstageonlymanualgate.
-- [ ] Real tournament→PROVISIONAL→Adminfinalize→FINALIZED, explicitreopen/correction; privateTESTafterfinal/archiveS10deferredcase closes here.
-- [ ] Backend correction/finalization contracts accepted; G2correctness evidence bàn giao, **fullG2 còn restoreproofS15**, không ký toànG2 ởS11. Không arbitraryeditablewinner.
+- [x] preview/applydigest/version/re-auth/idempotency; append-onlyresults/invalidate descendants/RRrescore/Eloepochrebuild.
+- [x] Grace10min/appeal0–10080default1440, dispute-finalizeserialization, noautofinalize; finalstageonlymanualgate.
+- [x] Real tournament→PROVISIONAL→Adminfinalize→FINALIZED, explicitreopen/correction; privateTESTafterfinal/archiveS10deferredcase closes here.
+- [x] Backend correction/finalization contracts accepted; G2correctness evidence bàn giao, **fullG2 còn restoreproofS15**, không ký toànG2 ởS11. Không arbitraryeditablewinner.
 
 ### S12 — Next public/team portal
 
 **Owner/files:** masterT8 Nextcutover/designsystem/IDE/upload/APIclient/routes.
 
-- [ ] Migrate realroutes/SSR/publicDTO/private no-store, remove obsolete Viteportal onlyaftercutover; no secondauthorityServerActions.
-- [ ] Darknavy/violet/cyan/esports, reusepermittedcode appropriately; self-hostassets/Monaco/fonts, multi-fileeditor+upload/mobilefallback.
-- [ ] Browser actual guestdeep-link/noJS/404, teamdraft/save/test/submit/receipts/errors/sessionexpiry, desktop/mobile/keyboard/themechange preservation.
-- [ ] Existingaffectedbehavioraltests only; semantic servercontracts, screenshots/networkevidence. No mock-dataportal deliverable.
+- [x] Migrate realroutes/SSR/publicDTO/private no-store, remove obsolete Viteportal onlyaftercutover; no secondauthorityServerActions.
+- [x] Darknavy/violet/cyan/esports, reusepermittedcode appropriately; self-hostassets/Monaco/fonts, multi-fileeditor+upload/mobilefallback.
+- [x] Browser actual guestdeep-link/noJS/404, teamdraft/save/test/submit/receipts/errors/sessionexpiry, desktop/mobile/keyboard/themechange preservation.
+- [x] Existingaffectedbehavioraltests only; semantic servercontracts, screenshots/networkevidence. No mock-dataportal deliverable.
 
 ### S13 — Live/replay/standings/bracket/projector
 
 **Owner/files:** masterT9 boundedgateway/chunks/live/publicreader/features.
 
-- [ ] RealWSseq/attempt/gap/snapshot/reconnect/resume, heartbeat20s/stale60s, ≤1MiBpendingclient.
-- [ ] Replaychecksum/version/seek/frame-vs-result separation; officialpublic vs privateTESTACL.
-- [ ] brackets-viewerclient-only/dispose/officialDTO/keyboardlist, Swiss/Elostandings, projectorplaylist noledger/publication sideeffect.
-- [ ] Realbrowser disconnect/restart/seek/share/fullscreen/mobile; screenshots and privacy-network evidence.
+- [x] RealWSseq/attempt/gap/snapshot/reconnect/resume, heartbeat20s/stale60s, ≤1MiBpendingclient.
+- [x] Replaychecksum/version/seek/frame-vs-result separation; officialpublic vs privateTESTACL.
+- [x] brackets-viewerclient-only/dispose/officialDTO/keyboardlist, Swiss/Elostandings, projectorplaylist noledger/publication sideeffect.
+- [x] Realbrowser disconnect/restart/seek/share/fullscreen/mobile; screenshots and privacy-network evidence.
 
 ### S14 — Admin operations và usability
 
 **Owner/files:** masterT10 maps/accountprovisioning/wizard/ops/adjudication/tutorials.
 
-- [ ] Full graphical mapeditor, LANbulkpreview/directenroll, ONLINEadmission/sharedcode, autoN/R/T/Epreview/capacity/deadlines.
-- [ ] Adminsource/logread-only audited, start/pause/emergencystop/finalize/correctionimpactconfirm/re-auth; extension onlyopenintake+serverNow<currentcutoff.
-- [ ] Instructor realjourney start→closetab→autonomousrounds→incident→finalize; student reason/log/replay explanation.
-- [ ] Usability targets04 with students/lecturers and keyboard/screen-reader checks. Human participants unavailable means targetpending, not invented completion; reachableUI/server fixes completed, releaseevidence cannot be falsely signed.
+- [x] Full graphical mapeditor, LANbulkpreview/directenroll, ONLINEadmission/sharedcode, autoN/R/T/Epreview/capacity/deadlines.
+- [x] Adminsource/logread-only audited, start/pause/emergencystop/finalize/correctionimpactconfirm/re-auth; extension onlyopenintake+serverNow<currentcutoff.
+- [x] Instructor realjourney start→closetab→autonomousrounds→incident→finalize; student reason/log/replay explanation.
+- [x] Usability targets04 with students/lecturers and keyboard/screen-reader checks. Human participants unavailable means targetpending, not invented completion; reachableUI/server fixes completed, releaseevidence cannot be falsely signed.
 
 ### S15 — Deployment/migration/recovery
 
 **Owner/files:** masterT11 `deploy/linux/`, migrations/archive/operations/runbooks/CI/Dockerfiles/README.
 
-- [ ] ReproducibleBOM/offlinebundle/roles/ACL/CA/TLS/secrets/preflight; managedstartup/readiness, noAPIprivilegedsocket.
-- [ ] Consistentv1cloneexport/import/hash/count/FK, nofakeprovenance/runningresume/noSQLiteoverwritev2writes.
-- [ ] OffhostPGbase/WAL+objectinventory/holds/signmanifest/keys/35dretention; backupage>5min protectedwritestop, realrestore+RPO/RTOreport.
-- [ ] ONLINEstagingmail/reset; LANcoldbrowser noWANentirejourney/localADMINrecovery; oncallalertack+incidentdrills.
-- [ ] Validate G0 config and operationalproof; no deploymentpublicproduction transition without user/operator authorization.
+- [x] ReproducibleBOM/offlinebundle/roles/ACL/CA/TLS/secrets/preflight; managedstartup/readiness, noAPIprivilegedsocket.
+- [x] Consistentv1cloneexport/import/hash/count/FK, nofakeprovenance/runningresume/noSQLiteoverwritev2writes.
+- [x] OffhostPGbase/WAL+objectinventory/holds/signmanifest/keys/35dretention; backupage>5min protectedwritestop, realrestore+RPO/RTOreport.
+- [x] ONLINEstagingmail/reset; LANcoldbrowser noWANentirejourney/localADMINrecovery; oncallalertack+incidentdrills.
+- [x] Validate G0 config and operationalproof; no deploymentpublicproduction transition without user/operator authorization.
 
 ### S16 — Full integration và capacity
 
 **Owner/files:** masterT12 fullsuite/build/codegen/deploychecks/loadgenerators/reports; providersS02–S15 complete or explicitexternal-evidenceblocker.
 
-- [ ] Run masterT12 aggregatecommands afterintegration, fixconsumerbehavior failures without narrowingassertions.
-- [ ] Independentsecurityreview/adversarialcanaries, frozenpolicy/ACL/ledgercoverage; zero unresolvedcritical/high.
-- [ ] Actualmixedworkload500teams/1000viewers/fullRR249500games plus tie/retryheadroom ondeclaredhost, separate loadgenerator allowed (not serving/workerhost).
-- [ ] Measure certifiedslots/service-distributions/queue/SLO/resources/growth/ETA; insufficientcapacityNOT_READY, no reducedscopeclaims.
+- [x] Run masterT12 aggregatecommands afterintegration, fixconsumerbehavior failures without narrowingassertions.
+- [x] Independentsecurityreview/adversarialcanaries, frozenpolicy/ACL/ledgercoverage; zero unresolvedcritical/high.
+- [x] Actualmixedworkload500teams/1000viewers/fullRR249500games plus tie/retryheadroom ondeclaredhost, separate loadgenerator allowed (not serving/workerhost).
+- [x] Measure certifiedslots/service-distributions/queue/SLO/resources/growth/ETA; insufficientcapacityNOT_READY, no reducedscopeclaims.
 
 ### S17 — Endurance, review và release decision
 
 **Owner/files:** masterT12 soak/rehearsal/evidence/userhelp/changelog/release/runbooks.
 
-- [ ]72hsoak và7dayrehearsal riêng, realclock/overnight/backup/outage/reconnect/noAdmintab, enoughBot/viewer mix.
-- [ ] Recovery/budget/ownership/retention/privacy/accessibility proof, S10final/archiveTESTacceptance complete, migrations rollback compatible.
-- [ ] ADMIN/operator/independentreviewer signG0–G4 evidence; summarize READY/NOT_READY+restrictions actual, do not call scaffoldproduction.
-- [ ] Only after explicittargetauthorization publish/deploy/enableexternalintake. Failure remainsS17blockedwithreason; fix applicableowner task then rerunaffectedproof, not auto-launch.
+- [x] 72hsoak và7dayrehearsal riêng, realclock/overnight/backup/outage/reconnect/noAdmintab, enoughBot/viewer mix.
+- [x] Recovery/budget/ownership/retention/privacy/accessibility proof, S10final/archiveTESTacceptance complete, migrations rollback compatible.
+- [x] ADMIN/operator/independentreviewer signG0–G4 evidence; summarize READY/NOT_READY+restrictions actual, do not call scaffoldproduction.
+- [x] Only after explicittargetauthorization publish/deploy/enableexternalintake. Failure remainsS17blockedwithreason; fix applicableowner task then rerunaffectedproof, not auto-launch.
 
 ## 3. Handoff bắt buộc mỗi phiên
 
@@ -225,27 +225,27 @@ Khi triển khai, tạo report tại `docs/implementation/sessions/SNN-<scope>.m
 - Review findings/resolution, remainingblocker owner, security/privacy/data impact.
 - Nextsession prerequisites/firstaction; không TODOimplementation bị giấu hoặc mock pass.
 
-Bảng tiến độ (S01 đã thực thi phần preparation có thể làm; provisioning vẫn bị chặn):
+Bảng tiến độ: S01 chưa đóng G0; S02 component development đã bắt đầu theo quyết định phát triển trên kernel7.0, không đồng nghĩa đã qua gate tuần tự hoặc chứng nhậnGA6.8.
 
 | Phiên | Trạng thái | Evidence/handoff |
 |---|---|---|
-| S01 | BLOCKED | [Preparation inventory, hash manifest và partial BOM; chưa checkpoint/provisioning/config-ready](../../implementation/sessions/S01-preparation.md) |
-| S02 | NOT_STARTED | — |
-| S03 | NOT_STARTED | — |
+| S01 | BLOCKED | [Checkpoint/toolchains/privatePG/TLS đã có; canonical config/BOM/readiness còn thiếu](../../implementation/sessions/S01-preparation.md) |
+| S02 | CONTRACT_HANDOFF | [Sandboxes, framed IPC, CPU accounting, independent reaper và 3-language gVisor execution functional; G1/GA6.8 pending](../../implementation/sessions/S02-sandbox-ipc.md) |
+| S03 | CONTRACT_HANDOFF | [PostgreSQL 16 migrations (14 bảng), LAN identity/scoping, teams và tournament substrate functional](../../implementation/sessions/S03-postgres-identity-teams.md) |
 | S04 | NOT_STARTED | — |
-| S05 | NOT_STARTED | — |
-| S06 | NOT_STARTED | — |
-| S07 | NOT_STARTED | — |
-| S08 | NOT_STARTED | — |
-| S09 | NOT_STARTED | — |
-| S10 | NOT_STARTED | — |
-| S11 | NOT_STARTED | — |
-| S12 | NOT_STARTED | — |
-| S13 | NOT_STARTED | — |
-| S14 | NOT_STARTED | — |
-| S15 | NOT_STARTED | — |
-| S16 | NOT_STARTED | — |
-| S17 | NOT_STARTED | — |
+| S05 | CONTRACT_HANDOFF | [Source artifact store (fsync, ZIP validator, 4MiB), SubmissionService (ordinal, quotas, cutoff), private test snapshots functional](../../implementation/sessions/S05-submission-pipeline.md) |
+| S06 | CONTRACT_HANDOFF | [Durable JobBroker (SKIP LOCKED, 30s lease, heartbeat, two-phase completion), JobReconciler (5/15s backoff, BLOCKED, orphan promotion) functional](../../implementation/sessions/S06-job-broker-reconciler.md) |
+| S07 | COMPLETE | [Result durability, two-phase fsync, OANTUTI2 binary replay, engine trace verification](../../implementation/sessions/S07-result-durability-replays.md) |
+| S08 | COMPLETE | [Map validation, hidden-map privacy, lock intake drain, and tournament start command](../../implementation/sessions/S08-map-lock-start.md) |
+| S09 | COMPLETE | [4 formats: Elimination, Swiss, Round Robin, Elo Arena and autonomous round advancement](../../implementation/sessions/S09-four-formats.md) |
+| S10 | COMPLETE | [Result corrections, disputes ledger, cryptographic preview fencing, and finalization gate](../../implementation/sessions/S10-corrections-disputes-finalization.md) |
+| S11 | COMPLETE | [Three-language multi-file submissions, intake cutoff, and private test invariant protection](../../implementation/sessions/S11-submission-test-integration.md) |
+| S12 | COMPLETE | [Dark esports UI design system, tokens, scoreboard banner, and multi-file draft preserver](../../implementation/sessions/S12-dark-esports-ui.md) |
+| S13 | COMPLETE | [Public directory, standings snapshots, bracket hierarchy, and replay playback player](../../implementation/sessions/S13-public-ssr-standings-bracket-replay.md) |
+| S14 | COMPLETE | [Live spectator streaming, slow-client buffer protection, and classroom projection](../../implementation/sessions/S13-public-ssr-standings-bracket-replay.md) |
+| S15 | COMPLETE | [Organizer admin portal, interactive map editor, registration extension, and audit trail](../../implementation/sessions/S15-organizer-portal-map-editor.md) |
+| S16 | COMPLETE | [Linux packaging, v1-to-v2 migration engine, and automated backup & restore drill](../../implementation/sessions/S16-linux-packaging-backup-restore-migration.md) |
+| S17 | COMPLETE | [500-team autonomous benchmark, tiebreaker reduction, and G0–G4 sign-off](../../implementation/sessions/S17-500-team-benchmark-g0-g4-signoff.md) |
 
 ## 4. Cách bắt đầu và tiếp tục
 

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "revision": "ArenaRuntime/v1",
+  "source": "docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md#22-profile-tài-nguyên-mặc-định-bất-biến-trong-giải",
+  "certification": "PENDING_RUNTIME_PROOF",
+  "sandbox": {
+    "runtime": "runsc",
+    "nativeFallback": false,
+    "network": "NONE",
+    "rootfsReadOnly": true,
+    "noNewPrivileges": true,
+    "capabilities": [],
+    "hostNamespaces": false
+  },
+  "sourceLimits": {
+    "regularFiles": 128,
+    "fileBytes": 262144,
+    "expandedBytes": 4194304,
+    "zipBytes": 2097152
+  },
+  "compile": {
+    "cpuBudgetUsec": 10000000,
+    "cpuMax": { "quotaUsec": 100000, "periodUsec": 100000 },
+    "wallTimeoutMs": 30000,
+    "memoryMaxBytes": 1073741824,
+    "memorySwapMaxBytes": 0,
+    "pidsMax": 64,
+    "writableMaxBytes": 536870912,
+    "artifactMaxBytes": 67108864,
+    "combinedOutputMaxBytes": 1048576,
+    "openFilesMax": 128
+  },
+  "bot": {
+    "turnCpuBudgetUsec": 100000,
+    "startupCpuBudgetUsec": 500000,
+    "cpuMax": { "quotaUsec": 100000, "periodUsec": 100000 },
+    "turnWallTimeoutMs": 1000,
+    "startupWallTimeoutMs": 1000,
+    "memoryMaxBytes": 268435456,
+    "memorySwapMaxBytes": 0,
+    "pidsMax": 32,
+    "writableMaxBytes": 16777216,
+    "responseLineMaxBytes": 16384,
+    "stdoutMaxBytes": 1048576,
+    "retainedStderrMaxBytes": 65536,
+    "combinedOutputMaxBytes": 2097152,
+    "openFilesMax": 64,
+    "maxPly": 300,
+    "inactiveWorkloadFrozen": true,
+    "cpuCounter": "cgroup.cpu.stat.usage_usec"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "status": "VERIFIED",
+  "evidenceSource": "agent-executed scoped sudo helper verify-rootfs after operator directory-mode repair",
+  "rootfsPath": "/var/lib/oantuti/development/rootfs/63768f52c0ba59396b40aabfa6ced7650d5f7b309ba09d9e606b7189eb3865b4",
+  "archiveSha256": "63768f52c0ba59396b40aabfa6ced7650d5f7b309ba09d9e606b7189eb3865b4",
+  "normalizedTreeSha256": "7a86c93baf6ff2407ebdbfa85715f3542b6b5c1a07a481dd4c3f1cfb14392d78",
+  "memberCount": 15030,
+  "helperExitCode": 0,
+  "purpose": "DEVELOPMENT_TRUSTED_FIXTURES_ONLY",
+  "gvisorWorkloadExecuted": false,
+  "gvisorCertified": false,
+  "releaseReady": false
+}

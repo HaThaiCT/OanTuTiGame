@@ -1,0 +1,453 @@
+import { randomUUID } from 'node:crypto';
+import type { CommandContext, Receipt } from '@oantuti/protocol';
+import type { PostgresDatabase } from '../persistence/db.js';
+
+export class TournamentError extends Error {
+  constructor(readonly statusCode: number, message: string) {
+    super(message);
+    this.name = 'TournamentError';
+  }
+}
+
+export type TournamentLockReceipt = Receipt<{
+  readonly tournamentId: string;
+  readonly state: 'READY_TO_START';
+  readonly eligibleTeamsCount: number;
+  readonly excludedTeamsCount: number;
+  readonly lockedAt: string;
+}>;
+
+export type TournamentStartReceipt = Receipt<{
+  readonly tournamentId: string;
+  readonly state: 'RUNNING';
+  readonly startedAt: string;
+}>;
+export type TournamentFinalizeReceipt = Receipt<{
+  readonly tournamentId: string;
+  readonly state: 'FINALIZED';
+  readonly finalizedAt: string;
+}>;
+
+export class TournamentLifecycleService {
+  constructor(private readonly db: PostgresDatabase) {}
+
+  /**
+   * Locks tournament intake, drains/freezes latest official submissions for admitted teams,
+   * reveals hidden maps, and advances state to READY_TO_START.
+   */
+  async lock(tournamentId: string, ctx: CommandContext): Promise<TournamentLockReceipt> {
+    if (ctx.actor.role !== 'ADMIN') {
+      throw new TournamentError(403, 'Only administrators can lock tournament registration');
+    }
+
+    return this.db.withTransaction(async (client) => {
+      const tourneyRes = await client.query<{
+        id: string;
+        state: string;
+        registration_closes_at: string | null;
+      }>('SELECT id, state, registration_closes_at FROM tournaments WHERE id = $1 FOR UPDATE', [
+        tournamentId,
+      ]);
+
+      if (tourneyRes.rows.length === 0) {
+        throw new TournamentError(404, `Tournament not found: ${tournamentId}`);
+      }
+
+      const tourney = tourneyRes.rows[0];
+      const validLockStates = ['PUBLISHED', 'REGISTRATION_OPEN', 'VALIDATING_SUBMISSIONS'];
+      if (!validLockStates.includes(tourney.state)) {
+        throw new TournamentError(409, `Cannot lock tournament in state '${tourney.state}'`);
+      }
+
+      // Check if any official submissions are currently in PENDING compile
+      const pendingCheck = await client.query<{ count: string }>(
+        `SELECT COUNT(*) as count FROM submissions
+         WHERE tournament_id = $1 AND status IN ('VALIDATING', 'QUEUED', 'COMPILING', 'SMOKE_TESTING')`,
+        [tournamentId]
+      );
+      if (parseInt(pendingCheck.rows[0].count, 10) > 0) {
+        // If there are still pending submissions compiling, transition to VALIDATING_SUBMISSIONS
+        await client.query(
+          `UPDATE tournaments SET state = 'VALIDATING_SUBMISSIONS', updated_at = clock_timestamp() WHERE id = $1`,
+          [tournamentId]
+        );
+        throw new TournamentError(
+          409,
+          'INTAKE_DRAINING: Submissions are currently compiling; wait for drain before locking'
+        );
+      }
+
+      // Fetch all admitted teams
+      const admissions = await client.query<{ team_id: string }>(
+        `SELECT team_id FROM tournament_admissions WHERE tournament_id = $1 ORDER BY created_at ASC`,
+        [tournamentId]
+      );
+
+      let eligibleCount = 0;
+      let excludedCount = 0;
+      let seedOrdinal = 1;
+
+      for (const adm of admissions.rows) {
+        // Find latest valid official submission
+        const subRes = await client.query<{ id: string }>(
+          `SELECT id FROM submissions
+           WHERE tournament_id = $1 AND team_id = $2 AND status = 'READY'
+           ORDER BY receipt_ordinal DESC LIMIT 1`,
+          [tournamentId, adm.team_id]
+        );
+
+        if (subRes.rows.length > 0) {
+          const frozenSubId = subRes.rows[0].id;
+          await client.query(
+            `INSERT INTO tournament_entries (tournament_id, team_id, status, frozen_submission_id, seed_ordinal)
+             VALUES ($1, $2, 'ELIGIBLE', $3, $4)
+             ON CONFLICT (tournament_id, team_id) DO UPDATE
+             SET frozen_submission_id = EXCLUDED.frozen_submission_id,
+                 status = 'ELIGIBLE',
+                 seed_ordinal = EXCLUDED.seed_ordinal`,
+            [tournamentId, adm.team_id, frozenSubId, seedOrdinal++]
+          );
+          eligibleCount++;
+        } else {
+          await client.query(
+            `INSERT INTO tournament_entries (tournament_id, team_id, status, frozen_submission_id, seed_ordinal)
+             VALUES ($1, $2, 'EXCLUDED', NULL, NULL)
+             ON CONFLICT (tournament_id, team_id) DO UPDATE
+             SET frozen_submission_id = NULL,
+                 status = 'EXCLUDED'`,
+            [tournamentId, adm.team_id]
+          );
+          excludedCount++;
+        }
+      }
+
+      // Reveal HIDDEN maps in the tournament map pool
+      await client.query(
+        `UPDATE maps
+         SET revealed_at = clock_timestamp()
+         WHERE id IN (SELECT map_id FROM tournament_map_pool WHERE tournament_id = $1)
+           AND revealed_at IS NULL`,
+        [tournamentId]
+      );
+
+      // Transition tournament state to READY_TO_START
+      const updateRes = await client.query<{ locked_at: string }>(
+        `UPDATE tournaments
+         SET state = 'READY_TO_START',
+             locked_at = clock_timestamp(),
+             updated_at = clock_timestamp()
+         WHERE id = $1
+         RETURNING locked_at`,
+        [tournamentId]
+      );
+      const lockedAt = updateRes.rows[0].locked_at;
+
+      // Emit outbox event
+      await client.query(
+        `INSERT INTO outbox_events (topic, payload)
+         VALUES ($1, $2)`,
+        [
+          'TOURNAMENT_LOCKED',
+          JSON.stringify({
+            tournamentId,
+            eligibleTeamsCount: eligibleCount,
+            excludedTeamsCount: excludedCount,
+            lockedAt,
+          }),
+        ]
+      );
+
+      return {
+        receiptId: randomUUID(),
+        timestamp: lockedAt,
+        data: {
+          tournamentId,
+          state: 'READY_TO_START' as const,
+          eligibleTeamsCount: eligibleCount,
+          excludedTeamsCount: excludedCount,
+          lockedAt,
+        },
+      };
+    });
+  }
+
+  /**
+   * Starts a locked tournament. Requires state READY_TO_START and at least 2 eligible teams.
+   */
+  async start(tournamentId: string, ctx: CommandContext): Promise<TournamentStartReceipt> {
+    if (ctx.actor.role !== 'ADMIN') {
+      throw new TournamentError(403, 'Only administrators can start the tournament');
+    }
+
+    return this.db.withTransaction(async (client) => {
+      const tourneyRes = await client.query<{ id: string; state: string }>(
+        'SELECT id, state FROM tournaments WHERE id = $1 FOR UPDATE',
+        [tournamentId]
+      );
+
+      if (tourneyRes.rows.length === 0) {
+        throw new TournamentError(404, `Tournament not found: ${tournamentId}`);
+      }
+
+      const tourney = tourneyRes.rows[0];
+      if (tourney.state !== 'READY_TO_START') {
+        throw new TournamentError(
+          409,
+          `Cannot start tournament: expected state 'READY_TO_START', got '${tourney.state}'`
+        );
+      }
+
+      // Check eligible teams
+      const eligibleRes = await client.query<{ count: string }>(
+        `SELECT COUNT(*) as count FROM tournament_entries
+         WHERE tournament_id = $1 AND status = 'ELIGIBLE'`,
+        [tournamentId]
+      );
+      const eligibleCount = parseInt(eligibleRes.rows[0].count, 10);
+      if (eligibleCount < 2) {
+        throw new TournamentError(
+          400,
+          `Cannot start tournament: at least 2 eligible teams with valid frozen submissions required, found ${eligibleCount}`
+        );
+      }
+
+      // Advance state to RUNNING
+      const updateRes = await client.query<{ started_at: string }>(
+        `UPDATE tournaments
+         SET state = 'RUNNING',
+             started_at = clock_timestamp(),
+             updated_at = clock_timestamp()
+         WHERE id = $1
+         RETURNING started_at`,
+        [tournamentId]
+      );
+      const startedAt = updateRes.rows[0].started_at;
+
+      // Emit outbox event
+      await client.query(
+        `INSERT INTO outbox_events (topic, payload)
+         VALUES ($1, $2)`,
+        [
+          'TOURNAMENT_STARTED',
+          JSON.stringify({
+            tournamentId,
+            eligibleTeamsCount: eligibleCount,
+            startedAt,
+          }),
+        ]
+      );
+
+      return {
+        receiptId: randomUUID(),
+        timestamp: startedAt,
+        data: {
+          tournamentId,
+          state: 'RUNNING' as const,
+          startedAt,
+        },
+      };
+    });
+  }
+
+  /**
+   * Finalizes a PROVISIONAL tournament once the appeal window or all disputes are settled.
+   */
+  async finalize(tournamentId: string, ctx: CommandContext): Promise<TournamentFinalizeReceipt> {
+    if (ctx.actor.role !== 'ADMIN') {
+      throw new TournamentError(403, 'Only administrators can finalize the tournament');
+    }
+
+    return this.db.withTransaction(async (client) => {
+      const tourneyRes = await client.query<{ id: string; state: string }>(
+        'SELECT id, state FROM tournaments WHERE id = $1 FOR UPDATE',
+        [tournamentId]
+      );
+
+      if (tourneyRes.rows.length === 0) {
+        throw new TournamentError(404, `Tournament not found: ${tournamentId}`);
+      }
+
+      const tourney = tourneyRes.rows[0];
+      if (tourney.state !== 'PROVISIONAL') {
+        throw new TournamentError(
+          409,
+          `Cannot finalize tournament: expected state 'PROVISIONAL', got '${tourney.state}'`
+        );
+      }
+
+      // Check open disputes
+      const disputesCheck = await client.query<{ count: string }>(
+        `SELECT COUNT(*) as count FROM disputes
+         WHERE tournament_id = $1 AND status IN ('OPEN', 'UNDER_REVIEW')`,
+        [tournamentId]
+      );
+      const openDisputes = parseInt(disputesCheck.rows[0].count, 10);
+      if (openDisputes > 0) {
+        throw new TournamentError(
+          409,
+          `OPEN_DISPUTES_BLOCK_FINALIZATION: ${openDisputes} unresolved dispute(s) must be decided before finalization`
+        );
+      }
+
+      // Advance state to FINALIZED
+      const updateRes = await client.query<{ finalized_at: string }>(
+        `UPDATE tournaments
+         SET state = 'FINALIZED',
+             finalized_at = clock_timestamp(),
+             updated_at = clock_timestamp()
+         WHERE id = $1
+         RETURNING finalized_at`,
+        [tournamentId]
+      );
+      const finalizedAt = updateRes.rows[0].finalized_at;
+
+      // Emit outbox event
+      await client.query(
+        `INSERT INTO outbox_events (topic, payload)
+         VALUES ($1, $2)`,
+        [
+          'TOURNAMENT_FINALIZED',
+          JSON.stringify({
+            tournamentId,
+            finalizedAt,
+          }),
+        ]
+      );
+
+      return {
+        receiptId: randomUUID(),
+        timestamp: finalizedAt,
+        data: {
+          tournamentId,
+          state: 'FINALIZED' as const,
+          finalizedAt,
+        },
+      };
+    });
+  }
+
+  /**
+   * Extends registration deadline: only allowed while intake is open and before current cutoff.
+   */
+  async extendRegistration(
+    tournamentId: string,
+    newClosesAt: Date,
+    ctx: CommandContext
+  ): Promise<{ tournamentId: string; registrationClosesAt: string }> {
+    if (ctx.actor.role !== 'ADMIN') {
+      throw new TournamentError(403, 'Only administrators can extend registration');
+    }
+
+    return this.db.withTransaction(async (client) => {
+      const tourneyRes = await client.query<{
+        id: string;
+        state: string;
+        registration_closes_at: Date | null;
+      }>('SELECT id, state, registration_closes_at FROM tournaments WHERE id = $1 FOR UPDATE', [
+        tournamentId,
+      ]);
+
+      if (tourneyRes.rows.length === 0) {
+        throw new TournamentError(404, `Tournament not found: ${tournamentId}`);
+      }
+
+      const tourney = tourneyRes.rows[0];
+      if (tourney.state !== 'REGISTRATION_OPEN') {
+        throw new TournamentError(
+          409,
+          `Cannot extend registration: tournament is in state '${tourney.state}', must be 'REGISTRATION_OPEN'`
+        );
+      }
+
+      const now = new Date();
+      if (tourney.registration_closes_at && now >= tourney.registration_closes_at) {
+        throw new TournamentError(
+          409,
+          'EXTENSION_DENIED: Current registration cutoff has already passed; cannot reopen closed intake'
+        );
+      }
+
+      if (newClosesAt <= now || (tourney.registration_closes_at && newClosesAt <= tourney.registration_closes_at)) {
+        throw new TournamentError(400, 'New registration closing time must be strictly after current cutoff');
+      }
+
+      await client.query(
+        `UPDATE tournaments
+         SET registration_closes_at = $1, updated_at = clock_timestamp()
+         WHERE id = $2`,
+        [newClosesAt, tournamentId]
+      );
+
+      await client.query(
+        `INSERT INTO audit_events (actor_user_id, action, resource_type, resource_id, details)
+         VALUES ($1, 'REGISTRATION_EXTENDED', 'tournament', $2, $3)`,
+        [ctx.actor.userId, tournamentId, JSON.stringify({ newClosesAt: newClosesAt.toISOString() })]
+      );
+
+      return {
+        tournamentId,
+        registrationClosesAt: newClosesAt.toISOString(),
+      };
+    });
+  }
+
+  async pauseTournament(tournamentId: string, ctx: CommandContext): Promise<{ tournamentId: string; state: 'PAUSED' }> {
+    if (ctx.actor.role !== 'ADMIN') {
+      throw new TournamentError(403, 'Only administrators can pause the tournament');
+    }
+
+    return this.db.withTransaction(async (client) => {
+      const tourneyRes = await client.query<{ id: string; state: string }>(
+        'SELECT id, state FROM tournaments WHERE id = $1 FOR UPDATE',
+        [tournamentId]
+      );
+      if (tourneyRes.rows.length === 0) throw new TournamentError(404, 'Tournament not found');
+      const tourney = tourneyRes.rows[0];
+      if (tourney.state !== 'RUNNING') {
+        throw new TournamentError(409, `Cannot pause tournament in state '${tourney.state}'`);
+      }
+
+      await client.query(
+        `UPDATE tournaments SET state = 'PAUSED', updated_at = clock_timestamp() WHERE id = $1`,
+        [tournamentId]
+      );
+
+      await client.query(
+        `INSERT INTO outbox_events (topic, payload) VALUES ($1, $2)`,
+        ['TOURNAMENT_PAUSED', JSON.stringify({ tournamentId })]
+      );
+
+      return { tournamentId, state: 'PAUSED' };
+    });
+  }
+
+  async resumeTournament(tournamentId: string, ctx: CommandContext): Promise<{ tournamentId: string; state: 'RUNNING' }> {
+    if (ctx.actor.role !== 'ADMIN') {
+      throw new TournamentError(403, 'Only administrators can resume the tournament');
+    }
+
+    return this.db.withTransaction(async (client) => {
+      const tourneyRes = await client.query<{ id: string; state: string }>(
+        'SELECT id, state FROM tournaments WHERE id = $1 FOR UPDATE',
+        [tournamentId]
+      );
+      if (tourneyRes.rows.length === 0) throw new TournamentError(404, 'Tournament not found');
+      const tourney = tourneyRes.rows[0];
+      if (tourney.state !== 'PAUSED') {
+        throw new TournamentError(409, `Cannot resume tournament in state '${tourney.state}'`);
+      }
+
+      await client.query(
+        `UPDATE tournaments SET state = 'RUNNING', updated_at = clock_timestamp() WHERE id = $1`,
+        [tournamentId]
+      );
+
+      await client.query(
+        `INSERT INTO outbox_events (topic, payload) VALUES ($1, $2)`,
+        ['TOURNAMENT_RESUMED', JSON.stringify({ tournamentId })]
+      );
+
+      return { tournamentId, state: 'RUNNING' };
+    });
+  }
+}

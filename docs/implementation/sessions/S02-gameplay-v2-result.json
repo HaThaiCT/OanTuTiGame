@@ -1,0 +1,93 @@
+{
+  "status": "PASS",
+  "matches": [
+    {
+      "status": "PASS",
+      "kernel": "7.0.0-38-generic",
+      "match": {
+        "gameId": "3c4e2380-eaf2-4d1b-950e-dcb98dc2b561",
+        "winner": 1,
+        "reason": "THRONE_BREACH",
+        "disposition": "DECISIVE",
+        "rulesRevision": "ArenaGameplay/v2",
+        "totalPly": 1,
+        "trace": [
+          {
+            "ply": 1,
+            "side": 1,
+            "move": {
+              "pieceId": 1,
+              "targetPos": {
+                "x": 1,
+                "y": 0
+              }
+            }
+          }
+        ]
+      },
+      "independentReaperConfirmed": true,
+      "gvisorCertified": false,
+      "language": "python"
+    },
+    {
+      "status": "PASS",
+      "kernel": "7.0.0-38-generic",
+      "match": {
+        "gameId": "3c4e2380-eaf2-4d1b-950e-dcb98dc2b561",
+        "winner": 1,
+        "reason": "THRONE_BREACH",
+        "disposition": "DECISIVE",
+        "rulesRevision": "ArenaGameplay/v2",
+        "totalPly": 1,
+        "trace": [
+          {
+            "ply": 1,
+            "side": 1,
+            "move": {
+              "pieceId": 1,
+              "targetPos": {
+                "x": 1,
+                "y": 0
+              }
+            }
+          }
+        ]
+      },
+      "independentReaperConfirmed": true,
+      "gvisorCertified": false,
+      "language": "typescript"
+    },
+    {
+      "status": "PASS",
+      "kernel": "7.0.0-38-generic",
+      "match": {
+        "gameId": "3c4e2380-eaf2-4d1b-950e-dcb98dc2b561",
+        "winner": 1,
+        "reason": "THRONE_BREACH",
+        "disposition": "DECISIVE",
+        "rulesRevision": "ArenaGameplay/v2",
+        "totalPly": 1,
+        "trace": [
+          {
+            "ply": 1,
+            "side": 1,
+            "move": {
+              "pieceId": 1,
+              "targetPos": {
+                "x": 1,
+                "y": 0
+              }
+            }
+          }
+        ]
+      },
+      "independentReaperConfirmed": true,
+      "gvisorCertified": false,
+      "language": "cpp"
+    }
+  ],
+  "gvisorCertified": false,
+  "evidenceSource": "agent-executed exact scoped three-language action after game-host v2 cutover",
+  "exitCode": 0,
+  "releaseReady": false
+}

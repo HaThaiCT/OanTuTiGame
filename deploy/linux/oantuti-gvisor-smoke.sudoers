@@ -1,0 +1,2 @@
+# Fixed development sleep0 only; empty argument string forbids caller arguments.
+ha-thai ALL=(root) NOPASSWD:NOSETENV: /usr/local/libexec/oantuti/gvisor-smoke-v1/smoke-gvisor.py ""

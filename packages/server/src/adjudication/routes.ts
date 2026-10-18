@@ -1,0 +1,185 @@
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { IdentityService } from '../identity/service.js';
+import type { DisputeService } from './dispute-service.js';
+import type { CorrectionCommand, CorrectionService } from './correction-service.js';
+import type { TournamentLifecycleService } from '../tournaments/lifecycle-service.js';
+
+const COOKIE_NAME = 'oantuti_session';
+
+function extractToken(request: FastifyRequest): string | undefined {
+  const cookieHeader = request.headers.cookie;
+  if (!cookieHeader) return undefined;
+  const match = cookieHeader
+    .split(';')
+    .map((s) => s.trim())
+    .find((s) => s.startsWith(`${COOKIE_NAME}=`));
+  const token = match?.slice(COOKIE_NAME.length + 1);
+  return token && /^[a-f0-9]{64}$/.test(token) ? token : undefined;
+}
+
+export function registerAdjudicationRoutes(
+  app: FastifyInstance,
+  disputeService: DisputeService,
+  correctionService: CorrectionService,
+  lifecycleService: TournamentLifecycleService,
+  identityService: IdentityService
+): void {
+  async function requireActor(req: FastifyRequest, reply: FastifyReply) {
+    const token = extractToken(req);
+    if (!token) {
+      reply.code(401).send({ error: 'UNAUTHENTICATED' });
+      return null;
+    }
+    const auth = await identityService.authenticateToken(token);
+    if (!auth) {
+      reply.code(401).send({ error: 'SESSION_EXPIRED' });
+      return null;
+    }
+    return auth.actor;
+  }
+
+  // POST /api/v2/tournaments/:id/disputes
+  app.post<{ Params: { id: string } }>(
+    '/api/v2/tournaments/:id/disputes',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+
+      const body = req.body as { encounterId?: string; teamId?: string; reason?: string };
+      if (!body?.encounterId || !body?.teamId || !body?.reason) {
+        return reply.code(400).send({ error: 'encounterId, teamId, and reason are required' });
+      }
+
+      try {
+        const dispute = await disputeService.createDispute(actor, {
+          tournamentId: req.params.id,
+          encounterId: body.encounterId,
+          teamId: body.teamId,
+          reason: body.reason,
+        });
+        return reply.code(201).send(dispute);
+      } catch (err: any) {
+        return reply.code(err.statusCode ?? 400).send({ error: err.message });
+      }
+    }
+  );
+
+  // GET /api/v2/tournaments/:id/disputes
+  app.get<{ Params: { id: string } }>(
+    '/api/v2/tournaments/:id/disputes',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const disputes = await disputeService.listDisputes(req.params.id);
+      return reply.code(200).send({ disputes });
+    }
+  );
+
+  // POST /api/v2/organizer/disputes/:id/resolve
+  app.post<{ Params: { id: string } }>(
+    '/api/v2/organizer/disputes/:id/resolve',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      if (actor.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+
+      const body = req.body as { decision?: 'RESOLVED' | 'REJECTED'; note?: string };
+      if (body?.decision !== 'RESOLVED' && body?.decision !== 'REJECTED') {
+        return reply.code(400).send({ error: "decision must be 'RESOLVED' or 'REJECTED'" });
+      }
+
+      try {
+        const resolved = await disputeService.resolveDispute(
+          actor,
+          req.params.id,
+          body.decision,
+          body.note ?? ''
+        );
+        return reply.code(200).send(resolved);
+      } catch (err: any) {
+        return reply.code(err.statusCode ?? 400).send({ error: err.message });
+      }
+    }
+  );
+
+  // POST /api/v2/organizer/games/:id/preview-correction
+  app.post<{ Params: { id: string } }>(
+    '/api/v2/organizer/games/:id/preview-correction',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      if (actor.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+
+      const body = req.body as CorrectionCommand;
+      if (!body?.action || !body?.reason || typeof body?.expectedRevision !== 'number') {
+        return reply.code(400).send({ error: 'action, reason, and expectedRevision required' });
+      }
+
+      try {
+        const preview = await correctionService.previewCorrection(req.params.id, body, {
+          actor,
+          requestId: req.id ?? 'req_preview',
+        });
+        return reply.code(200).send(preview);
+      } catch (err: any) {
+        return reply.code(err.statusCode ?? 400).send({ error: err.message });
+      }
+    }
+  );
+
+  // POST /api/v2/organizer/games/:id/apply-correction
+  app.post<{ Params: { id: string } }>(
+    '/api/v2/organizer/games/:id/apply-correction',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      if (actor.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+
+      const body = req.body as { command: CorrectionCommand; previewDigest: string };
+      if (!body?.command || !body?.previewDigest) {
+        return reply.code(400).send({ error: 'command and previewDigest required' });
+      }
+
+      try {
+        const receipt = await correctionService.applyCorrection(
+          req.params.id,
+          body.command,
+          body.previewDigest,
+          {
+            actor,
+            requestId: req.id ?? 'req_apply',
+          }
+        );
+        return reply.code(200).send(receipt);
+      } catch (err: any) {
+        return reply.code(err.statusCode ?? 400).send({ error: err.message });
+      }
+    }
+  );
+
+  // POST /api/v2/organizer/tournaments/:id/finalize
+  app.post<{ Params: { id: string } }>(
+    '/api/v2/organizer/tournaments/:id/finalize',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      if (actor.role !== 'ADMIN') {
+        return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+
+      try {
+        const receipt = await lifecycleService.finalize(req.params.id, {
+          actor,
+          requestId: req.id ?? 'req_finalize',
+        });
+        return reply.code(200).send(receipt);
+      } catch (err: any) {
+        return reply.code(err.statusCode ?? 400).send({ error: err.message });
+      }
+    }
+  );
+}

@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "2.11.0",
     "@oantuti/engine": "*",
     "protobufjs": "^7.4.0"
   }

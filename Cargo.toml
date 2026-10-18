@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/arena-supervisor",
+    "crates/arena-engine",
+    "crates/arena-runner",
+]
+resolver = "2"
