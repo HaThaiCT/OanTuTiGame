@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import ReplayBoard from '../../replays/ReplayBoard';
+import { TeamRatingName } from '../../_components/TeamRatingName';
+import { TournamentRatingProvider } from '../../_components/TournamentRatingContext';
 import { sideLabel, winReasonLabel } from '../../../lib/labels';
 import { buildBoardFrames } from '../../../lib/replay';
 import {
-  isSamePly,
   livePlyToReplayPly,
   liveSocketUrl,
   parseLiveMessage,
+  sameLiveIdentity,
   type LiveOutcome,
   type LivePly,
   type LiveSnapshot,
@@ -43,6 +45,7 @@ const CONNECTION_CLASS: Record<Connection, string> = {
 
 const LIVE_STATUS_LABEL: Record<LiveStatus, string> = {
   RUNNING: 'Đang diễn ra',
+  PREVIEW_ENDED: 'Đang chờ kết quả được xác nhận',
   FINISHED: 'Đã kết thúc',
 };
 
@@ -67,7 +70,7 @@ function describePly(ply: LivePly): string {
  * same reconstruction engine the replay viewer uses (`buildBoardFrames`), so a live screen and a
  * replay of the same game show the same rules, moves and capture marks.
  */
-export default function LiveViewer({ gameId }: { readonly gameId: string }) {
+export default function LiveViewer({ gameId, canViewReplay = false }: { readonly gameId: string; readonly canViewReplay?: boolean }) {
   const [connection, setConnection] = useState<Connection>('connecting');
   const [notice, setNotice] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
@@ -82,6 +85,8 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
     let attempts = 0;
     // A FINISHED snapshot or a RESULT frame ends the stream on purpose: that close is never retried.
     let finished = false;
+    let identity: LiveSnapshot | null = null;
+    let lastSeq = 0;
 
     const openSocket = () => {
       if (cancelled) return;
@@ -102,7 +107,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
       };
 
       next.onmessage = (event: MessageEvent) => {
-        if (cancelled || typeof event.data !== 'string') return;
+        if (cancelled || socket !== next || typeof event.data !== 'string') return;
         let raw: unknown;
         try {
           raw = JSON.parse(event.data);
@@ -118,35 +123,45 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
 
         if (message.type === 'SNAPSHOT') {
           const incoming = message.snapshot;
+          if (incoming.gameId !== gameId) return;
+          identity = incoming;
+          lastSeq = incoming.seq;
           finished = incoming.status === 'FINISHED';
           setSnapshot(incoming);
-          pliesRef.current = incoming.events;
-          setPlies(incoming.events);
+          pliesRef.current = incoming.historyComplete ? incoming.events : [];
+          setPlies(pliesRef.current);
           setOutcome(incoming.outcome);
           setNotice(
-            incoming.map
-              ? null
-              : 'Server không gửi bàn đấu (map descriptor) cho ván này nên không thể dựng lại thế cờ — danh sách nước đi vẫn là dữ liệu thật.'
+            !incoming.historyComplete
+              ? 'Lịch sử trực tiếp đã vượt giới hạn bộ đệm — không dựng bàn cờ từ lịch sử thiếu.'
+              : incoming.status === 'PREVIEW_ENDED'
+                ? 'Bản xem trước đã dừng; đang chờ hệ thống xác nhận kết quả chính thức.'
+                : incoming.map ? null : 'Server không gửi bàn đấu cho ván này nên không thể dựng lại thế cờ.'
           );
           setConnection(finished ? 'finished' : 'live');
           return;
         }
 
+        if (message.type !== 'PING' && (!identity || !sameLiveIdentity(identity, message.identity))) return;
+        if (message.type === 'PREVIEW_ENDED') {
+          setSnapshot((current) => current ? { ...current, status: 'PREVIEW_ENDED' } : current);
+          setNotice('Bản xem trước đã dừng; đang chờ hệ thống xác nhận kết quả chính thức.');
+          return;
+        }
+
         if (message.type === 'EVENT') {
           if (finished) return;
-          const current = pliesRef.current;
-          const previous = current[current.length - 1] ?? null;
-          if (!isSamePly(previous, message.ply)) {
-            // A sequence gap means frames were missed: reconnecting buys a fresh snapshot, which
-            // is the only honest way to rebuild the board instead of showing a wrong position.
-            if (previous?.seq != null && message.ply.seq != null && message.ply.seq !== previous.seq + 1) {
-              setNotice('Bỏ lỡ một số nước đi — đang kết nối lại để lấy ảnh trạng thái đầy đủ.');
-              socket?.close();
-              return;
-            }
-            const next = [...current, message.ply];
-            pliesRef.current = next;
-            setPlies(next);
+          if (message.ply.seq === null || message.ply.seq <= lastSeq) return;
+          if (message.ply.seq !== lastSeq + 1) {
+            setNotice('Bỏ lỡ một số nước đi — đang kết nối lại để lấy ảnh trạng thái đầy đủ.');
+            socket?.close();
+            return;
+          }
+          lastSeq = message.ply.seq;
+          if (identity?.historyComplete) {
+            const plies = [...pliesRef.current, message.ply];
+            pliesRef.current = plies;
+            setPlies(plies);
           }
           setConnection('live');
           return;
@@ -159,6 +174,8 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
         }
 
         finished = true;
+        setSnapshot((current) => current ? { ...current, status: 'FINISHED', outcome: message.outcome } : current);
+        setNotice(null);
         setOutcome(message.outcome);
         setConnection('finished');
       };
@@ -168,6 +185,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
       next.onerror = () => {};
 
       next.onclose = (event: CloseEvent) => {
+        if (socket !== next) return;
         socket = null;
         if (cancelled) return;
 
@@ -210,7 +228,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
    * re-applying the whole ply list per event is cheap and keeps exactly one rule implementation.
    */
   const frames = useMemo(
-    () => (snapshot?.map ? buildBoardFrames(snapshot.map, plies.map(livePlyToReplayPly)) : null),
+    () => (snapshot?.map && snapshot.historyComplete ? buildBoardFrames(snapshot.map, plies.map(livePlyToReplayPly)) : null),
     [snapshot, plies]
   );
 
@@ -228,7 +246,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
     : null;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4"><TournamentRatingProvider tournamentId={snapshot?.tournamentId ?? ''}>
       <section className="flex flex-wrap items-start justify-between gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--live-accent)]">Trực tiếp</p>
@@ -240,12 +258,12 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
             <span className="flex items-center gap-2">
               <span className="inline-block h-3 w-3 rounded-full border border-[#94A3B8] bg-[#F8FAFC]" />
               <span className="text-[var(--text-secondary)]">Quân Trắng</span>
-              <span className="font-semibold">{whiteName}</span>
+              <span className="font-semibold">{snapshot?.whiteTeam ? <TeamRatingName teamId={snapshot.whiteTeam.id} name={whiteName} rating={null}/> : whiteName}</span>
             </span>
             <span className="flex items-center gap-2">
               <span className="inline-block h-3 w-3 rounded-full bg-[#1F2937] ring-1 ring-[var(--border-control)]" />
               <span className="text-[var(--text-secondary)]">Quân Đen</span>
-              <span className="font-semibold">{blackName}</span>
+              <span className="font-semibold">{snapshot?.blackTeam ? <TeamRatingName teamId={snapshot.blackTeam.id} name={blackName} rating={null}/> : blackName}</span>
             </span>
           </div>
         </div>
@@ -282,7 +300,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
       {outcome ? (
         <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Kết quả</p>
-          <p className="mt-1 text-xl font-semibold">{winnerText}</p>
+          <p className="mt-1 text-xl font-semibold">{outcome.winner === 1 && snapshot?.whiteTeam ? <><TeamRatingName teamId={snapshot.whiteTeam.id} name={whiteName} rating={null}/> (Quân Trắng) thắng</> : outcome.winner === 2 && snapshot?.blackTeam ? <><TeamRatingName teamId={snapshot.blackTeam.id} name={blackName} rating={null}/> (Quân Đen) thắng</> : winnerText}</p>
           <p className="mt-1 text-sm text-[var(--text-primary)]">
             <span className="font-semibold">{winReasonLabel[outcome.reason] ?? (outcome.reason || 'Không rõ lý do')}</span>
             {outcome.reason ? <span className="ml-2 font-mono text-[11px] text-[var(--text-secondary)]">{outcome.reason}</span> : null}
@@ -290,7 +308,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
         </section>
       ) : null}
 
-      {connection === 'finished' ? (
+      {connection === 'finished' && canViewReplay ? (
         <Link
           className="self-start rounded-sm bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)]"
           href={`/replays?game=${encodeURIComponent(gameId)}`}
@@ -367,6 +385,7 @@ export default function LiveViewer({ gameId }: { readonly gameId: string }) {
           ) : null}
         </aside>
       </div>
+    </TournamentRatingProvider>
     </div>
   );
 }

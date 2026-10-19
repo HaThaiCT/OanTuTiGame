@@ -19,6 +19,27 @@ jobs:
     name: Workspace tests and Web build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: arena_ci_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      # The server suites talk to a real PostgreSQL; the database name must contain "test" so the
+      # suite-wide ADMIN fixture guard and the migration guard accept it.
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci
+      PGDATABASE: arena_ci_test
+      OANTUTI_DEV_EXECUTION: '1'
+      OANTUTI_BACKUP_FENCE: 'off'
+      OANTUTI_MIGRATION_TEST_URL: postgres://postgres:ci@127.0.0.1:5432/postgres
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -40,12 +61,37 @@ jobs:
           g++ --version
       - name: Install locked dependencies
         run: npm ci
+      - name: Install the protobuf compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Build the Rust trace verifier
+        # The server treats this binary as the rules authority and has no TypeScript fallback, so
+        # the suite cannot pass without it. Debug profile matches the server's default lookup path.
+        run: cargo build --locked -p arena-runner --bin verify-trace
+      - name: Apply migrations to the isolated CI database
+        env:
+          # The applier refuses a raw PGPASSWORD value; it reads this private file and sets the
+          # pg client environment itself. The following test step keeps the job-level password.
+          PGPASSWORD: ''
+          PGPASSWORD_FILE: ${{ runner.temp }}/pgpass
+        run: |
+          printf '%s' 'ci' > "$PGPASSWORD_FILE"
+          chmod 600 "$PGPASSWORD_FILE"
+          node --import tsx deploy/linux/apply-migrations.mts --apply --grant-to postgres
       - name: Run workspace tests
         run: npm test
       - name: Typecheck and build Web
         run: npm run build --workspace=@oantuti/web
       - name: Validate Compose configuration
-        run: docker compose config --quiet
+        env:
+          PG_OWNER_PASSWORD_FILE: /dev/null
+          PG_APP_PASSWORD_FILE: /dev/null
+          # Configuration validation only: CI has no offhost backup pipeline.
+          OANTUTI_BACKUP_FENCE: 'off'
+        run: |
+          docker compose config --quiet
+          docker compose --profile ops config --quiet
 
   release:
     name: Publish image (${{ matrix.image }})
@@ -110,7 +156,7 @@ jobs:
     name: Docker image (${{ matrix.image }})
     needs: verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -128,4 +174,16 @@ jobs:
           context: .
           file: Dockerfile.${{ matrix.image }}
           platforms: linux/amd64
+          tags: oantuti-${{ matrix.image }}:ci
+          load: ${{ matrix.image == 'server' }}
           push: false
+      - name: Run trace verifier from the final server image
+        if: matrix.image == 'server'
+        run: |
+          set +e
+          output=$(printf '{}' | docker run --rm -i --entrypoint /app/bin/verify-trace \
+            'oantuti-server:ci' 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 2
+          printf '%s' "$output" | python3 -c 'import json,sys; assert json.load(sys.stdin)["ok"] is False'

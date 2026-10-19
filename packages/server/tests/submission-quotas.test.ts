@@ -235,6 +235,7 @@ describe('S05 Submission quotas (official receipts & private tests)', () => {
     });
 
     await identity.bootstrapAdmin(ADMIN_USERNAME, ADMIN_PASSWORD);
+    await db.query(`INSERT INTO deployment_settings(key,value) VALUES ('accountCapacity','{"limit":1000}') ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value`);
   });
 
   afterAll(async () => {

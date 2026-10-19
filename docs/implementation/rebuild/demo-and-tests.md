@@ -12,7 +12,7 @@ Ba tiến trình phải đang chạy (chúng là service có giám sát, xem `pr
 | Thành phần | Lệnh | Cổng/socket |
 |---|---|---|
 | PostgreSQL | `arena-rebuild-pg` | socket `/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket`, port `55434` |
-| API | `PORT=4301 HOST=127.0.0.1 OANTUTI_DEV_EXECUTION=1 PGHOST=… PGPORT=55434 PGDATABASE=arena_rebuild_c72cd5a74f33 PGUSER=arena_rebuild_app node --import tsx packages/server/src/index.ts` | `127.0.0.1:4301` |
+| API | `PORT=4301 HOST=127.0.0.1 OANTUTI_DEV_EXECUTION=1 OANTUTI_BACKUP_FENCE=off PGHOST=… PGPORT=55434 PGDATABASE=arena_rebuild_c72cd5a74f33 PGUSER=arena_rebuild_app node --import tsx packages/server/src/index.ts` | `127.0.0.1:4301` |
 | Portal | `cd packages/web && npm run start -- -H 127.0.0.1` | `127.0.0.1:4300` |
 
 `OANTUTI_DEV_EXECUTION=1` bật `TournamentAutoRunner` (tick 5 giây) — **không có nó thì giải sẽ
@@ -45,13 +45,14 @@ Kết quả đã kiểm chứng trong phiên này: **69 test file passed, 421 te
 # từ gốc repo, với env PG như trên
 npm run demo:seed -- --teams 2                                  # mặc định SINGLE_ELIMINATION
 npm run demo:seed -- --format ROUND_ROBIN --teams 4             # hoặc SWISS_PLAYOFF / ELO_ARENA
-npm run demo:seed -- --format SWISS_PLAYOFF --teams 8 --grace 5 # giữ grace 5 phút thay vì 0
+npm run demo:seed -- --format SWISS_PLAYOFF --teams 8 --grace 5 # grace 5 phút
+npm run demo:seed -- --format ROUND_ROBIN --teams 4 --rated --tag RATED # opt-in Rating global
 npm run demo:status                                             # tóm tắt các giải demo
 npm run demo:login system_admin                                 # in session cookie để mở portal
 ```
 
-Tuỳ chọn: `--teams 2..16`, `--format`, `--tag <TAG>` (đổi tên học phần/giải/map), `--grace 0..1440`
-(mặc định **0** để vòng seal ngay khi đấu xong; sản phẩm mặc định 10 phút).
+Tùy chọn: `--teams 2..16`, `--format`, `--tag <TAG>` (đổi tên học phần/giải/map), `--grace 0..1440` (demo mặc định 0 phút).
+Mặc định mọi giải là **Unrated**. `--rated` ghim lựa chọn Rated trước khi mở đăng ký và đặt cửa sổ kháng nghị 0 phút cho demo. Sau khi giải `PROVISIONAL`, ADMIN vẫn phải `finalize`; sau đó dùng `/organizer/tournaments/<id>?tab=adjudication` để review, re-auth và phê duyệt Rating. Công bố Rating là bước riêng, không tự chạy cùng với finalize.
 
 `demo:seed` thực hiện đúng trình tự của một kỳ thi thật, rồi in ra URL để mở:
 

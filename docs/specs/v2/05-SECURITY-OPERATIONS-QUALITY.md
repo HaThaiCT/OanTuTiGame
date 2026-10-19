@@ -3,6 +3,7 @@
 > Trạng thái: **Baseline thiết kế chốt cho triển khai; chưa triển khai, benchmark, pentest hoặc chứng nhận release**. Ngày: 2026-10-14.
 > Phạm vi: PR-01…PR-09 trong [01 — Yêu cầu sản phẩm](01-PRODUCT-REQUIREMENTS.md), một trường, mục tiêu500đội và rehearsal vận hành7ngày, khách public không login. Không hard clock-cutoff1–7ngày: giải kết thúc khi hoàn tất lịch/epochs và ADMINfinalize theo02. Chỉ đặc tả; không thay code/config/test.
 > “Phải” là acceptance condition tương lai. Quota/resource/retention/SLO là **technical defaults do người thiết kế chọn**, không phải đo đạc hoặc xác nhận riêng của người dùng. Runtime evidence vẫn là release gate, không là quyết định thiết kế bỏ ngỏ.
+> **ACL override 2026-10-18:** official replay chỉ FULL ADMIN trên page/API/gameId/digest/download/legacy paths, private no-store; guest401, STUDENT/limited403. Public standings/results/live giữ nguyên, không replayDigest trong DTO non-admin. TEST snapshot/log/replay vẫn owner-team-only kể cả chống ADMIN. Policy này thay các câu cũ mô tả replay chính thức public.
 
 ## 1. Điểm xuất phát và ranh giới tin cậy
 

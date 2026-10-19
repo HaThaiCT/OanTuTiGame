@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { MapDescriptor } from '@oantuti/engine';
-import type { Actor } from '@oantuti/protocol';
+import type { Actor, CommandContext } from '@oantuti/protocol';
 import { createApp } from '../src/app.js';
 import { PostgresDatabase } from '../src/persistence/db.js';
 import { IdentityService } from '../src/identity/service.js';
 import { hashPassword } from '../src/identity/crypto.js';
 import { MapService, MapError } from '../src/tournaments/map-service.js';
+import { TournamentLifecycleService } from '../src/tournaments/lifecycle-service.js';
 
 const MAP_V1: MapDescriptor = {
   mapName: 'map-versions-v1',
@@ -469,6 +471,65 @@ describe('S16: Map versions & tournament map commitments', () => {
       );
       expect(note.rows).toHaveLength(1);
       expect(note.rows[0].details.tournamentId).toBe(tPlain);
+    });
+  });
+
+  describe('5. Hidden content is gated per version, not per map', () => {
+    it('keeps a later version secret until the tournament that pins it locks', async () => {
+      const hiddenSlug = `mapver_hidden_${runId}`;
+      const secretV1: MapDescriptor = { ...MAP_V1, mapName: `${hiddenSlug}-v1` };
+      const secretV2: MapDescriptor = { ...MAP_V2, mapName: `${hiddenSlug}-v2` };
+      const tReveal = await insertTournament('PUBLISHED');
+      const tFuture = await insertTournament('PUBLISHED');
+      const lifecycle = new TournamentLifecycleService(db);
+      const ctx: CommandContext = { actor: adminActor, requestId: randomUUID() };
+
+      try {
+        await mapService.createMap(adminActor, {
+          slug: hiddenSlug,
+          displayName: 'Secret Board',
+          descriptor: secretV1,
+          visibility: 'HIDDEN',
+        });
+        await mapService.commitMapForTournament(tReveal, hiddenSlug, adminActor);
+        // Locking the first tournament reveals exactly the version it pinned.
+        await lifecycle.lock(tReveal, ctx);
+
+        // A newer version becomes the secret board of a tournament that has not locked yet.
+        await mapService.publishVersion(hiddenSlug, secretV2, adminActor);
+        await mapService.addMapToPool(tFuture, hiddenSlug, adminActor);
+
+        // Neither the default read nor an explicit request for the new version may serve it.
+        await expect(mapService.getMap(hiddenSlug)).rejects.toMatchObject({ statusCode: 403 });
+        await expect(mapService.getMap(hiddenSlug, undefined, 2)).rejects.toMatchObject({ statusCode: 403 });
+        const revealedV1 = await mapService.getMap(hiddenSlug, undefined, 1);
+        expect(revealedV1.descriptor.mapName).toBe(secretV1.mapName);
+
+        // The organizer still reads the current version.
+        const adminRead = await mapService.getMap(hiddenSlug, adminActor);
+        expect(adminRead.descriptor.mapName).toBe(secretV2.mapName);
+
+        // The public listing shows what was revealed, never what is still secret.
+        const listed = (await mapService.listMaps()).find((row) => row.slug === hiddenSlug);
+        expect(listed?.descriptor.mapName).toBe(secretV1.mapName);
+
+        // The future tournament's pool must not expose the version it pinned.
+        expect(await mapService.getTournamentMapPool(tFuture)).toEqual([]);
+        const adminPool = await mapService.getTournamentMapPool(tFuture, adminActor);
+        expect(adminPool.map((row) => row.descriptor.mapName)).toEqual([secretV2.mapName]);
+
+        // Locking that tournament reveals its own version.
+        await lifecycle.lock(tFuture, ctx);
+        const afterSecondLock = await mapService.getMap(hiddenSlug);
+        expect(afterSecondLock.descriptor.mapName).toBe(secretV2.mapName);
+      } finally {
+        const tournamentIds = [tReveal, tFuture];
+        await db.query(`DELETE FROM tournament_map_pool WHERE tournament_id = ANY($1::uuid[])`, [tournamentIds]);
+        await db.query(`DELETE FROM outbox_events WHERE payload->>'tournamentId' = ANY($1::text[])`, [tournamentIds]);
+        await db.query(`DELETE FROM audit_events WHERE resource_id = ANY($1::text[])`, [tournamentIds]);
+        await db.query(`DELETE FROM tournaments WHERE id = ANY($1::uuid[])`, [tournamentIds]);
+        await db.query(`DELETE FROM maps WHERE slug = $1`, [hiddenSlug]);
+      }
     });
   });
 });

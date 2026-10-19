@@ -2,6 +2,7 @@
 
 > Trạng thái: **Baseline thiết kế trước triển khai đã chốt**, ngày 2026-10-14; chưa triển khai/chứng nhận release.
 > Chủ sản phẩm: giảng viên/đơn vị tổ chức. Quyết định người dùng được ghi ở [06](06-DESIGN-REVIEW-RECORD.md); các tham số kỹ thuật tại đây và [02](02-GAMEPLAY-TOURNAMENT-RULES.md) là lựa chọn của designer nay thuộc baseline, không ngụ ý người dùng đã duyệt riêng từng giá trị. Gates runtime/security/capacity vẫn bắt buộc trước release.
+> **Override người dùng 2026-10-18:** Ban tổ chức và replay chính thức chỉ FULL ADMIN; khách/STUDENT không thấy menu/link và không truy cập page/API/download theo game hoặc digest. Public results/standings/live giữ nguyên. Private TEST của đội vẫn owner-only (ADMIN không được xem), viewer nằm trong workspace đội–giải. Yêu cầu này thay thế mọi câu cũ dưới đây gọi replay chính thức là public.
 
 ## 1. Định vị và phạm vi đã xác nhận
 
@@ -44,7 +45,8 @@ ONLINE: tự đăng ký email/password và xác nhận email trước login, đ�
 
 | Hành động | Khách | Thành viên đội | Đội trưởng | Admin/Giảng viên |
 |---|---|---|---|---|
-| Xem giải public/kết quả/replay | Có | Có | Có | Có |
+| Xem giải public/kết quả/live | Có | Có | Có | Có |
+| Xem/tải replay chính thức, thư viện Replay | Không | Không | Không | Có, FULL session |
 | Xem giải nháp | Không | Không | Không | Mọi giải trong hệ thống |
 | Xem source/log bài đã nộp | Không | Đội mình | Đội mình | Mọi đội, chỉ đọc, ghi audit; không public |
 | Lưu/nộp code/kiểm tra hợp lệ | Không | Đội mình | Đội mình | Không giả danh đội |

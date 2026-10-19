@@ -63,6 +63,26 @@ export default function DisputePanel({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [selectedGameId, setSelectedGameId] = useState('');
   const [reason, setReason] = useState('');
+  const draftKey = `oantuti:appeal-draft:${tournamentId}:${teamId}`;
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as { gameId?: unknown; reason?: unknown };
+        if (typeof draft.gameId === 'string') setSelectedGameId(draft.gameId);
+        if (typeof draft.reason === 'string') setReason(draft.reason);
+      }
+    } catch {
+      setNotice({ kind: 'error', text: 'Không đọc được bản nháp kháng nghị.' });
+    }
+    setDraftLoaded(true);
+  }, [draftKey]);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    try { sessionStorage.setItem(draftKey, JSON.stringify({ gameId: selectedGameId, reason })); }
+    catch { setNotice({ kind: 'error', text: 'Không lưu được bản nháp kháng nghị.' }); }
+  }, [draftLoaded, draftKey, selectedGameId, reason]);
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -64,10 +64,14 @@ export function registerAdjudicationRoutes(
   );
 
   // GET /api/v2/tournaments/:id/disputes
+  // Appeal text and adjudicator notes are private: the actor decides the scope, and an
+  // unauthenticated caller gets nothing at all.
   app.get<{ Params: { id: string } }>(
     '/api/v2/tournaments/:id/disputes',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      const disputes = await disputeService.listDisputes(req.params.id);
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      const disputes = await disputeService.listDisputes(req.params.id, actor);
       return reply.code(200).send({ disputes });
     }
   );
@@ -179,8 +183,8 @@ export function registerAdjudicationRoutes(
       if (!(await requireRecentReauth(identityService, req, reply))) return;
 
       const body = req.body as { command: CorrectionCommand; previewDigest: string };
-      if (!body?.command || !body?.previewDigest) {
-        return reply.code(400).send({ error: 'command and previewDigest required' });
+      if (!body?.command || typeof body.previewDigest !== 'string' || !/^[a-f0-9]{64}$/.test(body.previewDigest)) {
+        return reply.code(400).send({ error: 'command and SHA-256 previewDigest required' });
       }
 
       try {
@@ -191,6 +195,8 @@ export function registerAdjudicationRoutes(
           {
             actor,
             requestId: req.id ?? 'req_apply',
+            ...(typeof req.headers['idempotency-key'] === 'string'
+              ? { idempotencyKey: req.headers['idempotency-key'] } : {}),
           }
         );
         return reply.code(200).send(receipt);

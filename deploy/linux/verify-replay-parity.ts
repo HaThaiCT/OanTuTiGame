@@ -6,10 +6,11 @@
  * `OANTUTI2` object, and replays it through:
  *
  *   - `target/debug/verify-trace`        (Rust, `arena_engine::replay` via `arena_verifier`)
- *   - `TraceVerifier.verify()`           (TypeScript, server replay adjudication)
+ *   - `TraceVerifier.verify()`           (server adapter to the native Rust verifier)
  *   - the WASM verifier, with `--wasm`   (same Rust core compiled to `wasm32-unknown-unknown`)
  *
  * and reports every disagreement in `ok` / `appliedPly` / `winner` / `reason`.
+ * The server leg checks adapter/schema parity, not independent TypeScript rules authority.
  *
  * Usage:
  *   npx tsx deploy/linux/verify-replay-parity.ts [--limit N] [--rust-bin PATH] [--wasm PATH]
@@ -212,6 +213,8 @@ function runRust(rustBin: string, input: unknown): Verdict {
     input: JSON.stringify(input),
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
+    timeout: 5_000,
+    killSignal: 'SIGKILL',
   });
   if (result.error) {
     return { ok: false, appliedPly: null, winner: null, reason: null, error: `RUST_SPAWN_FAILED: ${result.error.message}` };
@@ -235,8 +238,8 @@ function runRust(rustBin: string, input: unknown): Verdict {
   };
 }
 
-function runTypeScript(map: MapDescriptor, evidence: GameResultEvidence, verifier: TraceVerifier): Verdict {
-  const result = verifier.verify(map, evidence, MAX_PLY);
+async function runServerAdapter(map: MapDescriptor, evidence: GameResultEvidence, verifier: TraceVerifier): Promise<Verdict> {
+  const result = await verifier.verify(map, evidence, MAX_PLY);
   return {
     ok: result.isValid,
     // `verifiedTurns` is the 1-based `turnNumber` reached, i.e. applied plies + 1.
@@ -339,7 +342,7 @@ async function checkReplays(options: Options): Promise<Summary> {
     console.error(`note: ${missingFiles} replay_objects rows skipped (object file missing)`);
   }
 
-  const verifier = new TraceVerifier();
+  const verifier = new TraceVerifier({ binaryPath: options.rustBin });
   const wasmVerifier = options.wasmBin ? await loadWasmVerifier(options.wasmBin) : null;
   const mismatches: Mismatch[] = [];
   let checked = 0;
@@ -382,6 +385,7 @@ async function checkReplays(options: Options): Promise<Summary> {
     };
 
     const rustInput = {
+      prefix_only: evidence.executionStatus === 'BOT_FORFEIT',
       manifest: {
         game_id: payload.gameId,
         map,
@@ -395,6 +399,7 @@ async function checkReplays(options: Options): Promise<Summary> {
         max_ply: MAX_PLY,
       },
       actions: trace.map((step) => ({
+        ply: step.ply,
         piece_id: step.move.pieceId,
         target_pos: [step.move.targetPos.x, step.move.targetPos.y],
         side: sideName(step.side),
@@ -404,7 +409,7 @@ async function checkReplays(options: Options): Promise<Summary> {
 
     checked++;
     const rust = runRust(options.rustBin, rustInput);
-    const ts = runTypeScript(map, evidence, verifier);
+    const ts = await runServerAdapter(map, evidence, verifier);
     if (rust.ok) rustOk++;
     if (ts.ok) tsOk++;
     const wasm = wasmVerifier ? wasmVerifier.verify(rustInput) : null;

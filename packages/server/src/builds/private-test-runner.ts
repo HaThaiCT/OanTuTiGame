@@ -55,8 +55,11 @@ const MAX_MATCH_TURNS = 300;
 const CPP_COMPILE_TIMEOUT_MS = 30_000;
 /** Longest reason persisted into `result_payload.error`. */
 const MAX_REASON_CHARS = 500;
-/** Repo bot played when the team has no READY submission for the tournament yet. */
-const DEFAULT_BASELINE_BOT = 'bots/greedy-bot.ts';
+/**
+ * Repo bot played when the team has no READY submission for the tournament yet. Shared with the
+ * native gateway, which pins the same bot as a granted source for a private-test assignment.
+ */
+export const DEFAULT_BASELINE_BOT = 'bots/greedy-bot.ts';
 
 /** UUID check applied before an id reaches a `uuid`-typed column (Postgres would raise 22P02). */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -144,7 +147,8 @@ interface SnapshotRow {
   readonly result_payload: unknown;
 }
 
-interface CandidateRow {
+/** The submission a private test plays as its opponent: the team's latest READY receipt. */
+export interface ReadySubmissionCandidate {
   readonly id: string;
   readonly receipt_ordinal: number;
   readonly source_digest: Digest;
@@ -263,7 +267,7 @@ export class PrivateTestRunner {
 
     const runDir = path.join(this.spoolDir, `test-${testId}`);
     try {
-      const map = await this.resolveMap(snapshot.tournament_id);
+      const map = await resolvePrivateTestMap(this.db, snapshot.tournament_id);
       const own = await materializeSource({
         artifactStore: this.artifactStore,
         sourceDigest: snapshot.source_digest,
@@ -443,65 +447,6 @@ export class PrivateTestRunner {
   }
 
   /**
-   * The board a private test plays on, most authoritative first:
-   *   1. the tournament's committed map, at the exact version it pinned (COMMITMENT),
-   *   2. the newest map in the system, at its current version (LATEST_MAP),
-   *   3. a synthetic deterministic 3×3 (SYNTHETIC).
-   * Which one was used is recorded in `result_payload.map`.
-   */
-  private async resolveMap(
-    tournamentId: string
-  ): Promise<{ descriptor: MapDescriptor; ref: PrivateTestMapRef }> {
-    const commitment = await this.db.query<{
-      name: string;
-      version: number;
-      descriptor: MapDescriptor;
-    }>(
-      `SELECT m.display_name AS name, c.map_version AS version, mv.descriptor
-       FROM tournament_map_commitments c
-       JOIN maps m ON m.id = c.map_id
-       JOIN map_versions mv ON mv.map_id = c.map_id AND mv.version = c.map_version
-       WHERE c.tournament_id = $1`,
-      [tournamentId]
-    );
-    const committed = commitment.rows[0];
-    if (committed) {
-      return {
-        descriptor: committed.descriptor,
-        ref: { name: committed.name, version: committed.version, source: 'COMMITMENT' },
-      };
-    }
-
-    const latest = await this.db.query<{
-      name: string;
-      version: number;
-      descriptor: MapDescriptor;
-    }>(
-      // A HIDDEN map that the organizer has not revealed yet must not become a practice board: the
-      // team would learn the secret map from its own test run (replay/board/log), which is exactly
-      // the leak 02-GAMEPLAY/S08 forbids. Only PUBLIC or already-revealed versions are eligible.
-      `SELECT m.display_name AS name, m.current_version AS version, mv.descriptor
-       FROM maps m
-       JOIN map_versions mv ON mv.map_id = m.id AND mv.version = m.current_version
-       WHERE m.visibility = 'PUBLIC' OR m.revealed_at IS NOT NULL
-       ORDER BY m.created_at DESC, m.id DESC
-       LIMIT 1`
-    );
-    const newest = latest.rows[0];
-    if (newest) {
-      return {
-        descriptor: newest.descriptor,
-        ref: { name: newest.name, version: newest.version, source: 'LATEST_MAP' },
-      };
-    }
-
-    return {
-      descriptor: SYNTHETIC_TEST_MAP,
-      ref: { name: SYNTHETIC_TEST_MAP.mapName, source: 'SYNTHETIC' },
-    };
-  }
-
-  /**
    * Resolves the opponent: the team's latest READY official receipt for this tournament (the
    * same candidate a match would freeze, materialized through the shared intake path), else the
    * repo baseline bot. A READY receipt that cannot be materialized is a fault, not a reason to
@@ -511,7 +456,7 @@ export class PrivateTestRunner {
     snapshot: SnapshotRow,
     runDir: string
   ): Promise<{ config: BotConfig; ref: PrivateTestOpponentRef }> {
-    const candidate = await this.loadReadyCandidate(snapshot.tournament_id, snapshot.team_id);
+    const candidate = await loadLatestReadySubmission(this.db, snapshot.tournament_id, snapshot.team_id);
     if (candidate) {
       const materialized = await materializeSource({
         artifactStore: this.artifactStore,
@@ -541,18 +486,6 @@ export class PrivateTestRunner {
       config: { path: launch.executablePath, command: launch.command, args: [...launch.args] },
       ref: { kind: 'BASELINE', label: path.basename(this.baselineBotPath) },
     };
-  }
-
-  private async loadReadyCandidate(tournamentId: string, teamId: string): Promise<CandidateRow | null> {
-    const res = await this.db.query<CandidateRow>(
-      `SELECT id, receipt_ordinal, source_digest, language, entrypoint
-       FROM submissions
-       WHERE tournament_id = $1 AND team_id = $2 AND status = 'READY'
-       ORDER BY receipt_ordinal DESC
-       LIMIT 1`,
-      [tournamentId, teamId]
-    );
-    return res.rows[0] ?? null;
   }
 
   /** Per-language launch, identical to the executor's (`resolveLaunch` + digest-keyed C++ cache). */
@@ -585,6 +518,98 @@ export class PrivateTestRunner {
     const launch = resolveLaunch(language, entryPointPath, workDir);
     return { path: launch.executablePath, command: launch.command, args: [...launch.args] };
   }
+}
+
+/** The board a private test would play on, and where it came from (recorded in `result_payload.map`). */
+export interface ResolvedPrivateTestMap {
+  readonly descriptor: MapDescriptor;
+  readonly ref: PrivateTestMapRef;
+}
+
+/**
+ * The board a private test plays on, most authoritative first:
+ *   1. the tournament's committed map, at the exact version it pinned (COMMITMENT),
+ *   2. the newest map in the system, at its current version (LATEST_MAP),
+ *   3. a synthetic deterministic 3×3 (SYNTHETIC).
+ * Which one was used is recorded in `result_payload.map`.
+ *
+ * Shared by the dev runner, which plays the board, and the native gateway, which pins it in the
+ * assignment: whichever path executes a private test, the snapshot's board is chosen the same way.
+ */
+export async function resolvePrivateTestMap(
+  db: PostgresDatabase,
+  tournamentId: string
+): Promise<ResolvedPrivateTestMap> {
+  const commitment = await db.query<{
+    name: string;
+    version: number;
+    descriptor: MapDescriptor;
+  }>(
+    `SELECT m.display_name AS name, c.map_version AS version, mv.descriptor
+     FROM tournament_map_commitments c
+     JOIN maps m ON m.id = c.map_id
+     JOIN map_versions mv ON mv.map_id = c.map_id AND mv.version = c.map_version
+     WHERE c.tournament_id = $1`,
+    [tournamentId]
+  );
+  const committed = commitment.rows[0];
+  if (committed) {
+    return {
+      descriptor: committed.descriptor,
+      ref: { name: committed.name, version: committed.version, source: 'COMMITMENT' },
+    };
+  }
+
+  const latest = await db.query<{
+    name: string;
+    version: number;
+    descriptor: MapDescriptor;
+  }>(
+    // A board an organizer has not revealed yet must not become a practice board: the team would
+    // learn the secret map from its own test run (board, replay, log), which is exactly the leak
+    // 02-GAMEPLAY/S08 forbids. Reveal is a *per-version* fact (migration 023), so the version the
+    // fallback would pin has to be revealed itself — a map revealed for an older tournament must
+    // not expose a newer version published afterwards.
+    `SELECT m.display_name AS name, m.current_version AS version, mv.descriptor
+     FROM maps m
+     JOIN map_versions mv ON mv.map_id = m.id AND mv.version = m.current_version
+     WHERE m.visibility = 'PUBLIC' OR mv.revealed_at IS NOT NULL
+     ORDER BY m.created_at DESC, m.id DESC
+     LIMIT 1`
+  );
+  const newest = latest.rows[0];
+  if (newest) {
+    return {
+      descriptor: newest.descriptor,
+      ref: { name: newest.name, version: newest.version, source: 'LATEST_MAP' },
+    };
+  }
+
+  return {
+    descriptor: SYNTHETIC_TEST_MAP,
+    ref: { name: SYNTHETIC_TEST_MAP.mapName, source: 'SYNTHETIC' },
+  };
+}
+
+/**
+ * The candidate a private test plays against: the team's latest READY official receipt for the
+ * tournament, i.e. the same submission a match would freeze. `null` means the repo baseline bot.
+ * A READY receipt that cannot be materialized is a fault, not a reason to swap in the baseline.
+ */
+export async function loadLatestReadySubmission(
+  db: PostgresDatabase,
+  tournamentId: string,
+  teamId: string
+): Promise<ReadySubmissionCandidate | null> {
+  const res = await db.query<ReadySubmissionCandidate>(
+    `SELECT id, receipt_ordinal, source_digest, language, entrypoint
+     FROM submissions
+     WHERE tournament_id = $1 AND team_id = $2 AND status = 'READY'
+     ORDER BY receipt_ordinal DESC
+     LIMIT 1`,
+    [tournamentId, teamId]
+  );
+  return res.rows[0] ?? null;
 }
 
 function toSummary(row: SummaryRow): PrivateTestSummary {

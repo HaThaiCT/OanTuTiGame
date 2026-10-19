@@ -1,5 +1,7 @@
 # OanTuTi Arena v2 — kế hoạch triển khai theo phiên tuần tự
 
+> **Execution priority update (2026-10-18):** User requests LAN completed/stable before ONLINE development resumes. Use [LAN-first completion](2026-10-18-lan-first-completion.md) for remaining work and acceptance order; retain S01–S17 below as canonical coverage/history. ONLINE mail/public admission/VPS release is deferred, not a prerequisite for LAN. LAN security/recovery/endurance requirements remain; deployment is still paused pending explicit authorization.
+
 
 > **2026-10-17 — SUPERSEDED / NOT_ACCEPTED:** các dấu complete/contract-handoff và report trước rebuild không được kế thừa làm acceptance. Mọi checkbox dưới đây là tiêu chí phải chứng minh lại, không kết quả đã quan sát. S01 đang thực hiện trong workspace rebuild; G0/G1 chưa đóng, G1–G4 vẫn pending. Giữ report gốc làm lịch sử; không đổi số canonical S01–S17 để khớp tên report sai.
 > **For agentic workers:** REQUIRED SUB-SKILL khi thực thi: `subagent-driven-development` hoặc `executing-plans`. Đây là lịch chia phiên của kế hoạch T0–T12, không thay baseline hoặc tự xác nhận task đã hoàn tất.

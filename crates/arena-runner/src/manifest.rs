@@ -10,6 +10,9 @@ pub struct GameManifestJson {
     pub map: MapJson,
     pub pieces: Vec<PieceJson>,
     pub max_ply: u32,
+    /// Opaque control-plane receipt provenance, covered by the digest of the complete manifest.
+    #[serde(default)]
+    pub provenance: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]

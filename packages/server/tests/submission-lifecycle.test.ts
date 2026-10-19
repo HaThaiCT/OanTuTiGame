@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { randomBytes } from 'node:crypto';
+import { hashToken } from '../src/identity/crypto.js';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { Database } from '../src/persistence/db.js';
 import { IdentityService } from '../src/identity/service.js';
 import { TeamService } from '../src/teams/service.js';
 import { ArtifactStore } from '../src/submissions/artifact-store.js';
+import { PrivateTestService } from '../src/submissions/private-test-service.js';
 import { SubmissionService } from '../src/submissions/service.js';
 import { BuildPipeline } from '../src/builds/build-pipeline.js';
 import { PrivateTestRunner } from '../src/builds/private-test-runner.js';
@@ -102,6 +105,7 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
 
     // Bootstrap admin
     await identity.bootstrapAdmin('s05_admin', 'AdminPassword999!');
+    await db.query(`INSERT INTO deployment_settings(key,value) VALUES ('accountCapacity','{"limit":1000}') ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value`);
   });
 
   afterAll(async () => {
@@ -535,5 +539,30 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
       url: `/api/v2/submissions/${firstSubmissionId}/source`,
     });
     expect(guestSource.statusCode).toBe(401);
+  });
+
+  it('denies limited ADMIN source/log inspection, keeps private responses uncached and audits build log access', async () => {
+    const admin = await db.query<{ id: string }>("SELECT id FROM users WHERE username = 's05_admin'");
+    const token = randomBytes(32).toString('hex');
+    await db.query(`INSERT INTO sessions(user_id, token_hash, scope, expires_at)
+      VALUES ($1, $2, 'PASSWORD_CHANGE_ONLY', clock_timestamp() + interval '1 hour')`, [admin.rows[0].id, hashToken(token)]);
+    for (const suffix of ['source', 'build-log']) {
+      const denied = await app.inject({ url: `/api/v2/submissions/${firstSubmissionId}/${suffix}`, headers: { cookie: `oantuti_session=${token}` } });
+      expect(denied.statusCode).toBe(403);
+      expect(denied.headers['cache-control']).toBe('private, no-store');
+      const foreign = await app.inject({ url: `/api/v2/submissions/${firstSubmissionId}/${suffix}`, headers: { cookie: team2Cookie } });
+      expect(foreign.statusCode).toBe(403);
+      const allowed = await app.inject({ url: `/api/v2/submissions/${firstSubmissionId}/${suffix}`, headers: { cookie: adminCookie } });
+      expect(allowed.statusCode).toBe(200);
+      expect(allowed.headers['cache-control']).toBe('private, no-store');
+    }
+    const events = await db.query("SELECT action FROM audit_events WHERE resource_id = $1 AND action = 'SUBMISSION_BUILD_LOG_READ'", [firstSubmissionId]);
+    expect(events.rows.length).toBeGreaterThan(0);
+    const actor = { userId: admin.rows[0].id, username: 's05_admin', role: 'ADMIN' as const, scope: 'FULL' as const, teamIds: [] };
+    await expect(submissions.createPrivateTest(tournamentId, team1Id, { language: 'PYTHON', entrypoint: 'main.py', zipBuffer: createZip({ 'main.py': SMOKE_BOT_SOURCE }) }, actor)).rejects.toMatchObject({ statusCode: 403 });
+    await expect(new PrivateTestService(db, artifactStore).createTest({ tournamentId, teamId: team1Id, language: 'PYTHON', entrypoint: 'main.py', opponentType: 'BASELINE_RANDOM' }, { actor, requestId: 'private-admin-denied' })).rejects.toMatchObject({ statusCode: 403 });
+    // An organizer reads submitted work but never files an official receipt for a team.
+    await expect(submissions.submit(tournamentId, team1Id, { language: 'PYTHON', entrypoint: 'main.py', zipBuffer: createZip({ 'main.py': SMOKE_BOT_SOURCE }) }, actor))
+      .rejects.toMatchObject({ statusCode: 403, code: 'ADMIN_CANNOT_SUBMIT' });
   });
 });

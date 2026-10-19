@@ -8,7 +8,7 @@
  * account's password) and reading back state to wait for asynchronous work.
  *
  * Usage (from the repository root):
- *   npx tsx deploy/linux/dev-demo.ts seed   [--format SINGLE_ELIMINATION|SWISS_PLAYOFF|ROUND_ROBIN|ELO_ARENA] [--teams N] [--tag TAG] [--grace MINUTES]
+ *   npx tsx deploy/linux/dev-demo.ts seed   [--format SINGLE_ELIMINATION|SWISS_PLAYOFF|ROUND_ROBIN|ELO_ARENA] [--teams N] [--tag TAG] [--grace MINUTES] [--rated]
  *   npx tsx deploy/linux/dev-demo.ts login  <username>
  *   npx tsx deploy/linux/dev-demo.ts status [--tag TAG]
  *
@@ -24,6 +24,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { crc32 } from 'node:zlib';
 import { resolveDbConfig, PostgresDatabase } from '../../packages/server/src/persistence/db.js';
 import { generateTemporaryPassword, hashPassword } from '../../packages/server/src/identity/crypto.js';
@@ -43,16 +44,18 @@ interface Options {
   readonly tag: string;
   /** Grace before a finished round seals. 0 keeps a demo moving; the product default is 10 minutes. */
   readonly grace: number;
+  readonly rated: boolean;
 }
 
 const FORMATS = ['SINGLE_ELIMINATION', 'SWISS_PLAYOFF', 'ROUND_ROBIN', 'ELO_ARENA'] as const;
 
-function parseArgs(argv: readonly string[]): Options {
+export function parseDemoArgs(argv: readonly string[]): Options {
   const positional: string[] = [];
   let format = 'SINGLE_ELIMINATION';
   let teams = 2;
   let tag = 'DEMO';
   let grace = 0;
+  let rated = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--format') {
@@ -69,6 +72,8 @@ function parseArgs(argv: readonly string[]): Options {
     } else if (arg === '--tag') {
       tag = (argv[++i] ?? '').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
       if (!tag) throw new Error('--tag must contain letters or digits');
+    } else if (arg === '--rated') {
+      rated = true;
     } else if (arg.startsWith('--')) {
       throw new Error(`unknown option ${arg}`);
     } else {
@@ -76,10 +81,9 @@ function parseArgs(argv: readonly string[]): Options {
     }
   }
   const command = positional.shift() ?? 'status';
-  if (!['seed', 'login', 'status', 'accounts'].includes(command)) {
-    throw new Error(`unknown command "${command}" (expected seed | login | status | accounts)`);
-  }
-  return { command, positional, format, teams, tag, grace };
+  if (!['seed', 'login', 'status', 'accounts'].includes(command)) throw new Error(`unknown command "${command}" (expected seed | login | status | accounts)`);
+  if (rated && command !== 'seed') throw new Error('--rated is only valid with seed');
+  return { command, positional, format, teams, tag, grace, rated };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -464,7 +468,7 @@ async function seed(options: Options): Promise<void> {
   const tournamentName = `${options.tag} ${options.format.replace('_', ' ')} ${new Date().toISOString().slice(0, 16)}`;
   const created = await apiOk('POST', '/api/v2/organizer/tournaments', {
     cookie: world.adminSession,
-    body: { courseCode: world.courseCode, name: tournamentName, format: options.format, maxTeams: Math.max(2, options.teams) },
+    body: { courseCode: world.courseCode, name: tournamentName, format: options.format, maxTeams: Math.max(2, options.teams), isRated: options.rated },
   });
   const tournamentId = readString(asRecord(created?.tournament), 'id') ?? readString(created, 'id');
   if (!tournamentId) throw new Error('the tournament was created but the response carried no id');
@@ -523,6 +527,12 @@ async function seed(options: Options): Promise<void> {
     cookie: world.adminSession,
     body: { mapSlug: world.mapSlugs[0] },
   });
+  if (options.rated) {
+    await apiOk('POST', `/api/v2/organizer/tournaments/${tournamentId}/appeal-window`, {
+      cookie: world.adminSession,
+      body: { minutes: 0 },
+    });
+  }
   console.log('started     the development auto-runner plays the round every 5 seconds');
 
   const played = await waitFor('the first round to finish and seal', 300_000, async () => {
@@ -650,7 +660,7 @@ async function accounts(options: Options): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const options = parseArgs(process.argv.slice(2));
+  const options = parseDemoArgs(process.argv.slice(2));
   try {
     await db.query('SELECT 1');
   } catch (error) {
@@ -665,8 +675,10 @@ async function main(): Promise<void> {
   return status(options);
 }
 
-main().catch(async (error: unknown) => {
-  console.error(`dev-demo failed: ${error instanceof Error ? error.message : String(error)}`);
-  await db.close().catch(() => undefined);
-  process.exitCode = 1;
-});
+if (process.argv[1] && resolvePath(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(async (error: unknown) => {
+    console.error(`dev-demo failed: ${error instanceof Error ? error.message : String(error)}`);
+    await db.close().catch(() => undefined);
+    process.exitCode = 1;
+  });
+}

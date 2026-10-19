@@ -11,6 +11,20 @@ export interface DbConfig {
   readonly max?: number;
 }
 
+/**
+ * A statement runner usable both by a module on its own connection and inside a caller's
+ * transaction. PostgreSQL's own client type declares mutable parameter arrays, so the union of the
+ * two identities is not callable directly even though both accept the same statements at runtime.
+ */
+export type StatementRunner = <T extends pg.QueryResultRow = pg.QueryResultRow>(
+  text: string,
+  params?: readonly unknown[]
+) => Promise<pg.QueryResult<T>>;
+
+export function statementRunner(executor: PostgresDatabase | pg.PoolClient): StatementRunner {
+  return (executor.query as unknown as StatementRunner).bind(executor) as StatementRunner;
+}
+
 const DEFAULT_WORKSPACE_PATH = '/home/ha-thai/.local/share/oantuti/development/workspace.json';
 
 export function resolveDbConfig(override?: Partial<DbConfig>): DbConfig {
@@ -40,8 +54,10 @@ export function resolveDbConfig(override?: Partial<DbConfig>): DbConfig {
 
 export class PostgresDatabase {
   private readonly pool: pg.Pool;
+  private readonly config: DbConfig;
 
   constructor(config: DbConfig = resolveDbConfig()) {
+    this.config = config;
     this.pool = new Pool({
       host: config.host,
       port: config.port,
@@ -49,6 +65,17 @@ export class PostgresDatabase {
       user: config.user,
       max: config.max ?? 10,
     });
+  }
+
+  async connectDedicated(): Promise<pg.Client> {
+    const client = new pg.Client({
+      host: this.config.host,
+      port: this.config.port,
+      database: this.config.database,
+      user: this.config.user,
+    });
+    await client.connect();
+    return client;
   }
 
   async query<T extends pg.QueryResultRow = pg.QueryResultRow>(text: string, params?: readonly unknown[]): Promise<pg.QueryResult<T>> {

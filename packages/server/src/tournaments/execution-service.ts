@@ -83,12 +83,6 @@ export const MAX_MATCH_TURNS = 300;
 
 const CPP_COMPILE_TIMEOUT_MS = 30_000;
 
-/**
- * RESULT published when a run faults before the match produced an outcome (bot spawn failure,
- * evidence or recording fault): spectators get a terminal frame instead of a game that stays
- * RUNNING forever.
- */
-const LIVE_EXECUTION_FAILED_RESULT: LiveResult = Object.freeze({ winner: null, reason: 'EXECUTION_FAILED' });
 
 /**
  * Lease renewal period: a third of the TTL, so two heartbeats can be lost before a running
@@ -387,7 +381,7 @@ export class MatchExecutionService {
     const stopHeartbeat = this.startHeartbeat(lease);
     try {
       const { status, accepted } = await this.executeGameById(lease.targetId);
-      const completion = await this.jobBroker.prepareCompletion(lease.identity, accepted.evidence);
+      const completion = await this.jobBroker.prepareCompletion(lease.identity, { kind: 'GAME', game: accepted.evidence });
       await this.jobBroker.complete(
         {
           completionId: completion.data.completionId,
@@ -485,9 +479,8 @@ export class MatchExecutionService {
    * progression is the caller's step (`executeGameById`), so a crash between the two is
    * healed by replaying the job.
    *
-   * The run is published live: the channel is opened once both bots are ready, every ply is
-   * pushed as it is played, and the channel is finished in the `finally` so spectators see a
-   * result even when the run faults after the match (evidence/recording failures included).
+   * The run is published live once both bots are ready. Only a successfully recorded result
+   * is authoritative; faults end the preview without asserting a winner or a draw.
    * Opening only after both bots materialized keeps a failed preparation from leaving a
    * RUNNING channel behind — the hub never sees a game that did not start.
    */
@@ -497,15 +490,17 @@ export class MatchExecutionService {
 
     const manifestDigest = this.computeManifestDigest(game.rules_revision, white.manifest, black.manifest);
 
-    this.liveHub.openGame({
+    // The hub binds this channel to us: a requeued attempt that opens the same game replaces the
+    // publisher, so our late callbacks can no longer repaint the match that attempt is playing.
+    const live = this.liveHub.openGame({
       gameId: game.id,
+      tournamentId: game.tournament_id,
       map: game.map_descriptor,
       whiteTeam: { id: game.white_team_id, name: game.white_team_name },
       blackTeam: { id: game.black_team_id, name: game.black_team_name },
     });
 
     const startedAt = process.hrtime.bigint();
-    let liveResult: LiveResult | null = null;
     try {
       const result = await new MatchOrchestrator({
         matchId: game.id,
@@ -513,9 +508,8 @@ export class MatchExecutionService {
         whiteBotConfig: white.config,
         blackBotConfig: black.config,
         maxTurns: MAX_MATCH_TURNS,
-        onTurn: (record: TurnRecord) => this.liveHub.publishTurn(game.id, toLiveTurnEvent(record)),
+        onTurn: (record: TurnRecord) => live.publishTurn(toLiveTurnEvent(record)),
       }).runMatch();
-      liveResult = toLiveResult(result);
 
       const wallUsec = ((process.hrtime.bigint() - startedAt) / 1000n).toString();
       const evidence = this.buildEvidence(game, result, wallUsec);
@@ -526,12 +520,11 @@ export class MatchExecutionService {
         evidence,
         manifestDigest,
         mapDescriptor: game.map_descriptor,
+        maxTurns: MAX_MATCH_TURNS,
       });
+      live.finishGame(toLiveResult(result));
     } finally {
-      // RESULT carries the match outcome, not the recording outcome: it is published as soon as
-      // the match is decided. A run that faulted before producing one closes the game flat with
-      // a null winner rather than leaving spectators on a game that will never play another ply.
-      this.liveHub.finishGame(game.id, liveResult ?? LIVE_EXECUTION_FAILED_RESULT);
+      live.previewEnd();
     }
   }
 
@@ -644,14 +637,10 @@ export class MatchExecutionService {
   }
 
   /**
-   * Builds the evidence exactly as TraceVerifier expects it.
-   *
-   * The runner decides the match with the v1 rules, while the verifier re-adjudicates with
-   * the v2 rules: the outcome (winner/reason/disposition) is therefore re-derived here by
-   * replaying the trace through the v2 engine, so the recorded evidence is precisely what
-   * the verifier recomputes. When the trace is not a v2-terminal game the runner stopped on
-   * a bot fault (crash, timeout, illegal move, protocol violation) and the result is
-   * recorded as a forfeit win for the surviving side.
+   * Builds candidate evidence for Rust adjudication. This legacy runtime's TS replay is
+   * not authoritative: ResultService independently verifies every move/outcome in Rust.
+   * Runtime faults remain candidate evidence only and cannot be accepted without an
+   * authenticated supervisor observation (not supplied by this runtime).
    */
   private buildEvidence(game: ExecutableGameRow, result: MatchResult, wallUsec: string): GameResultEvidence {
     const trace: ActionTraceStep[] = [];
@@ -707,9 +696,8 @@ export class MatchExecutionService {
   /**
    * Replays a move trace with the v2 rules and returns the terminal outcome.
    *
-   * Mirrors TraceVerifier.verify() step for step — same engine calls, same break on the
-   * first v2-terminal state, same final evaluateVictoryV2() — so the evidence produced
-   * above is accepted by the verifier. Keep both loops in lockstep.
+   * This legacy candidate builder does not certify the result. Rust replay rejects illegal
+   * moves, terminal suffixes and mismatched outcomes independently in ResultService.
    */
   private replayTrace(mapDescriptor: MapDescriptor, trace: readonly ActionTraceStep[]): V2Outcome {
     const topology = createMapTopology(mapDescriptor);

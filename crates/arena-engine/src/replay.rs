@@ -58,20 +58,44 @@ pub fn verify_actions(
     actions: &[ReplayAction],
     claimed: &VictoryOutcome,
 ) -> Result<ReplayEvidence, ReplayError> {
+    let evidence = verify_prefix(map, pieces, max_ply, actions)?;
+    if !evidence.outcome.is_game_over {
+        return Err(ReplayError::TraceIncomplete);
+    }
+    if evidence.outcome != *claimed {
+        return Err(ReplayError::ClaimedOutcomeMismatch);
+    }
+    Ok(evidence)
+}
+
+/// Replays every action without certifying a runtime fault or requiring termination.
+pub fn verify_prefix(
+    map: MapTopology,
+    pieces: Vec<Piece>,
+    max_ply: u32,
+    actions: &[ReplayAction],
+) -> Result<ReplayEvidence, ReplayError> {
+    verify_prefix_state(map, pieces, max_ply, actions).map(|(evidence, _)| evidence)
+}
+
+/// The checked state is exposed for independently validating a recorded faulting action.
+pub fn verify_prefix_state(
+    map: MapTopology,
+    pieces: Vec<Piece>,
+    max_ply: u32,
+    actions: &[ReplayAction],
+) -> Result<(ReplayEvidence, GameState), ReplayError> {
     let mut state = GameState::try_new(map, pieces, max_ply).map_err(|_| ReplayError::InitialStateRejected)?;
     let initial = state.outcome();
     if initial.is_game_over {
         if !actions.is_empty() {
             return Err(ReplayError::InitialTerminalWithActions);
         }
-        if initial != *claimed {
-            return Err(ReplayError::ClaimedOutcomeMismatch);
-        }
-        return Ok(ReplayEvidence {
+        return Ok((ReplayEvidence {
             outcome: initial,
             initial_terminal: true,
             applied_ply: 0,
-        });
+        }, state));
     }
 
     let mut applied = 0u32;
@@ -90,15 +114,9 @@ pub fn verify_actions(
     }
 
     let outcome = state.outcome();
-    if !outcome.is_game_over {
-        return Err(ReplayError::TraceIncomplete);
-    }
-    if outcome != *claimed {
-        return Err(ReplayError::ClaimedOutcomeMismatch);
-    }
-    Ok(ReplayEvidence {
+    Ok((ReplayEvidence {
         outcome,
         initial_terminal: false,
         applied_ply: applied,
-    })
+    }, state))
 }

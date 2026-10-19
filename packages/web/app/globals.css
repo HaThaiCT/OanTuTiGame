@@ -117,6 +117,25 @@ main :is(h1, h2, h3) { letter-spacing: -.035em; }
 .arena-theme-selector { display: flex; align-items: center; gap: 2px; padding: 4px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 24px; }
 .arena-theme-selector button { display: grid; place-items: center; width: 28px; height: 28px; color: var(--text-secondary); border-radius: 50%; cursor: pointer; }
 .arena-theme-selector button[aria-pressed='true'] { color: var(--text-primary); background: var(--surface-subtle); }
+.rating-name { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
+.rating-name a { text-decoration: underline; text-underline-offset: 3px; }
+.rating-badge { display: inline-flex; border: 1px solid currentColor; border-radius: 999px; padding: 0 .45rem; font-size: .72rem; white-space: nowrap; }
+.rating-name.rating-unrated, .rating-name.rating-newbie, .rating-badge.rating-unrated, .rating-badge.rating-newbie { color: #B8BCC4; }
+.rating-name.rating-pupil, .rating-badge.rating-pupil { color: #86EFAC; }
+.rating-name.rating-specialist, .rating-badge.rating-specialist { color: #67E8F9; }
+.rating-name.rating-expert, .rating-badge.rating-expert { color: #93C5FD; }
+.rating-name.rating-candidate_master, .rating-badge.rating-candidate_master { color: #D8B4FE; }
+.rating-name.rating-master, .rating-name.rating-international_master, .rating-badge.rating-master, .rating-badge.rating-international_master { color: #FDBA74; }
+.rating-name.rating-grandmaster, .rating-name.rating-international_grandmaster, .rating-name.rating-legendary_grandmaster, .rating-badge.rating-grandmaster, .rating-badge.rating-international_grandmaster, .rating-badge.rating-legendary_grandmaster { color: #FCA5A5; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge):is(.rating-unrated,.rating-newbie) { color: #4B5563; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge).rating-pupil { color: #166534; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge).rating-specialist { color: #0E7490; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge).rating-expert { color: #1D4ED8; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge).rating-candidate_master { color: #7E22CE; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge):is(.rating-master,.rating-international_master) { color: #9A3412; }
+:root[data-theme='light'] :is(.rating-name,.rating-badge):is(.rating-grandmaster,.rating-international_grandmaster,.rating-legendary_grandmaster) { color: #B91C1C; }
+.rating-history { color: var(--accent-secondary); max-width: 42rem; }
+.rating-history svg { display: block; width: 100%; height: 12rem; border: 1px solid var(--border-subtle); background: var(--surface); }
 @media (min-width: 1001px) { .arena-mobile-nav { display: none; } }
 @media (max-width: 1200px) { .arena-desktop-nav { gap: 16px; } .arena-header-row { gap: 24px; } .arena-main { padding-inline: 32px; } .arena-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1000px) { .arena-desktop-nav, .arena-header-controls { display: none; } .arena-menu-toggle { display: block; } .arena-hero { gap: 28px; } .arena-catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

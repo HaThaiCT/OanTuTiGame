@@ -65,6 +65,11 @@ const TEXT_ENCODER = new TextEncoder();
 const MonacoEditor = dynamic<EditorProps>(
   () =>
     import('@monaco-editor/react').then((module) => {
+      // Configure the shared loader before React mounts Editor (its mount effect
+      // calls loader.init). The complete matching distribution is copied by the
+      // web predev/prebuild hook; workers, CSS and fonts remain same-origin too.
+      // Do not use the loader's jsDelivr default, even when the LAN has Internet.
+      module.loader.config({ paths: { vs: '/monaco/vs' } });
       // Tuỳ cách bundler gói lại, component có thể nằm ở `default` hoặc lồng thêm một lớp `default`.
       const first = (module as { default?: unknown } | null)?.default ?? module;
       const second = (first as { default?: unknown } | null)?.default ?? first;
@@ -374,6 +379,48 @@ export default function SourceIde({
   const [sending, setSending] = useState(false);
   const nextFileId = useRef(2);
   const lastEntrypoint = useRef(entrypointChoice);
+  const draftKey = `oantuti:source-draft:${tournamentId}:${teamId}`;
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as { files?: unknown; selectedId?: unknown; entrypoint?: unknown; language?: unknown };
+        if (Array.isArray(draft.files) && draft.files.length > 0 && draft.files.length <= MAX_EDITOR_FILES) {
+          const restored: SourceFile[] = [];
+          for (const value of draft.files) {
+            if (!value || typeof value !== 'object') throw new Error('Invalid draft');
+            const file = value as Record<string, unknown>;
+            if (typeof file.id !== 'string' || typeof file.name !== 'string' || typeof file.content !== 'string') throw new Error('Invalid draft file');
+            restored.push(makeFile(file.id, file.name, file.content));
+          }
+          setFiles(restored);
+          setSelectedId(typeof draft.selectedId === 'string' ? draft.selectedId : restored[0]!.id);
+          if (typeof draft.entrypoint === 'string') setEntrypointChoice(draft.entrypoint);
+          if (typeof draft.language === 'string' && LANGUAGES.some((item) => item === draft.language)) setLanguage(draft.language);
+          nextFileId.current = restored.reduce((max, file) => Math.max(max, Number(file.id.replace(/^f/, '')) || 0), 1) + 1;
+        }
+      }
+    } catch {
+      setStatus({ tone: 'error', text: 'Không đọc được bản nháp đã lưu trên trình duyệt.' });
+    }
+    setDraftLoaded(true);
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    try {
+      sessionStorage.setItem(draftKey, JSON.stringify({
+        files: files.map(({ id, name, content }) => ({ id, name, content })),
+        selectedId,
+        entrypoint: entrypointChoice,
+        language,
+      }));
+    } catch {
+      setStatus({ tone: 'error', text: 'Không lưu được bản nháp. Hãy giữ trang này mở hoặc tải mã nguồn trước khi rời trang.' });
+    }
+  }, [draftLoaded, draftKey, files, selectedId, entrypointChoice, language]);
 
   const selected = files.find((file) => file.id === selectedId) ?? files[0] ?? null;
   const entrypointOptions = files.filter((file) => languageForPath(file.name) !== null);

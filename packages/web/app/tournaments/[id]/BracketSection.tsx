@@ -1,12 +1,16 @@
 import Link from 'next/link';
+import { TeamRatingName } from '../../_components/TeamRatingName';
 import type { BracketEncounter, BracketRound } from '../../../lib/api';
 import { encounterStatusLabel, stageLabel } from '../../../lib/labels';
+import BracketGraphic from './BracketGraphic';
 
 export interface BracketSectionProps {
   /** `null` = the bracket API could not be read; `[]` = the server has no encounters scheduled yet. */
   readonly encounters: readonly BracketEncounter[] | null;
   /** Structural width per round; a slot with no encounter row is an EMPTY slot, not a missing match. */
   readonly rounds?: readonly BracketRound[];
+  readonly canViewReplay?: boolean;
+  readonly format?: string;
 }
 
 export interface RoundGroup {
@@ -46,8 +50,13 @@ export function groupByStageAndRound(encounters: readonly BracketEncounter[]): R
   return [...groups.values()];
 }
 
-export default function BracketSection({ encounters, rounds = [] }: BracketSectionProps) {
+export default function BracketSection({ encounters, rounds = [], canViewReplay = false, format = '' }: BracketSectionProps) {
   const groups = groupByStageAndRound(encounters ?? []);
+  for (const round of rounds) {
+    if (!groups.some((group) => group.stage === round.stage && group.roundOrdinal === round.roundOrdinal)) {
+      groups.push({ stage: round.stage, roundOrdinal: round.roundOrdinal, encounters: [] });
+    }
+  }
   const missingGameIds = (encounters ?? []).some(
     (encounter) =>
       (encounter.status === 'COMPLETED' || encounter.status === 'RUNNING') && encounter.games.length === 0
@@ -66,12 +75,13 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
           {encounters === null ? 'Không đọc được dữ liệu' : `${encounters.length} trận`}
         </span>
       </div>
+      {encounters ? <BracketGraphic encounters={encounters} rounds={rounds} format={format} /> : null}
 
       {encounters === null ? (
         <p className="px-6 py-10 text-center text-sm text-[var(--text-secondary)]">
           Không đọc được nhánh đấu từ server — hãy tải lại trang.
         </p>
-      ) : encounters.length === 0 ? (
+      ) : encounters.length === 0 && rounds.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-[var(--text-secondary)]">
           Chưa có trận nào được xếp lịch. Nhánh đấu chỉ hiện khi server tạo cặp đấu cho vòng đầu.
         </p>
@@ -115,7 +125,7 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
                       <th className="px-4 py-2 text-center">Tỉ số</th>
                       <th className="px-4 py-2">Đội B</th>
                       <th className="px-4 py-2">Trạng thái</th>
-                      <th className="px-4 py-2">Kết quả &amp; replay</th>
+                      <th className="px-4 py-2">Kết quả</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -162,7 +172,7 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
                           <td className="px-4 py-3 text-[var(--text-secondary)]">#{encounter.slotOrdinal}</td>
                           <td className="px-4 py-3">
                             <span className={teamAWon ? 'font-semibold text-[var(--success-text)]' : 'font-medium'}>
-                              {encounter.teamAName ?? 'Đội chưa đặt tên'}
+                              <TeamRatingName teamId={encounter.teamAId} name={encounter.teamAName ?? 'Đội chưa đặt tên'} rating={null}/>
                             </span>
                             {teamAWon ? (
                               <span className="ml-2 rounded border border-[var(--success-text)] bg-[var(--success-tint)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--success-text)]">
@@ -175,11 +185,11 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
                           </td>
                           <td className="px-4 py-3">
                             {encounter.teamBId === null ? (
-                              <span className="text-[var(--text-secondary)]">Bye — miễn đấu</span>
+                              <span className="text-[var(--text-secondary)]">{encounter.status === 'BYE' ? 'Bye — miễn đấu' : 'EMPTY — Ô trống'}</span>
                             ) : (
                               <>
                                 <span className={teamBWon ? 'font-semibold text-[var(--success-text)]' : 'font-medium'}>
-                                  {encounter.teamBName ?? 'Đội chưa đặt tên'}
+                                  <TeamRatingName teamId={encounter.teamBId} name={encounter.teamBName ?? 'Đội chưa đặt tên'} rating={null}/>
                                 </span>
                                 {teamBWon ? (
                                   <span className="ml-2 rounded border border-[var(--success-text)] bg-[var(--success-tint)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--success-text)]">
@@ -217,6 +227,7 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
                                     >
                                       Kết quả
                                     </Link>
+                                    {canViewReplay ? <>
                                     <Link
                                       className="text-[var(--action)] hover:text-[var(--action-hover)]"
                                       href={`/replays?game=${encodeURIComponent(game.gameId)}`}
@@ -229,6 +240,7 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
                                     >
                                       Replay tải về
                                     </Link>
+                                    </> : null}
                                   </span>
                                 ))}
                               </span>
@@ -251,7 +263,7 @@ export default function BracketSection({ encounters, rounds = [] }: BracketSecti
 
       {missingGameIds ? (
         <p className="border-t border-[var(--border-subtle)] px-6 py-4 text-xs text-[var(--text-secondary)]">
-          Server chưa trả về mã game (game_id) cho từng trận, nên liên kết kết quả và replay chỉ hiện khi API bổ sung mã này.
+          Một số ván chưa có kết quả để hiển thị.
         </p>
       ) : null}
     </section>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, scryptSync } from 'node:crypto';
 import { Database } from '../src/persistence/db.js';
 import { IdentityService, IdentityError } from '../src/identity/service.js';
 import { TeamService, TeamError } from '../src/teams/service.js';
@@ -33,9 +33,17 @@ describe('S03 Production Identity, Teams & Tournament Substrate (PostgreSQL 16)'
       await client.query('DELETE FROM deployment_settings');
     });
 
-    // Bootstrap singleton Admin
-    const admin = await identity.bootstrapAdmin('system_admin', 'AdminPassword123!');
-    expect(admin.username).toBe('system_admin');
+    // Concurrent bootstrap must retain one administrator, never demote existing users.
+    const bootstraps = await Promise.allSettled([
+      identity.bootstrapAdmin('system_admin', 'AdminPassword123!'),
+      identity.bootstrapAdmin('second_candidate', 'AdminPassword123!'),
+    ]);
+    expect(bootstraps.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const winner = bootstraps.find((result) => result.status === 'fulfilled');
+    if (!winner || winner.status !== 'fulfilled') throw new Error('No bootstrap winner');
+    const admin = winner.value;
+    await db.query("UPDATE users SET username = 'system_admin' WHERE id = $1", [admin.id]);
+    await db.query("INSERT INTO deployment_settings(key, value) VALUES ('accountCapacity', '{\"limit\":1000}')");
     expect(admin.role).toBe('ADMIN');
 
     // Logging in as Admin gives FULL session
@@ -78,6 +86,29 @@ describe('S03 Production Identity, Teams & Tournament Substrate (PostgreSQL 16)'
       scope: 'FULL',
     };
     await expect(identity.lanBulkProvision([{ username: 'hacker', displayName: 'H', role: 'STUDENT' }], studentActor)).rejects.toThrow(IdentityError);
+  });
+
+  it('expires and consumes LAN credentials once, resets students and revokes every session', async () => {
+    const [student] = await identity.lanBulkProvision([{ username: 'reset_student', displayName: 'Reset', role: 'STUDENT' }], adminActor);
+    const limited = await identity.login(student.username, student.temporaryPassword);
+    await expect(identity.login(student.username, student.temporaryPassword)).rejects.toMatchObject({ statusCode: 401 });
+    const full = await identity.changePassword(student.userId, student.temporaryPassword, 'PermanentPassword456!');
+    const reset = await identity.resetLanStudentPassword(student.userId, adminActor);
+    expect(reset.temporaryPassword).not.toBe(student.temporaryPassword);
+    expect(await identity.authenticateToken(limited.token)).toBeUndefined();
+    expect(await identity.authenticateToken(full.token)).toBeUndefined();
+    await expect(identity.login(student.username, 'PermanentPassword456!')).rejects.toMatchObject({ statusCode: 401 });
+    await db.query("UPDATE users SET temporary_password_expires_at = clock_timestamp() - interval '1 second' WHERE id = $1", [student.userId]);
+    await expect(identity.login(student.username, reset.temporaryPassword)).rejects.toMatchObject({ statusCode: 401 });
+    const renewed = await identity.resetLanStudentPassword(student.userId, adminActor);
+    const session = await identity.login(student.username, renewed.temporaryPassword);
+    await identity.revokeUserSessions(student.userId, adminActor);
+    expect(await identity.authenticateToken(session.token)).toBeUndefined();
+    await expect(identity.resetLanStudentPassword(adminActor.userId, adminActor)).rejects.toMatchObject({ statusCode: 403 });
+    await expect(identity.resetLanStudentPassword(student.userId, { ...adminActor, scope: 'PASSWORD_CHANGE_ONLY' })).rejects.toMatchObject({ statusCode: 403 });
+    const events = await identity.listAuditEvents(adminActor, student.userId);
+    expect(events.map((event) => event.action)).toContain('LAN_PASSWORD_RESET');
+    expect(JSON.stringify(events)).not.toContain(renewed.temporaryPassword);
   });
 
   it('forces password change workflow on initial student login', async () => {
@@ -193,5 +224,69 @@ describe('S03 Production Identity, Teams & Tournament Substrate (PostgreSQL 16)'
     await expect(
       admissions.enrollTeam(tournament.id, team.id, { actor: nonAdminActor, requestId: randomUUID() })
     ).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it('only upgrades legacy hashes after a successful password authentication', async () => {
+    const salt = 'ab'.repeat(16);
+    const legacy = `scrypt$${salt}$${scryptSync('OldPass123!', salt, 64).toString('hex')}`;
+    const [student] = await identity.lanBulkProvision([{ username: 'legacy_student', displayName: 'Legacy', role: 'STUDENT' }], adminActor);
+    await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [legacy, student.userId]);
+    await expect(identity.login(student.username, 'incorrect password')).rejects.toMatchObject({ statusCode: 401 });
+    const before = await db.query<{ password_hash: string }>('SELECT password_hash FROM users WHERE id = $1', [student.userId]);
+    expect(before.rows[0].password_hash).toBe(legacy);
+    const session = await identity.login(student.username, 'OldPass123!');
+    expect(session.scope).toBe('PASSWORD_CHANGE_ONLY');
+    const after = await db.query<{ password_hash: string }>('SELECT password_hash FROM users WHERE id = $1', [student.userId]);
+    expect(after.rows[0].password_hash).toMatch(/^\$argon2id\$/);
+    await expect(identity.changePassword(student.userId, 'OldPass123!', 'too-short')).rejects.toMatchObject({ statusCode: 400 });
+    await expect(identity.changePassword(student.userId, 'OldPass123!', '🔒'.repeat(129))).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('enforces idle, absolute and ADMIN session lifetime bounds', async () => {
+    const session = await identity.login('system_admin', 'AdminPassword123!');
+    expect(new Date(session.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(12 * 60 * 60 * 1000);
+    await db.query("UPDATE sessions SET last_seen_at = clock_timestamp() - INTERVAL '12 hours' WHERE id = $1", [session.sessionId]);
+    expect(await identity.authenticateToken(session.token)).toBeUndefined();
+    await expect(identity.reauthenticate(session.token, 'AdminPassword123!')).rejects.toMatchObject({ statusCode: 401 });
+    const second = await identity.login('system_admin', 'AdminPassword123!');
+    await db.query("UPDATE sessions SET created_at = clock_timestamp() - INTERVAL '12 hours', expires_at = clock_timestamp() + INTERVAL '7 days' WHERE id = $1", [second.sessionId]);
+    expect(await identity.authenticateToken(second.token)).toBeUndefined();
+    const [student] = await identity.lanBulkProvision([{ username: 'absolute_student', displayName: 'Absolute', role: 'STUDENT' }], adminActor);
+    const limited = await identity.login(student.username, student.temporaryPassword);
+    expect((await identity.authenticateToken(limited.token))?.actor.teamIds).toEqual([]);
+    await db.query("UPDATE sessions SET created_at = clock_timestamp() - INTERVAL '7 days', expires_at = clock_timestamp() + INTERVAL '7 days' WHERE id = $1", [limited.sessionId]);
+    expect(await identity.authenticateToken(limited.token)).toBeUndefined();
+  });
+
+  it('limits failed account and shared-IP attempts without charging successful logins', async () => {
+    await db.query('DELETE FROM identity_login_attempts');
+    for (let index = 0; index < 10; index++) {
+      await expect(identity.login('nonexistent_rate_account', 'incorrect password', `account-ip-${index}`)).rejects.toMatchObject({ statusCode: 401 });
+    }
+    await expect(identity.login('nonexistent_rate_account', 'incorrect password', 'fresh-ip')).rejects.toMatchObject({ statusCode: 429 });
+    for (let index = 0; index < 30; index++) {
+      await expect(identity.login(`nonexistent_ip_account_${index}`, 'incorrect password', 'shared-ip')).rejects.toMatchObject({ statusCode: 401 });
+    }
+    await expect(identity.login('new_ip_account', 'incorrect password', 'shared-ip')).rejects.toMatchObject({ statusCode: 429 });
+    await db.query('DELETE FROM identity_login_attempts');
+    for (let index = 0; index < 11; index++) await identity.login('system_admin', 'AdminPassword123!', 'successful-ip');
+    const count = await db.query<{ count: string }>('SELECT count(*)::text AS count FROM identity_login_attempts');
+    expect(count.rows[0].count).toBe('0');
+  }, 30_000);
+
+  it('fails closed for missing/invalid capacity and serializes competing provisions', async () => {
+    await db.query("DELETE FROM deployment_settings WHERE key = 'accountCapacity'");
+    const entry = (username: string) => [{ username, displayName: username, role: 'STUDENT' as const }];
+    await expect(identity.lanBulkProvision(entry('missing_capacity'), adminActor)).rejects.toMatchObject({ code: 'ACCOUNT_CAPACITY_REQUIRED' });
+    await db.query("INSERT INTO deployment_settings(key, value) VALUES ('accountCapacity', '{\"limit\":\"1000\"}')");
+    await expect(identity.lanBulkProvision(entry('bad_capacity'), adminActor)).rejects.toMatchObject({ code: 'ACCOUNT_CAPACITY_REQUIRED' });
+    const count = await db.query<{ count: string }>('SELECT count(*)::text AS count FROM users');
+    await db.query("UPDATE deployment_settings SET value = $1 WHERE key = 'accountCapacity'", [JSON.stringify({ limit: Number(count.rows[0].count) + 1 })]);
+    const results = await Promise.allSettled([
+      identity.lanBulkProvision(entry('capacity_racer_a'), adminActor),
+      identity.lanBulkProvision(entry('capacity_racer_b'), adminActor),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    await db.query("UPDATE deployment_settings SET value = '{\"limit\":1000}' WHERE key = 'accountCapacity'");
   });
 });

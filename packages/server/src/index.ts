@@ -4,6 +4,7 @@
 
 import { createApp } from './app.js';
 import { PostgresDatabase } from './persistence/db.js';
+import { nativeGatewayConfig } from './jobs/runtime-config.js';
 
 export * from './db.js';
 export * from './match-service.js';
@@ -46,17 +47,19 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 if (process.argv[1]?.endsWith('src/index.ts') || process.argv[1]?.endsWith('dist/index.js')) {
-  let pgDb: PostgresDatabase | undefined;
-  try {
-    pgDb = new PostgresDatabase();
-  } catch (err) {
-    console.warn('PostgreSQL 16 not available, running in fallback mode');
-  }
+  const pgDb = new PostgresDatabase();
+  const localJobBroker = nativeGatewayConfig();
 
   createApp({
     dbLocation: process.env.DB_LOCATION,
     allowedOrigins: process.env.PUBLIC_ORIGINS?.split(',').map(origin => origin.trim()).filter(Boolean),
     pgDb,
+    localJobBroker,
+    // Evidence bytes belong on the operator's data disk, not inside the checkout. Unset keeps the
+    // historical `<cwd>/storage/*` layout that the container image uses.
+    botsDir: process.env.OANTUTI_SUBMISSION_DIR,
+    replaysDir: process.env.OANTUTI_REPLAYS_DIR,
+    executionSpoolDir: process.env.OANTUTI_SPOOL_DIR,
   })
     .then(async ({ app }) => {
       await app.listen({ port: PORT, host: HOST });
@@ -64,8 +67,8 @@ if (process.argv[1]?.endsWith('src/index.ts') || process.argv[1]?.endsWith('dist
       process.stdout.write(`        OanTuTi Arena Game Server & WS Hub             \n`);
       process.stdout.write(`=======================================================\n`);
       process.stdout.write(`HTTP API:      http://${HOST}:${PORT}\n`);
-      process.stdout.write(`WebSocket:     ws://${HOST}:${PORT}/ws/matches/:matchId\n`);
-      process.stdout.write(`Ready to accept bot matches and spectator streams!\n`);
+      process.stdout.write(`Control plane:  /api/v2 (live spectator stream: /api/v2/live/:gameId)\n`);
+      process.stdout.write(`Execution is dispatched to sandboxed workers; readiness reports what this build accepts.\n`);
       process.stdout.write(`=======================================================\n\n`);
     })
     .catch((err) => {

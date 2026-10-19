@@ -1,125 +1,52 @@
 # OanTuTi Arena
 
-Nền tảng thi đấu bot Oẳn Tù Tì: engine TypeScript, runner STDIO NDJSON, Fastify API/WebSocket, replay Protobuf, quản lý tài khoản/phiên bản bot và giao diện React/Canvas với Monaco Editor.
+Website thi đấu Bot OanTuTi: Next.js/React, Fastify/WebSocket, PostgreSQL 16, bàn cờ và replay. Engine/supervisor Rust có cổng kiểm chứng riêng.
 
-> **Phạm vi vận hành:** dành cho môi trường nội bộ và mã bot đáng tin cậy. Docker Compose dưới đây đóng gói ứng dụng, **không cô lập riêng từng bot**. Các mutation API (tạo trận, giải đấu, lưu bot, chạy draft) yêu cầu xác thực bằng tài khoản người dùng; bot vẫn chạy bằng tiến trình con cùng container server. Không công khai dịch vụ nhận code lên Internet. Không có Security Pentest trong phạm vi bàn giao này.
+> **Chưa chứng nhận production:** bộ Docker dưới đây chạy control plane v2, không bật thực thi mã Bot. Không dùng `OANTUTI_DEV_EXECUTION=1` để thay thế sandbox trên một website công khai.
 
-## Thiết kế nâng cấp production v2 — chưa triển khai
+**Phạm vi bàn giao hiện tại:** phần mềm LAN, không provision/cấp máy, không infrastructure test, soak 72h hay rehearsal 7 ngày. Các việc đó chỉ là khuyến nghị triển khai tương lai; không có nghĩa release đã được chứng nhận hoặc capacity/ETA/RPO/RTO đã đạt.
 
-Bộ tài liệu mới dành cho giải Bot khoảng 500 đội, chạy nhiều ngày, bốn thể thức và khán giả không cần đăng nhập:
+## 1. Cài trên máy cá nhân hoặc VPS Linux
 
-- **[Mục lục đặc tả v2](docs/specs/v2/README.md)** — audit hiện trạng, yêu cầu sản phẩm, gameplay/giải đấu, kiến trúc/dữ liệu, UI/UX, an toàn và vận hành.
-- **[Thiết kế tổng](docs/superpowers/specs/2026-10-13-production-upgrade-design.md)** và **[kế hoạch triển khai](docs/superpowers/plans/2026-10-13-production-upgrade.md)** — quyết định đề xuất, dependencies và cổng nghiệm thu.
-- **[Research nền tảng](docs/research/2026-10-13-v2-platform-research.md)** và **[đánh giá tech stack](docs/research/2026-10-13-v2-tech-stack-evaluation.md)** — nguồn chính thức và tradeoffs.
+Cùng bộ Compose cho hai nơi: PostgreSQL → API → Next.js → nginx. Chỉ gateway bind loopback theo mặc định. Không có ứng dụng desktop/mobile riêng.
 
-Đây là **đề xuất chờ phê duyệt, chỉ thay đổi tài liệu**; không có chức năng v2 được triển khai trong lần này. Các lệnh và mô tả vận hành bên dưới vẫn là **v1** với giới hạn trusted-bot đã nêu. Mục tiêu tải, sandbox và phục hồi trong đặc tả mới không phải bằng chứng v1 đã đạt production.
-
-## 1. Chạy bằng Docker Compose
-
-Yêu cầu Docker Engine và Docker Compose v2. Chạy từ thư mục gốc repository:
+Đọc [runbook bàn giao LAN](docs/runbooks/lan-handover.md) để vận hành, sao lưu, xử lý sự cố và nghiệm thu; [khuyến nghị hạ tầng](docs/runbooks/infrastructure-recommendation.md) để chọn máy/phần mềm; [hướng dẫn triển khai và bằng chứng kiểm thử](docs/implementation/rebuild/portable-deployment.md) cho chi tiết đóng gói. Cần Docker Engine và Compose; tạo hai file mật khẩu ngẫu nhiên khác nhau ngoài checkout, rồi đặt đường dẫn:
 
 ```bash
+export PG_OWNER_PASSWORD_FILE=/absolute/private/path/postgres-owner
+export PG_APP_PASSWORD_FILE=/absolute/private/path/postgres-app
+export PUBLIC_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+export OANTUTI_BACKUP_FENCE=off  # chỉ demo không nhận code sinh viên; vận hành thật dùng enforce + backup hợp lệ
+docker compose config --quiet
 docker compose up --build -d
 ```
 
-Mở **http://localhost:3000**. Nginx phục vụ SPA và chuyển tiếp `/api/` cùng `/ws/` tới server. Cổng API 3001 chỉ được expose trong mạng Compose, không publish ra máy host. Web mặc định chỉ bind localhost.
-
-Nếu cổng 3000 đang dùng:
-
-```bash
-WEB_PORT=3300 docker compose up --build -d
-```
-
-Server dùng Node.js 24, Python 3 và G++ hỗ trợ C++20; chạy dưới tài khoản `node`, không phải root. Web dùng build Vite multi-stage và Nginx. Compose chờ healthcheck server trước khi khởi động web.
-
-### Vận hành
+Mở http://127.0.0.1:3000. Không publish cổng PostgreSQL/API. VPS mặc định truy cập qua SSH tunnel; HTTPS, tên miền, mail ONLINE, sandbox và backup ngoài host phải được cấu hình/kiểm chứng trước khi mở dịch vụ công khai.
 
 ```bash
 docker compose ps
-docker compose logs -f server web
-curl --fail http://localhost:3000/api/health
-
-# Khởi động lại; giữ database, bot sources và replay
-docker compose restart
-
-# Cập nhật sau khi sửa mã nguồn
-docker compose up --build -d
-
-# Dừng và gỡ container/mạng; giữ volume dữ liệu
-docker compose down
+docker compose logs -f server web gateway
+curl --fail http://127.0.0.1:3000/api/v2/tournaments
+docker compose down  # giữ named volumes
 ```
 
-`docker compose down -v` **xóa volume và dữ liệu**; không dùng khi muốn giữ lịch sử trận đấu.
+**Không dùng `down -v` với dữ liệu thật.** PostgreSQL `arena-postgres` giữ ledger v2, `arena-storage` giữ source/replay; sao chép riêng storage không phải backup v2 đầy đủ. Khởi tạo schema chỉ chạy với volume trống; nâng cấp volume hiện có cần migration được duyệt và backup đã kiểm tra.
 
-### Lưu trữ và sao lưu
+## 2. Workspace phát triển và demo
 
-Named volume `arena-storage` được mount tại `/app/storage`, gồm:
+[Demo và test](docs/implementation/rebuild/demo-and-tests.md) mô tả stack dev đang có, biến PG, tài khoản demo và cách chạy suite. Suite có thể re-seed DB; không trỏ nó vào dữ liệu triển khai.
 
-| Đường dẫn trong container | Dữ liệu |
-| --- | --- |
-| `/app/storage/arena.sqlite` | Bot registry, ELO, trận đấu, giải đấu, metadata và replay BLOB |
-| `/app/storage/bots/` | Mã bot nộp qua API/IDE |
-| `/app/storage/replays/` | Tệp replay `.oantuti` |
+Đặc tả: [v2](docs/specs/v2/README.md). Trạng thái/bằng chứng: [rebuild ledger](docs/implementation/rebuild/progress.md). Các mục lịch sử bên dưới mô tả API/SDK v1, không phải chứng nhận deploy v2.
 
-Dữ liệu volume được giữ khi container được tạo lại. Không chỉ sao lưu các tệp replay: cần cả database và bot sources.
+## 3. Giao diện LAN v2
 
-Để có bản sao nhất quán, chờ các trận/giải đấu hoàn tất rồi dừng server trước khi copy:
+- ADMIN cấp tài khoản/đội và direct-enroll; không tự đăng ký, không mật khẩu admin mặc định. STUDENT đăng nhập bằng tài khoản được cấp và kích hoạt theo policy.
+- Workspace đội: source/Monaco nhiều tệp, bài nộp chính thức, diagnostics và private TEST. Private TEST chỉ đội sở hữu, không ảnh hưởng điểm chính thức.
+- ADMIN mở đăng ký, khóa cấu hình, chủ động Bắt đầu khi readiness/capacity hợp lệ, xử lý dispute/correction và finalize. Không cần giữ tab mở để scheduler tiến giải.
+- Public SSR: giải đã công bố, standings, bracket và kết quả/live. **Official replay chỉ FULL ADMIN**, không phát replay qua renderer bracket. Private TEST replay theo quyền chủ đội.
+- Sơ đồ elimination/playoff dùng **brackets-viewer.js 1.9.1** từ npm lockfile (npm khai báo ISC nhưng tệp LICENSE đi kèm là **MIT**; bản copy nội bộ giữ đúng tệp LICENSE đó); JS/CSS/LICENSE được copy nội bộ bởi predev/prebuild, không CDN. Mỗi sơ đồ ở document client riêng, dispose khi dữ liệu đổi/unmount; danh sách accessible vẫn giữ EMPTY/BYE/WALKOVER/DOUBLE_WITHDRAWAL theo server. Swiss/Elo không vẽ bracket giả, mỗi cửa sổ tối đa 16 ô.
+- Monaco và assets renderer phục vụ cục bộ; không cần Internet trên browser LAN. Cách build/restart và biến môi trường xem runbook.
 
-```bash
-docker compose stop server
-docker compose cp server:/app/storage ./arena-backup
-docker compose start server
-```
-
-Khôi phục vào cùng đường dẫn storage, giữ quyền ghi của UID/GID 1000 (`node`). Named volume rỗng được Docker khởi tạo từ thư mục storage trong image; bind mount do người dùng tự tạo cần quyền phù hợp.
-
-## 2. Chạy local không Docker
-
-Yêu cầu Node.js 24, npm, Python 3, G++ có C++20. `node:sqlite` được sử dụng ở server. Chạy các lệnh từ thư mục gốc để đường dẫn map, SDK và bot đúng.
-
-```bash
-npm ci
-
-# Terminal 1: lưu database trên đĩa
-mkdir -p storage
-DB_LOCATION=./storage/arena.sqlite npx tsx packages/server/src/index.ts
-
-# Terminal 2: Web dev server + proxy API/WebSocket
-npm run dev --workspace=@oantuti/web
-```
-
-Web: `http://localhost:3000`; API local: `http://localhost:3001`.
-
-| Biến môi trường server | Mặc định local | Compose |
-| --- | --- | --- |
-| `PORT` | `3001` | `3001` |
-| `HOST` | `0.0.0.0` | `0.0.0.0` |
-| `DB_LOCATION` | Database trong RAM nếu không đặt | `/app/storage/arena.sqlite` |
-
-Database trong RAM mất toàn bộ registry/ELO/lịch sử khi server dừng. Thư mục cha của `DB_LOCATION` phải tồn tại và ghi được. Không thay `PORT` riêng trong Compose nếu chưa cập nhật Nginx và healthcheck tương ứng.
-
-## 3. Giao diện sử dụng
-
-- **Tài khoản & Phân quyền (RBAC):**
-  - **Admin mặc định:** Hệ thống tự động tạo sẵn tài khoản `admin` (mật khẩu mặc định `admin123` hoặc biến môi trường `ADMIN_PASSWORD`), có huy hiệu `👑 Admin`. Admin nắm độc quyền tạo giải đấu, chốt danh sách và điều khiển máy chiếu.
-  - **Người chơi (Player):** Người dùng trong mạng LAN tự đăng ký qua Web, luôn nhận vai trò `🎮 Player`. Người chơi dùng Bot IDE để lập trình và nộp bot vào giải; không thể tạo giải hay chốt giải (nhận HTTP 403 Forbidden).
-- **Mô hình Mạng Nội Bộ (LAN Party / Tournament):**
-  - Máy chủ Admin chạy trên cổng `3000` (Web) và `3001` (API/WS), lắng nghe `0.0.0.0`.
-  - Mọi người trong cùng mạng Wi-Fi/LAN truy cập bằng trình duyệt tại: `http://<IP_MÁY_ADMIN>:3000`. Không cần cài Node, Python hay C++ trên máy client.
-  - **Cơ chế Chống Lộ Kết Quả (Anti-Spoiler Gate):** Server tính toàn bộ trận đấu ở nền. Bảng điểm và danh sách trận trên máy người chơi chỉ mở khóa đồng bộ theo từng lượt Admin bấm **"Trận đấu tiếp theo (Next Match)"** trên máy chiếu.
-- **Bot IDE:**
-  - Cho phép chọn bot cá nhân (`Owned bot`), tạo mới (`New Bot`), đổi tên và chọn ngôn ngữ (Python / TypeScript).
-  - **Save:** tạo bot mới hoặc lưu phiên bản mới của bot đang chọn (tăng version, giữ nguyên điểm ELO, lưu mã nguồn bất biến vào lịch sử).
-  - **History:** mở lại mã nguồn các phiên bản cũ để xem hoặc tiếp tục chỉnh sửa rồi lưu thành phiên bản mới.
-  - **Delete:** xóa mềm bot cá nhân khỏi danh sách thi đấu nhưng giữ nguyên lịch sử các trận đã diễn ra.
-  - **Run Test:** chạy đối kháng ngay bằng buffer code đang soạn thảo trên giao diện, truyền phát lượt đi trực tiếp lên Canvas mà **không tạo bot rác** trên danh sách hay bảng xếp hạng ELO.
-- **New Match:** chọn map và hai bot bất kỳ trong danh sách (gồm bot hệ thống và các bot đang hoạt động) để khởi chạy trận đấu.
-- **Match Logs:** xuất hiện tuần tự theo từng lượt đi được trình chiếu; nút Reset Logs đưa bàn cờ và nhật ký về lượt 0.
-- **Timeline:** Play/Pause, bước tới/lùi, tua nhanh/chậm (1x, 2x, 5x, 10x).
-- **Load .oantuti Replay:** nạp tệp replay nhị phân ngoại tuyến để phát lại bàn cờ.
-- **Leaderboard & Tournaments:** xem bảng xếp hạng ELO, danh sách giải đấu Round-Robin, bảng điểm và xem lại từng trận.
-
-Monaco Editor tải tài nguyên từ CDN; font từ Google Fonts. Nếu server chạy trước khi cập nhật mã backend, cần khởi động lại server.
 ## 4. Luật chơi
 
 Mỗi quân đi một ô theo 8 hướng vua trên các ô hợp lệ. Không đi vào đồng minh, quân địch cùng loại hoặc quân khắc chế mình.
@@ -163,85 +90,45 @@ g++ -std=c++20 -O3 -I sdk/cpp sdk/cpp/starter_bot.cpp -o sdk/cpp/starter_bot
 
 Binary được tạo cạnh source nên thư mục đó cần quyền ghi. SDK/header phải đi kèm khi bot import/include chúng; code inline trong IDE nên tự chứa các thành phần cần thiết.
 
-## 6. Kiến trúc repository
+## 6. Kiến trúc repository và API v2
 
-```mermaid
-flowchart LR
-    Browser[React / Canvas / Monaco] -->|HTTP + binary WebSocket| Nginx[Nginx]
-    Nginx --> API[Fastify API + WebSocket Hub]
-    API --> DB[(SQLite + storage volume)]
-    API --> Runner[STDIO match runner]
-    Runner --> Engine[Pure game engine]
-    Runner --> Bots[Python / TypeScript / C++ child processes]
-```
+- `packages/server`: Fastify control plane, PostgreSQL ledger, scheduler, immutable object/result và role ACL.
+- `packages/web`: Next.js SSR/React portal, workspace, organizer, Canvas live/replay và bracket presentation.
+- Rust workspace: engine, verifier và execution supervisor; TypeScript local runner là công cụ SDK/dev, không thay sandbox cho code không tin cậy.
+- `packages/protocol`, `sdk/`: wire format và SDK ba ngôn ngữ.
+- `docs/specs/v2/`: authority sản phẩm/luật/dữ liệu/UI/security; không xem tên baseline là bằng chứng đã nghiệm thu.
 
-- `packages/engine`: topology, trạng thái, luật, mô phỏng seeded fuzzing.
-- `packages/protocol`: Protobuf codec, bitmask map, framing 5 byte, replay `OANTUTI1`.
-- `packages/runner`: handshake, timeout, child processes, CLI.
-- `packages/server`: API, WebSocket catch-up, SQLite, giải đấu/ELO.
-- `packages/web`: visualizer, playback, editor và bảng xếp hạng.
-- `sdk/`: SDK và bot mẫu đa ngôn ngữ.
-- `docs/specs/`: thiết kế chi tiết; một số hạng mục mô tả mục tiêu dài hạn, không đồng nghĩa đã nghiệm thu.
+API mới nằm dưới `/api/v2`; public discovery không phụ thuộc máy chiếu. Route legacy `/api/auth/register` bị tắt mặc định; không dùng hướng dẫn PLAYER/self-registration/anti-spoiler v1 cho LAN v2. Runbook chứa quy trình operator và quyền replay hiện hành.
 
-## 7. API chính
-
-| Endpoint | Phương thức | Xác thực | Chức năng |
-| --- | --- | --- | --- |
-| `/api/auth/register` | POST | Không | Đăng ký tài khoản mới (mật khẩu scrypt, luôn nhận vai trò `PLAYER`) |
-| `/api/auth/login` | POST | Không | Đăng nhập tài khoản (hỗ trợ `admin / admin123` hoặc tài khoản Player) |
-| `/api/auth/me` | GET | Tùy chọn | Thông tin tài khoản hiện tại kèm vai trò (`ADMIN` / `PLAYER`) |
-| `/api/auth/logout` | POST | Session | Đăng xuất và thu hồi session token |
-| `/api/bots` | GET | Không | Danh sách bot công khai (chỉ metadata: id, tên, ngôn ngữ, ELO, version; không lộ mã nguồn) |
-| `/api/bots?mine=1` | GET | Bắt buộc | Danh sách bot do tài khoản sở hữu |
-| `/api/bots` | POST | Bắt buộc | Tạo bot mới thuộc tài khoản đang đăng nhập |
-| `/api/bots/:id` | GET | Chủ sở hữu | Xem chi tiết bot kèm mã nguồn phiên bản hiện tại |
-| `/api/bots/:id` | PUT | Chủ sở hữu | Cập nhật phiên bản mới (yêu cầu đúng version hiện tại) |
-| `/api/bots/:id` | DELETE | Chủ sở hữu | Xóa mềm bot khỏi danh sách thi đấu |
-| `/api/bots/:id/versions` | GET | Chủ sở hữu | Lịch sử tất cả các phiên bản mã nguồn của bot |
-| `/api/matches/test` | POST | Bắt buộc | Chạy thử nghiệm unranked từ mã nguồn gửi kèm |
-| `/api/matches` | POST | Bắt buộc | Khởi tạo trận đấu chính thức giữa 2 bot |
-| `/api/matches/:id` | GET | Không | Trạng thái/kết quả trận đấu |
-| `/api/matches/:id/replay` | GET | Không | Tải tệp replay nhị phân `.oantuti` |
-| `/api/tournaments` | GET | Không | Xem danh sách các giải đấu |
-| `/api/tournaments` | POST | `ADMIN` | Tạo giải đấu mới (Round-Robin hoặc Swiss) |
-| `/api/tournaments/:id/entries` | POST | Bắt buộc | Thí sinh nộp bot cá nhân vào giải đấu đang mở |
-| `/api/tournaments/:id/lock` | POST | `ADMIN` | Chốt danh sách thí sinh và ghép cặp |
-| `/api/tournaments/:id/project-next` | POST | `ADMIN` | Chuyển trận trình chiếu tiếp theo và mở khóa điểm số toàn phòng |
-| `/api/tournaments/:id` | GET | Không | Bảng tổng sắp và các trận đấu (tự động lọc Anti-Spoiler cho Player) |
-| `/ws/matches/:matchId` | WebSocket | Không | Stream nhị phân Protobuf theo thời gian thực |
-
-Giải đấu hỗ trợ cả 2 thể thức chuẩn: **Vòng tròn tính điểm (Round-Robin)** và **Hệ Thụy Sĩ (Swiss System)**. Thể thức Thụy Sĩ tự động phân nhóm theo điểm số qua từng vòng ($R = \lceil \log_2 N \rceil$), ngăn chặn tái đấu giữa các cặp đã gặp nhau, tự động cấp vé Bye (+3.0 điểm) khi số bot lẻ. Ban tổ chức có bảng điều khiển với nút "Trận đấu tiếp theo (Next Match)" để tuần tự chiếu từng trận lên Canvas và màn hình vinh danh Nhà vô địch kèm cúp vàng 🏆 và pháo hoa.
-
-Trình chiếu do người tổ chức bấm nút điều khiển trên trình duyệt, không tự chuyển theo thời gian. Vị trí hàng đợi được giữ khi chuyển tab hoặc bật Theater trong cùng phiên trang; hết hàng đợi thì nút Next Match bị vô hiệu hóa, không tự quay lại trận đầu. Khi replay chưa sẵn sàng, thông báo lỗi được hiển thị và không tăng vị trí hàng đợi. Server vẫn tính các trận của giải ở nền; nút Next Match điều khiển trình chiếu, không phải lệnh bắt đầu tính trận trên server.
-
-Khi tạo giải, chọn **Mở đăng ký**: giải giữ trạng thái PENDING, chưa chạy trận. Người chơi lưu bot trong Bot IDE rồi vào giải, chọn bot cá nhân và bấm **Nộp bot tham gia**. Mỗi tài khoản một bài nộp, có thể thay bài trước khi khóa. Chủ giải bấm **Chốt danh sách & ghép cặp** khi có ít nhất hai người; sau khóa, không nhận bài mới. Nếu bot đã sửa sau lúc nộp, người chơi cần nộp lại trước khi chốt. Các API tương ứng: `POST /api/tournaments/:id/entries` và `POST /api/tournaments/:id/lock`.
-## 8. Kiểm tra
+## 7. Kiểm tra phát triển (không chạy trong lượt bàn giao này)
 
 ```bash
+# Trước suite có server: PGHOST/PGPORT/PGUSER tới DB test cô lập; không dùng DB demo/production.
+export PGDATABASE=arena_example_test
 npm test
 npm run test:engine
 npm run test:runner
 npm run test:protocol
 npm run test:web
-npm run test:server
+node --import tsx deploy/linux/test-isolated.mts packages/server
 npm run build --workspace=@oantuti/web
-npm run test:load
+# Load/infrastructure probes chỉ là khuyến nghị riêng, không yêu cầu trong delivery này.
 ```
 
 Fuzz suite so sánh SHA-256 canonical trace của các lần chạy cùng seed trên cùng runtime; chưa chứng minh tính đồng nhất trên mọi CPU/runtime hay SHA-256 toàn bộ replay `.oantuti`.
 Load benchmark hiện là phép đo ngắn trên loopback, client/server cùng tiến trình: không thay thế soak test 60 phút, kiểm tra memory leak dài hạn hoặc đo qua mạng thật. Không lấy một lần chạy làm chứng nhận SLA production.
 
-Đợt kiểm tra đóng gói Docker trước đó đã thực thi: build cả hai image; Nginx `nginx -t`; hai service healthy; trận Python/C++, TypeScript và bot Python nộp qua API; nhận INIT/DELTA/END qua WebSocket proxy; tải replay; tạo lại container và đối chiếu SHA-256 replay cùng registry/kết quả. Kiểm tra tài khoản/phiên bản bot đã chạy trực tiếp trên giao diện trình duyệt: đăng ký tài khoản, đăng xuất/đăng nhập lại, lưu bot lên version 1 rồi version 2, xem lại mã nguồn version cũ, chạy draft Python/TypeScript không làm tăng số lượng bot trên registry hay biến động ELO. `npm test` đạt 84/84 tests trong lần kiểm tra này.
+Các số test/smoke v1 lịch sử không được dùng làm bằng chứng v2 hiện tại. Chỉ báo cáo các checks thực sự đã chạy cho revision tương ứng; xem ledger/bằng chứng có scope rõ ràng.
 
 Nếu máy báo `docker: unknown command: docker compose`, cần cài Docker Compose v2 plugin theo hệ điều hành hoặc dùng standalone Compose v2. Lần smoke test dùng standalone `/tmp/oantuti-docker-compose` vì host chưa có plugin; không thay đổi cài đặt Docker của host.
 
-## 9. Giới hạn trước khi triển khai công khai
+## 8. Giới hạn trước khi triển khai công khai
 
-Cần HTTPS ở reverse proxy ngoài, giới hạn tài nguyên và sandbox riêng cho bot không tin cậy trước khi triển khai công khai. Hệ thống đã có phân quyền 2 tầng `ADMIN` và `PLAYER`, tài khoản Admin mặc định, nộp bot theo tài khoản, khóa danh sách bởi Admin và cơ chế Anti-Spoiler đồng bộ tiến trình trình chiếu qua mạng LAN. Compose không mount Docker socket, không dùng privileged mode và không tự fallback thành một sandbox an toàn.
+Cần cấu hình HTTPS/origin, sandbox riêng cho code không tin cậy, backup/fence và quyền ADMIN/STUDENT trước vận hành thật. Không có admin password mặc định hay public self-registration trong LAN v2; kết quả công khai không bị khóa bởi projector. Compose không tự biến API thành execution sandbox.
 
-`npm ci` trong image hiện báo 8 dependency vulnerabilities (2 low, 3 moderate, 1 high, 2 critical). Chưa thực hiện dependency upgrade hay Security Pentest; không xem build thành công là chứng nhận bảo mật.
+Không suy trạng thái dependency vulnerabilities từ một lần `npm ci` cũ; audit/support và chứng nhận host là công việc triển khai được cho phép riêng, không phải bằng chứng hay yêu cầu infrastructure test của delivery này.
 
-## 10. GitHub Actions CI/CD
+## 9. GitHub Actions CI/CD
 
 Workflow: `.github/workflows/ci.yml`.
 

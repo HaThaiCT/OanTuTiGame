@@ -31,6 +31,8 @@ import { MapService } from '../src/tournaments/map-service.js';
 import { MatchExecutionService } from '../src/tournaments/execution-service.js';
 import { TournamentAutoRunner } from '../src/tournaments/auto-runner.js';
 import { TournamentSchedulerService } from '../src/tournaments/scheduler-service.js';
+import { TournamentControlPlane } from '../src/tournaments/control-plane.js';
+import { RetentionService } from '../src/operations/retention-service.js';
 
 const sampleMap: MapDescriptor = {
   mapName: 'grace-autoseal-map-3x3',
@@ -123,15 +125,16 @@ describe('S11: round grace window and autoseal', () => {
         evidence: {
           gameId: game.id,
           winner: whiteWon ? 1 : 2,
-          reason: whiteWon ? 'THRONE_BREACH' : 'BOT_TIMEOUT',
+          reason: 'THRONE_BREACH',
           disposition: 'DECISIVE' as const,
-          executionStatus: whiteWon ? ('COMPLETED' as const) : ('BOT_FORFEIT' as const),
+          executionStatus: 'COMPLETED' as const,
           rulesRevision: 'ArenaGameplay/v2',
-          totalPly: 3,
+          totalPly: whiteWon ? 3 : 4,
           trace: [
             { ply: 1, side: 1, move: { pieceId: 1, targetPos: { x: 1, y: 2 } } },
             { ply: 2, side: 2, move: { pieceId: 2, targetPos: { x: 1, y: 1 } } },
-            { ply: 3, side: 1, move: { pieceId: 1, targetPos: { x: 2, y: 2 } } },
+            { ply: 3, side: 1, move: { pieceId: 1, targetPos: { x: 2, y: whiteWon ? 2 : 1 } } },
+            ...(whiteWon ? [] : [{ ply: 4, side: 2, move: { pieceId: 2, targetPos: { x: 0, y: 0 } } }]),
           ],
         },
         manifestDigest: `sha256_grace_${tag}_${index}`,
@@ -369,5 +372,29 @@ describe('S11: round grace window and autoseal', () => {
 
     expect((await roundState(tournamentId, 1)).sealed_at).not.toBeNull();
     expect(await encounterCount(tournamentId, 2)).toBe(1);
+  });
+  it('advances rounds and closes intake without enabling the development executor', async () => {
+    const { tournamentId } = await createTournament(0, 'native-control-plane');
+    await completeRoundOne(tournamentId);
+    const draining = await createTournament(60, 'deadline-control-plane');
+    await db.query("UPDATE tournaments SET state = 'REGISTRATION_OPEN', registration_closes_at = clock_timestamp() - interval '1 minute' WHERE id = $1", [draining.tournamentId]);
+    const broker = new JobBroker(db);
+    const driver = new TournamentControlPlane(db, broker, new JobReconciler(db), scheduler, new RetentionService(db));
+    const previous = process.env.OANTUTI_DEV_EXECUTION;
+    process.env.OANTUTI_DEV_EXECUTION = '0';
+    try {
+      await driver.tick();
+      await driver.tick();
+      expect((await roundState(tournamentId, 1)).sealed_at).not.toBeNull();
+      expect(await encounterCount(tournamentId, 2)).toBe(1);
+      const state = await db.query<{ state: string }>('SELECT state FROM tournaments WHERE id = $1', [draining.tournamentId]);
+      expect(state.rows[0].state).toBe('VALIDATING_SUBMISSIONS');
+      const events = await db.query("SELECT id FROM outbox_events WHERE topic = 'REGISTRATION_CLOSED' AND payload->>'tournamentId' = $1", [draining.tournamentId]);
+      expect(events.rows).toHaveLength(1);
+    } finally {
+      if (previous === undefined) delete process.env.OANTUTI_DEV_EXECUTION;
+      else process.env.OANTUTI_DEV_EXECUTION = previous;
+      driver.stop();
+    }
   });
 });

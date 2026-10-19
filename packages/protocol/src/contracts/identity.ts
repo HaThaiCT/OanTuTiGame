@@ -51,6 +51,8 @@ export interface TournamentSubstrateDto {
   readonly name: string;
   readonly format: 'SINGLE_ELIMINATION' | 'SWISS_PLAYOFF' | 'ROUND_ROBIN' | 'ELO_ARENA';
   readonly state: 'DRAFT' | 'PUBLISHED' | 'REGISTRATION_OPEN' | 'VALIDATING_SUBMISSIONS' | 'LOCKED' | 'READY_TO_START' | 'RUNNING' | 'PAUSED' | 'PROVISIONAL' | 'FINALIZED' | 'ARCHIVED' | 'CANCELLED';
+  readonly isRated: boolean;
+  readonly globalRatingPolicy: 'ArenaContestRating/v1';
   readonly version: number;
   readonly rulesRevision: string;
   readonly maxTeams: number;

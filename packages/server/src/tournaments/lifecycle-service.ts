@@ -25,12 +25,19 @@ export type TournamentStartReceipt = Receipt<{
   readonly startedAt: string;
 }>;
 
+export type TournamentArchiveReceipt = Receipt<{
+  readonly tournamentId: string;
+  readonly state: 'ARCHIVED';
+  readonly archivedAt: string;
+}>;
+
 
 export class TournamentLifecycleService {
   constructor(
     private readonly db: PostgresDatabase,
     /** Protected-write fence: lock/start/finalize refuse to advance on a stale backup. */
-    private readonly backupFence?: BackupFence
+    private readonly backupFence?: BackupFence,
+    private readonly assertExecutionReady?: () => Promise<void>,
   ) {}
 
   /**
@@ -65,9 +72,9 @@ export class TournamentLifecycleService {
     if (ctx.actor.role !== 'ADMIN') {
       throw new TournamentError(403, 'Only administrators can lock tournament registration');
     }
-    await this.backupFence?.assertFresh();
 
     return this.db.withTransaction(async (client) => {
+      await this.backupFence?.assertFresh(client);
       const tourneyRes = await client.query<{
         id: string;
         state: string;
@@ -160,12 +167,35 @@ export class TournamentLifecycleService {
         [tournamentId]
       );
 
-      // Reveal HIDDEN maps in the tournament map pool
+      // Hidden content is revealed per version, for exactly the versions this tournament plays: the
+      // committed map (single-map formats) and every map in the pool (knockout series). Both are read
+      // from the row each one pinned, and a later publish of the same map stays hidden until the
+      // tournament that pins it locks.
+      const playedMaps = `SELECT map_id FROM tournament_map_commitments WHERE tournament_id = $1
+                          UNION
+                          SELECT map_id FROM tournament_map_pool WHERE tournament_id = $1`;
+
+      // Reveal HIDDEN maps in the set this tournament plays.
       await client.query(
         `UPDATE maps
          SET revealed_at = clock_timestamp()
-         WHERE id IN (SELECT map_id FROM tournament_map_pool WHERE tournament_id = $1)
+         WHERE id IN (${playedMaps})
            AND revealed_at IS NULL`,
+        [tournamentId]
+      );
+
+      await client.query(
+        `WITH played AS (
+           SELECT map_id, map_version FROM tournament_map_commitments WHERE tournament_id = $1
+           UNION
+           SELECT map_id, map_version FROM tournament_map_pool WHERE tournament_id = $1
+         )
+         UPDATE map_versions v
+            SET revealed_at = clock_timestamp()
+           FROM played p
+          WHERE v.map_id = p.map_id
+            AND v.version = p.map_version
+            AND v.revealed_at IS NULL`,
         [tournamentId]
       );
 
@@ -239,11 +269,12 @@ export class TournamentLifecycleService {
     if (ctx.actor.role !== 'ADMIN') {
       throw new TournamentError(403, 'Only administrators can start the tournament');
     }
-    await this.backupFence?.assertFresh();
+    await this.assertExecutionReady?.();
 
     return this.db.withTransaction(async (client) => {
-      const tourneyRes = await client.query<{ id: string; state: string; version: number }>(
-        'SELECT id, state, version FROM tournaments WHERE id = $1 FOR UPDATE',
+      await this.backupFence?.assertFresh(client);
+      const tourneyRes = await client.query<{ id: string; state: string; version: number; is_rated: boolean }>(
+        'SELECT id, state, version, is_rated FROM tournaments WHERE id = $1 FOR UPDATE',
         [tournamentId]
       );
 
@@ -295,6 +326,15 @@ export class TournamentLifecycleService {
         );
       }
 
+      if (tourney.is_rated) {
+        await client.query(
+          `UPDATE tournament_entries
+              SET global_rating_participant = true
+            WHERE tournament_id = $1 AND status = 'ELIGIBLE' AND frozen_submission_id IS NOT NULL`,
+          [tournamentId]
+        );
+      }
+
       // Advance state to RUNNING
       const updateRes = await client.query<{ started_at: string }>(
         `UPDATE tournaments
@@ -333,6 +373,54 @@ export class TournamentLifecycleService {
       };
     });
   }
+  /** Archive is a state transition, never a purge: evidence and retention holds stay intact. */
+  async archive(tournamentId: string, ctx: CommandContext): Promise<TournamentArchiveReceipt> {
+    // Authorize before receipt lookup, so a limited session cannot replay a privileged command.
+    if (ctx.actor.role !== 'ADMIN' || ctx.actor.scope !== 'FULL') {
+      throw new TournamentError(403, 'Only fully authenticated administrators can archive tournaments');
+    }
+    return runIdempotent(this.db, ctx, `ARCHIVE:${tournamentId}`, { tournamentId }, async () => {
+      return this.db.withTransaction(async (client) => {
+        await this.backupFence?.assertFresh(client);
+        const result = await client.query<{ state: string; version: number }>(
+          'SELECT state, version FROM tournaments WHERE id = $1 FOR UPDATE',
+          [tournamentId]
+        );
+        const tournament = result.rows[0];
+        if (!tournament) throw new TournamentError(404, `Tournament not found: ${tournamentId}`);
+        this.assertExpectedVersion(tournament, ctx);
+        if (tournament.state !== 'FINALIZED') {
+          throw new TournamentError(409, `Cannot archive tournament in state '${tournament.state}'`);
+        }
+        const disputes = await client.query(
+          `SELECT id FROM disputes WHERE tournament_id = $1 AND status IN ('OPEN', 'UNDER_REVIEW') LIMIT 1`,
+          [tournamentId]
+        );
+        if (disputes.rows.length > 0) {
+          throw new TournamentError(409, 'OPEN_DISPUTES: Resolve active disputes before archiving');
+        }
+        // Do not clear legal/security/team holds, rewrite finalized_at, or delete any data.
+        const updated = await client.query<{ archived_at: Date }>(
+          `UPDATE tournaments SET state = 'ARCHIVED', version = version + 1, updated_at = clock_timestamp()
+           WHERE id = $1 RETURNING updated_at AS archived_at`,
+          [tournamentId]
+        );
+        const archivedAt = updated.rows[0].archived_at.toISOString();
+        const data = { tournamentId, state: 'ARCHIVED' as const, archivedAt };
+        await client.query(
+          `INSERT INTO audit_events (actor_user_id, action, resource_type, resource_id, details)
+           VALUES ($1, 'TOURNAMENT_ARCHIVED', 'tournament', $2, $3)`,
+          [ctx.actor.userId, tournamentId, JSON.stringify({ ...data, requestId: ctx.requestId })]
+        );
+        await client.query(
+          `INSERT INTO outbox_events (topic, payload) VALUES ('TOURNAMENT_ARCHIVED', $1)`,
+          [JSON.stringify(data)]
+        );
+        return { receiptId: randomUUID(), timestamp: archivedAt, data };
+      });
+    });
+  }
+
 
 
 

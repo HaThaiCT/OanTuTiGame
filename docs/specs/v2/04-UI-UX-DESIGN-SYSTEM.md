@@ -2,6 +2,7 @@
 
 > **Baseline UI/UX đã chốt hướng thiết kế; chưa triển khai.** Tài liệu không phải mockup/browser chạy được hoặc bằng chứng nghiệm thu. Usability/performance là targets phải kiểm trong T8–T12; palette/library choice không tự chứng nhận accessibility.
 > Yêu cầu gốc: [01 — Product requirements](01-PRODUCT-REQUIREMENTS.md). Quy tắc thi đấu và trạng thái domain do [02 — Gameplay & Tournament](02-GAMEPLAY-TOURNAMENT-RULES.md) quyết định; contract API/data do [03 — Architecture & Data Contracts](03-ARCHITECTURE-DATA-CONTRACTS.md) quyết định. Nhãn UI không được tạo state machine cạnh tranh với server.
+> **UX override 2026-10-18:** core UX theo role được ưu tiên: guest chỉ public view; STUDENT thấy danh sách giải tham gia gọn và workspace riêng đội–giải với Tổng quan/Bài nộp/Test riêng tư/Kháng nghị; ADMIN có danh sách quản lý và console một giải riêng. Navigation Ban tổ chức/Replay chỉ FULL ADMIN; official replay không public. Private TEST viewer vẫn chỉ đội mình, không ADMIN. Giữ visual game-arena.ai; không app desktop/mobile. Xem kế hoạch `../../superpowers/plans/2026-10-18-core-role-ux-first.md`.
 
 ## 1. Quyết định thiết kế và cơ sở hiện trạng
 

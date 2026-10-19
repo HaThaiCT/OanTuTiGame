@@ -377,9 +377,11 @@ describe('S11: Submission & Test Integration (T3b)', () => {
         testService.getTestResult(test.data.testId, studentActorB)
       ).rejects.toThrow(TestError);
 
-      // Admin CAN view
-      const resultAdmin = await testService.getTestResult(test.data.testId, adminActor);
-      expect(resultAdmin.testId).toBe(test.data.testId);
+      // Private practice stays team-only against the organizer too: an ADMIN session cannot read a
+      // team's test result, exactly like its unpublished drafts.
+      await expect(
+        testService.getTestResult(test.data.testId, adminActor)
+      ).rejects.toThrow(TestError);
     });
 
     it('enforces concurrent quota limit (max 2 pending per team)', async () => {

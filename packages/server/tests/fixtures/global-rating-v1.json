@@ -1,0 +1,732 @@
+{
+  "metadata": {
+    "policy": "ArenaContestRating/v1",
+    "oracle": "Independent throwaway Python decimal.Decimal with localcontext precision=50; integer conversion truncates toward zero.",
+    "source": "local://global-team-rating-plan.md section 2; inspired by https://codeforces.com/blog/entry/20762",
+    "parity": "Specified Arena policy only; not byte-for-byte parity with modern Codeforces.",
+    "formula": "Opponent-excluding logistic seed; sqrt(seed * rank midpoint) target; integer bisection [1,8000]; truncated half performance delta; mean correction -trunc(mean)-1; top min(N,floor(4sqrt(N))) correction clamped [-10,0], old-rating DESC/UUID ASC cutoff; rating clamp [0,8000].",
+    "regeneration": "Never regenerate expected values from production TypeScript."
+  },
+  "cases": [
+    {
+      "name": "equal-four-distinct",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 1
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 1500,
+          "rank": 2,
+          "rankEnd": 2
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 1500,
+          "rank": 3,
+          "rankEnd": 3
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 1500,
+          "rank": 4,
+          "rankEnd": 4
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 1500,
+          "delta": 112,
+          "newRating": 1612
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 1500,
+          "delta": 19,
+          "newRating": 1519
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 1500,
+          "delta": -39,
+          "newRating": 1461
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 1500,
+          "delta": -93,
+          "newRating": 1407
+        }
+      ],
+      "corrections": {
+        "firstCorrection": -11,
+        "secondCorrection": 0,
+        "topCorrectionCount": 4
+      }
+    },
+    {
+      "name": "eight-knockout-ties",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 1
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 1500,
+          "rank": 2,
+          "rankEnd": 2
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 1500,
+          "rank": 3,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 1500,
+          "rank": 3,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000005",
+          "rating": 1500,
+          "rank": 5,
+          "rankEnd": 8
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000006",
+          "rating": 1500,
+          "rank": 5,
+          "rankEnd": 8
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000007",
+          "rating": 1500,
+          "rank": 5,
+          "rankEnd": 8
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000008",
+          "rating": 1500,
+          "rank": 5,
+          "rankEnd": 8
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 1500,
+          "delta": 131,
+          "newRating": 1631
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 1500,
+          "delta": 67,
+          "newRating": 1567
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 1500,
+          "delta": 14,
+          "newRating": 1514
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 1500,
+          "delta": 14,
+          "newRating": 1514
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000005",
+          "oldRating": 1500,
+          "delta": -58,
+          "newRating": 1442
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000006",
+          "oldRating": 1500,
+          "delta": -58,
+          "newRating": 1442
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000007",
+          "oldRating": 1500,
+          "delta": -58,
+          "newRating": 1442
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000008",
+          "oldRating": 1500,
+          "delta": -58,
+          "newRating": 1442
+        }
+      ],
+      "corrections": {
+        "firstCorrection": -12,
+        "secondCorrection": 0,
+        "topCorrectionCount": 8
+      }
+    },
+    {
+      "name": "mixed-ratings-tied-places",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 800,
+          "rank": 1,
+          "rankEnd": 1
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 1900,
+          "rank": 2,
+          "rankEnd": 3
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 1500,
+          "rank": 2,
+          "rankEnd": 3
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 2400,
+          "rank": 4,
+          "rankEnd": 4
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 800,
+          "delta": 600,
+          "newRating": 1400
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 1900,
+          "delta": -194,
+          "newRating": 1706
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 1500,
+          "delta": 36,
+          "newRating": 1536
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 2400,
+          "delta": -444,
+          "newRating": 1956
+        }
+      ],
+      "corrections": {
+        "firstCorrection": -82,
+        "secondCorrection": 0,
+        "topCorrectionCount": 4
+      }
+    },
+    {
+      "name": "equal-25-cutoff-20",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 1
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 1500,
+          "rank": 2,
+          "rankEnd": 2
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 1500,
+          "rank": 3,
+          "rankEnd": 3
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 1500,
+          "rank": 4,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000005",
+          "rating": 1500,
+          "rank": 5,
+          "rankEnd": 5
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000006",
+          "rating": 1500,
+          "rank": 6,
+          "rankEnd": 6
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000007",
+          "rating": 1500,
+          "rank": 7,
+          "rankEnd": 7
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000008",
+          "rating": 1500,
+          "rank": 8,
+          "rankEnd": 8
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000009",
+          "rating": 1500,
+          "rank": 9,
+          "rankEnd": 9
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000010",
+          "rating": 1500,
+          "rank": 10,
+          "rankEnd": 10
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000011",
+          "rating": 1500,
+          "rank": 11,
+          "rankEnd": 11
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000012",
+          "rating": 1500,
+          "rank": 12,
+          "rankEnd": 12
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000013",
+          "rating": 1500,
+          "rank": 13,
+          "rankEnd": 13
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000014",
+          "rating": 1500,
+          "rank": 14,
+          "rankEnd": 14
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000015",
+          "rating": 1500,
+          "rank": 15,
+          "rankEnd": 15
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000016",
+          "rating": 1500,
+          "rank": 16,
+          "rankEnd": 16
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000017",
+          "rating": 1500,
+          "rank": 17,
+          "rankEnd": 17
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000018",
+          "rating": 1500,
+          "rank": 18,
+          "rankEnd": 18
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000019",
+          "rating": 1500,
+          "rank": 19,
+          "rankEnd": 19
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000020",
+          "rating": 1500,
+          "rank": 20,
+          "rankEnd": 20
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000021",
+          "rating": 1500,
+          "rank": 21,
+          "rankEnd": 21
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000022",
+          "rating": 1500,
+          "rank": 22,
+          "rankEnd": 22
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000023",
+          "rating": 1500,
+          "rank": 23,
+          "rankEnd": 23
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000024",
+          "rating": 1500,
+          "rank": 24,
+          "rankEnd": 24
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000025",
+          "rating": 1500,
+          "rank": 25,
+          "rankEnd": 25
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 1500,
+          "delta": 159,
+          "newRating": 1659
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 1500,
+          "delta": 114,
+          "newRating": 1614
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 1500,
+          "delta": 87,
+          "newRating": 1587
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 1500,
+          "delta": 68,
+          "newRating": 1568
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000005",
+          "oldRating": 1500,
+          "delta": 52,
+          "newRating": 1552
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000006",
+          "oldRating": 1500,
+          "delta": 39,
+          "newRating": 1539
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000007",
+          "oldRating": 1500,
+          "delta": 28,
+          "newRating": 1528
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000008",
+          "oldRating": 1500,
+          "delta": 18,
+          "newRating": 1518
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000009",
+          "oldRating": 1500,
+          "delta": 8,
+          "newRating": 1508
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000010",
+          "oldRating": 1500,
+          "delta": 0,
+          "newRating": 1500
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000011",
+          "oldRating": 1500,
+          "delta": -8,
+          "newRating": 1492
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000012",
+          "oldRating": 1500,
+          "delta": -16,
+          "newRating": 1484
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000013",
+          "oldRating": 1500,
+          "delta": -23,
+          "newRating": 1477
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000014",
+          "oldRating": 1500,
+          "delta": -30,
+          "newRating": 1470
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000015",
+          "oldRating": 1500,
+          "delta": -37,
+          "newRating": 1463
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000016",
+          "oldRating": 1500,
+          "delta": -44,
+          "newRating": 1456
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000017",
+          "oldRating": 1500,
+          "delta": -50,
+          "newRating": 1450
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000018",
+          "oldRating": 1500,
+          "delta": -57,
+          "newRating": 1443
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000019",
+          "oldRating": 1500,
+          "delta": -63,
+          "newRating": 1437
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000020",
+          "oldRating": 1500,
+          "delta": -69,
+          "newRating": 1431
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000021",
+          "oldRating": 1500,
+          "delta": -76,
+          "newRating": 1424
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000022",
+          "oldRating": 1500,
+          "delta": -82,
+          "newRating": 1418
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000023",
+          "oldRating": 1500,
+          "delta": -88,
+          "newRating": 1412
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000024",
+          "oldRating": 1500,
+          "delta": -94,
+          "newRating": 1406
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000025",
+          "oldRating": 1500,
+          "delta": -101,
+          "newRating": 1399
+        }
+      ],
+      "corrections": {
+        "firstCorrection": -13,
+        "secondCorrection": -10,
+        "topCorrectionCount": 20
+      }
+    },
+    {
+      "name": "all-tied-four",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 1500,
+          "rank": 1,
+          "rankEnd": 4
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 1500,
+          "delta": -1,
+          "newRating": 1499
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 1500,
+          "delta": -1,
+          "newRating": 1499
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 1500,
+          "delta": -1,
+          "newRating": 1499
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 1500,
+          "delta": -1,
+          "newRating": 1499
+        }
+      ],
+      "corrections": {
+        "firstCorrection": -1,
+        "secondCorrection": 0,
+        "topCorrectionCount": 4
+      }
+    },
+    {
+      "name": "clamp-boundaries",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 0,
+          "rank": 4,
+          "rankEnd": 4
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 0,
+          "rank": 3,
+          "rankEnd": 3
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 8000,
+          "rank": 2,
+          "rankEnd": 2
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 8000,
+          "rank": 1,
+          "rankEnd": 1
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 0,
+          "delta": 0,
+          "newRating": 0
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 0,
+          "delta": 95,
+          "newRating": 95
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 8000,
+          "delta": -91,
+          "newRating": 7909
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 8000,
+          "delta": -4,
+          "newRating": 7996
+        }
+      ],
+      "corrections": {
+        "firstCorrection": -4,
+        "secondCorrection": 0,
+        "topCorrectionCount": 4
+      }
+    },
+    {
+      "name": "upper-clamp",
+      "input": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "rating": 8000,
+          "rank": 1,
+          "rankEnd": 1
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "rating": 8000,
+          "rank": 2,
+          "rankEnd": 2
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "rating": 8000,
+          "rank": 3,
+          "rankEnd": 3
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "rating": 8000,
+          "rank": 4,
+          "rankEnd": 4
+        }
+      ],
+      "expected": [
+        {
+          "teamId": "00000000-0000-4000-8000-000000000001",
+          "oldRating": 8000,
+          "delta": 0,
+          "newRating": 8000
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000002",
+          "oldRating": 8000,
+          "delta": 0,
+          "newRating": 8000
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000003",
+          "oldRating": 8000,
+          "delta": -2,
+          "newRating": 7998
+        },
+        {
+          "teamId": "00000000-0000-4000-8000-000000000004",
+          "oldRating": 8000,
+          "delta": -56,
+          "newRating": 7944
+        }
+      ],
+      "corrections": {
+        "firstCorrection": 26,
+        "secondCorrection": 0,
+        "topCorrectionCount": 4
+      }
+    }
+  ]
+}

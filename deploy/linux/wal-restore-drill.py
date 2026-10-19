@@ -228,11 +228,6 @@ def restore_and_measure(marker: str) -> dict[str, object]:
 def main() -> int:
     parser = argparse.ArgumentParser(description='Local WAL archive + restore drill (not off-host).')
     parser.add_argument('--keep', action='store_true', help='keep the restored data directory and archive')
-    parser.add_argument(
-        '--no-heartbeat',
-        action='store_true',
-        help='do not record the successful backup heartbeat the write fence reads',
-    )
     parser.add_argument('--out', default=str(Path(__file__).resolve().parents[2] / 'docs/implementation/rebuild/S15-wal-restore-drill.json'))
     args = parser.parse_args()
 
@@ -285,16 +280,12 @@ def main() -> int:
     # The marker belongs to the drill, not to the data set: remove it from the live cluster.
     psql("DELETE FROM deployment_settings WHERE key = 'wal_drill_marker'", database=DATABASE)
 
-    # A verified restore is a completed backup: publish the heartbeat the protected-write fence reads.
-    if manifest['restore']['markerFound'] and not args.no_heartbeat:
-        psql(
-            "INSERT INTO deployment_settings (key, value, updated_at) "
-            "VALUES ('backup_status', jsonb_build_object('lastSuccessAt', now()::text, "
-            "'source', 'wal-restore-drill'), now()) "
-            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()",
-            database=DATABASE,
-        )
-        manifest['heartbeat'] = {'recorded': True, 'key': 'backup_status'}
+    # Local same-disk recovery is never evidence of offhost backup health. In particular, do not
+    # overwrite backup_status: only the offhost manifest/inventory verifier may publish that row.
+    manifest['heartbeat'] = {
+        'recorded': False,
+        'reason': 'Local restore drills cannot certify verified offhost checkpoints',
+    }
 
     if not args.keep:
         shutil.rmtree(RESTORE_DIR, ignore_errors=True)

@@ -7,9 +7,12 @@ import type {
   GameResultEvidence,
   ResultEvidence,
 } from '@oantuti/protocol';
-import type { PostgresDatabase } from '../persistence/db.js';
+import { statementRunner, type PostgresDatabase } from '../persistence/db.js';
 import { ReplayStore, type ReplayV2Payload } from './replay-store.js';
 import { TraceVerifier } from './trace-verifier.js';
+import { isAuthenticatedNativeExecution, type AuthenticatedNativeExecution } from '../jobs/local-transport.js';
+import type { AcceptanceFence } from '../jobs/broker.js';
+import type { PoolClient } from 'pg';
 
 export class ResultIntegrityError extends Error {
   constructor(message: string) {
@@ -49,15 +52,28 @@ export interface RecordResultInput {
   readonly evidence: GameResultEvidence;
   readonly manifestDigest: Digest;
   readonly mapDescriptor: MapDescriptor;
+  /** Must match the execution manifest's ply limit. Official games currently use 300. */
+  readonly maxTurns?: number;
+  readonly client?: PoolClient;
+  readonly nativeExecution?: AuthenticatedNativeExecution;
 }
 
 export class ResultService {
+  private acceptanceFence?: AcceptanceFence;
+  setAcceptanceFence(fence: AcceptanceFence): void { this.acceptanceFence = fence; }
   constructor(
     private readonly db: PostgresDatabase,
     private readonly replayStore: ReplayStore,
     private readonly traceVerifier: TraceVerifier = new TraceVerifier(),
     private readonly onGameAccepted?: (gameId: string) => Promise<void>
   ) {}
+
+  async validateNativeEvidence(input: RecordResultInput): Promise<void> {
+    const execution = input.nativeExecution;
+    if (!execution || !isAuthenticatedNativeExecution(execution) || execution.gameId !== input.gameId || execution.lease.attemptId !== input.attemptId || execution.manifestDigest !== input.manifestDigest || execution.actionTraceDigest !== createHash('sha256').update(JSON.stringify(input.evidence.trace)).digest('hex')) throw new ResultIntegrityError('NATIVE_EXECUTION_BINDING_MISMATCH');
+    const verified = await this.traceVerifier.verify(input.mapDescriptor, input.evidence, input.maxTurns ?? 300, execution);
+    if (!verified.isValid || verified.requiresSupervisorEvidence) throw new ResultIntegrityError(`Trace verification failed: ${verified.error ?? 'SUPERVISOR_EVIDENCE_REQUIRED'}`);
+  }
 
   /**
    * Accepts and records a game result with full cryptographic and game engine trace verification.
@@ -69,7 +85,7 @@ export class ResultService {
     // 0. Idempotency guard (fast path). A game has at most one accepted result: a reclaimed
     //    lease or a duplicate job for the same game must not record a second version, so it
     //    short-circuits here before verification and before any replay object is staged.
-    const alreadyAccepted = await this.db.query<{ result_version_id: string; accepted_at: Date }>(
+    const alreadyAccepted = await statementRunner(input.client ?? this.db)<{ result_version_id: string; accepted_at: Date }>(
       'SELECT result_version_id, accepted_at FROM accepted_results WHERE game_id = $1',
       [gameId]
     );
@@ -81,10 +97,23 @@ export class ResultService {
       );
     }
 
-    // 1. Verify action trace against game rules
-    const verification = this.traceVerifier.verify(mapDescriptor, evidence);
+    if (evidence.gameId !== gameId) throw new ResultIntegrityError('EVIDENCE_GAME_ID_MISMATCH');
+    // Rust is the rules authority; trace prefixes cannot certify runtime faults.
+    const nativeExecution = input.nativeExecution;
+    if (nativeExecution !== undefined) {
+      const actionTraceDigest = createHash('sha256').update(JSON.stringify(evidence.trace)).digest('hex');
+      if (!isAuthenticatedNativeExecution(nativeExecution)
+        || nativeExecution.gameId !== gameId || nativeExecution.lease.attemptId !== attemptId
+        || nativeExecution.manifestDigest !== manifestDigest || nativeExecution.actionTraceDigest !== actionTraceDigest) {
+        throw new ResultIntegrityError('NATIVE_EXECUTION_BINDING_MISMATCH');
+      }
+    }
+    const verification = await this.traceVerifier.verify(mapDescriptor, evidence, input.maxTurns ?? 300, nativeExecution);
     if (!verification.isValid) {
       throw new ResultIntegrityError(`Trace verification failed: ${verification.error}`);
+    }
+    if (verification.requiresSupervisorEvidence) {
+      throw new ResultIntegrityError('SUPERVISOR_EVIDENCE_REQUIRED: a legal trace does not prove a runtime forfeit');
     }
 
     // 2. Serialize replay and write into immutable object store
@@ -100,12 +129,9 @@ export class ResultService {
       disposition: evidence.disposition,
       trace: evidence.trace,
       map: mapDescriptor,
+      nativeExecution,
     };
 
-    const replayBuffer = this.replayStore.serializeReplayV2(replayPayload);
-    const stagingKey = `replays/${gameId}_${attemptId}_${Date.now()}.oantuti`;
-    const staged = this.replayStore.stageReplay(stagingKey, replayBuffer);
-    const storedReplay = this.replayStore.promoteStagedReplay(staged.stagingPath, staged.digest);
 
     // 3. Compute digests
     const actionTraceDigest = createHash('sha256')
@@ -113,7 +139,19 @@ export class ResultService {
       .digest('hex');
 
     // 4. Atomic PostgreSQL Transaction
-    const receipt = await this.db.withTransaction(async (client) => {
+    const accept = async (client: PoolClient, pinned: boolean): Promise<AcceptedResultReceipt> => {
+      // A pinned completion was fenced when its evidence was pinned (`prepareCompletion`); only a
+      // fresh write needs the check again. Re-asserting it at consume time would strand restored
+      // pending completions, because activation removes the checkpoints of the old generation and
+      // no checkpoint exists for the new one yet.
+      if (!pinned) {
+        await this.acceptanceFence?.(client);
+        await client.query('SELECT pg_advisory_xact_lock_shared(1868657748,26)');
+      }
+    const replayBuffer = this.replayStore.serializeReplayV2(replayPayload);
+    const stagingKey = `replays/${gameId}_${attemptId}_${Date.now()}.oantuti`;
+    const staged = this.replayStore.stageReplay(stagingKey, replayBuffer);
+    const storedReplay = this.replayStore.promoteStagedReplay(staged.stagingPath, staged.digest);
       const gameCheck = await client.query<{ id: string; status: string }>(
         'SELECT id, status FROM games WHERE id = $1 FOR UPDATE',
         [gameId]
@@ -225,9 +263,12 @@ export class ResultService {
           acceptedAt,
         },
       };
-    });
+    };
+    const receipt = input.client
+      ? await accept(input.client, true)
+      : await this.db.withTransaction((client) => accept(client, false));
 
-    if (this.onGameAccepted) {
+    if (this.onGameAccepted && !input.client) {
       await this.onGameAccepted(gameId);
     }
 
@@ -285,8 +326,8 @@ export class ResultService {
    * The executor uses this both to detect an already-complete game before running a match
    * again and to pin the job completion with the digests the verifier already accepted.
    */
-  async getAcceptedResultSummary(gameId: string): Promise<AcceptedResultSummary | null> {
-    const res = await this.db.query<{
+  async getAcceptedResultSummary(gameId: string, client?: PoolClient): Promise<AcceptedResultSummary | null> {
+    const res = await statementRunner(client ?? this.db)<{
       id: string;
       revision: number;
       verdict: string;
@@ -328,7 +369,7 @@ export class ResultService {
   }
 
   /**
-   * Retrieves replay binary bytes by digest for the **public** replay route.
+   * Retrieves replay binary bytes by digest for the ADMIN-only official replay routes.
    *
    * Only replays referenced by an official result version are served. Private TEST replays live in
    * the same object store but never become result versions, and 01-PRODUCT-REQUIREMENTS §113 makes

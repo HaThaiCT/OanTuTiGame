@@ -1,24 +1,35 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import type { RatingReviewDto } from '@oantuti/protocol';
 import { apiRequest, adjudicationErrorText, errorText, reauthErrorText, REAUTH_PROMPT_TEXT, type ApiResult } from '../../lib/client';
 import { entryStatusLabel, formatLabel, stateLabel } from '../../lib/labels';
 import {
   addMapPoolEntry,
+  approveTournamentRating,
   commitMap,
+  getRatingReview,
   reauth,
+  rejectTournamentRating,
   removeMapPoolEntry,
+  setTournamentRated,
   type MapCommitment,
   type MapPoolView,
   type MapSummary,
   type TournamentEntry,
   type TournamentSummary,
+  searchOrganizerTeams,
 } from '../../lib/api';
+import TeamSearchPicker from './TeamSearchPicker';
 import EntryCodesPanel from './EntryCodesPanel';
 import MapEditor from './MapEditor';
 import TournamentAdjudication from './TournamentAdjudication';
+import AccountsInspectionPanel from './AccountsInspectionPanel';
+import { TeamRatingName } from '../_components/TeamRatingName';
+import { TournamentRatingProvider } from '../_components/TournamentRatingContext';
+import { useRatingRefresh } from '../_components/RatingLivePanels';
 
 type Notice = { kind: 'success' | 'error'; text: string };
 
@@ -109,6 +120,7 @@ const STATE_ACTIONS: Record<string, { action: string; label: string }[]> = {
   ],
   PAUSED: [{ action: 'resume', label: 'Tiếp tục' }],
   PROVISIONAL: [{ action: 'finalize', label: 'Hoàn tất' }],
+  FINALIZED: [{ action: 'archive', label: 'Lưu trữ giải' }],
 };
 
 const ENROLLABLE_STATES: Record<string, true> = {
@@ -198,7 +210,7 @@ function EntriesList({ entries, state }: { entries?: TournamentEntry[] | null; s
         <ul className="divide-y divide-[var(--border-subtle)] border-t border-[var(--border-subtle)]">
           {rows.map((entry) => (
             <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-              <span className="font-semibold">{entry.teamName}</span>
+              <span className="font-semibold"><TeamRatingName teamId={entry.teamId} name={entry.teamName} rating={null}/></span>
               <span className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
                 <span className="font-mono">teamId: {entry.teamId}</span>
                 <span>Seed {entry.seedOrdinal ?? '—'}</span>
@@ -215,6 +227,7 @@ function EntriesList({ entries, state }: { entries?: TournamentEntry[] | null; s
 }
 
 interface OrganizerConsoleProps {
+  section: 'create' | 'teams' | 'maps' | 'overview' | 'operations' | 'entries' | 'configuration' | 'adjudication';
   tournaments: TournamentSummary[];
   /** Deployment auth profile: shared entry codes only exist on ONLINE (LAN has no self-service). */
   authProfile: 'ONLINE' | 'LAN_OFFLINE' | null;
@@ -224,6 +237,12 @@ interface OrganizerConsoleProps {
   /** Tournament map pools; `null` means the pool could not be read. */
   poolsByTournament: Record<string, MapPoolView | null>;
   maps: MapSummary[];
+  /**
+   * The global organizer console owns account issuance and inspection; a tournament console only
+   * manages that tournament. Both share section keys (`teams`, `configuration`), so the accounts
+   * panel is gated by scope instead of by key — otherwise "Bản đồ" of a tournament renders it.
+   */
+  accountsScope?: boolean;
 }
 
 /** Mirrors the canonical N/R/T/E policy formulas so operators see the shape before creating. */
@@ -250,13 +269,147 @@ function policyPreview(format: string, raw: string): string {
   return `Elo E=${e} · cần ${Math.min(8, a)} trận có rating với ${Math.min(8, a, n - 1)} đối thủ khác nhau.`;
 }
 
+function RatedControl({ tournament }: { tournament: TournamentSummary }) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const editable = tournament.state === 'DRAFT' || tournament.state === 'PUBLISHED';
+
+  async function update(isRated: boolean) {
+    setPending(true);
+    const result = await setTournamentRated(tournament.id, isRated, tournament.version);
+    setPending(false);
+    if (!result.ok) {
+      setNotice({ kind: 'error', text: errorText(result, 'Không thể cập nhật cấu hình xếp hạng.') });
+      router.refresh();
+      return;
+    }
+    setNotice({ kind: 'success', text: isRated ? 'Giải đã được đặt là tính Rating global.' : 'Giải đã được đặt là không tính Rating global.' });
+    router.refresh();
+  }
+
+  return (
+    <div className="mt-4 border-t border-[var(--border-subtle)] pt-3">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" checked={tournament.isRated} disabled={!editable || pending} onChange={(event) => void update(event.target.checked)} />
+        Tính Rating global
+      </label>
+      <p className="mt-1 text-xs text-[var(--text-secondary)]">
+        {editable ? 'Chỉ có thể thay đổi khi giải ở Bản nháp hoặc Đã xuất bản.' : 'Cấu hình Rating global đã bị khóa theo trạng thái giải.'}
+      </p>
+      <NoticeLine notice={notice} />
+    </div>
+  );
+}
+
+function RatingReviewPanel({ tournament }: { tournament: TournamentSummary }) {
+  const router = useRouter();
+  const [review, setReview] = useState<RatingReviewDto | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState<'approve' | 'reject' | 'reauth' | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [confirmApprove, setConfirmApprove] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState('');
+  const [retry, setRetry] = useState<'approve' | 'reject' | null>(null);
+  const mounted = useRef(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    if (document.hidden) { setLoading(false); return; }
+    const result = await getRatingReview(tournament.id);
+    if (!mounted.current) return;
+    setLoading(false);
+    if (!result.ok || !result.data) {
+      setNotice({ kind: 'error', text: errorText(result, 'Không tải được đánh giá Rating. Dữ liệu hiện có vẫn được giữ nguyên.') });
+      return;
+    }
+    setReview(previous => {
+      if (previous?.previewDigest !== result.data!.previewDigest || previous?.tournamentVersion !== result.data!.tournamentVersion || result.data!.updating) setConfirmApprove(false);
+      return result.data!;
+    });
+    setNotice(null);
+  }, [tournament.id]);
+
+  useEffect(() => { mounted.current = true; void load(); return () => { mounted.current = false; }; }, [load]);
+  useRatingRefresh(load, Boolean(review?.updating));
+
+  async function decide(kind: 'approve' | 'reject') {
+    if (!review || review.updating) return;
+    if (kind === 'approve' && (!confirmApprove || !review.previewDigest)) {
+      setNotice({ kind: 'error', text: 'Xác nhận hậu quả công bố trước khi phê duyệt.' });
+      return;
+    }
+    const reason = rejectReason.trim();
+    if (kind === 'reject' && reason.length < 3) {
+      setNotice({ kind: 'error', text: 'Cần nêu lý do từ 3 ký tự để từ chối.' });
+      return;
+    }
+    setPending(kind);
+    const result = kind === 'approve'
+      ? await approveTournamentRating(tournament.id, { previewDigest: review.previewDigest!, generationId: review.generationId, expectedVersion: review.tournamentVersion }, crypto.randomUUID())
+      : await rejectTournamentRating(tournament.id, { reason, expectedVersion: review.tournamentVersion }, crypto.randomUUID());
+    setPending(null);
+    if (!result.ok) {
+      if (result.code === 'REAUTH_REQUIRED') { setRetry(kind); return; }
+      setNotice({ kind: 'error', text: errorText(result, 'Quyết định Rating thất bại.') });
+      if (result.code === 'RATING_PREVIEW_STALE' || result.code === 'VERSION_CONFLICT' || result.code === 'RATING_UPDATE_IN_PROGRESS') {
+        setConfirmApprove(false);
+        setRetry(null);
+        await load();
+        setNotice({ kind: 'error', text: 'Bản xem trước đã thay đổi. Đã tải lại; hãy kiểm tra và xác nhận hậu quả một lần nữa.' });
+      }
+      return;
+    }
+    setNotice({ kind: 'success', text: result.data?.status === 'UPDATING' ? 'Đang cập nhật công bố Rating.' : 'Đã từ chối đánh giá Rating.' });
+    setConfirmApprove(false);
+    router.refresh();
+    await load();
+  }
+
+  async function confirmReauth() {
+    if (!retry || reauthPassword === '') { setNotice({ kind: 'error', text: 'Nhập mật khẩu để xác nhận lại.' }); return; }
+    setPending('reauth');
+    const result = await reauth(reauthPassword);
+    setPending(null);
+    if (!result.ok) { setNotice({ kind: 'error', text: reauthErrorText(result) }); return; }
+    const action = retry;
+    setRetry(null);
+    setReauthPassword('');
+    await decide(action);
+  }
+
+  const disabled = !review || review.updating || ['UNRATED', 'NOT_FINAL'].includes(review.status) || pending !== null || loading;
+  return <section className="mt-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-subtle)] p-4">
+    <h4 className="font-semibold">Duyệt Rating global</h4>
+    {loading && !review ? <p className="mt-2 text-sm text-[var(--text-secondary)]">Đang tải đánh giá…</p> : null}
+    <NoticeLine notice={notice} />
+    <button type="button" onClick={() => void load()} disabled={loading || pending !== null} className={SECONDARY_BUTTON_CLASS}>Tải lại đánh giá</button>
+    {review ? <>
+      <p className="mt-2 text-sm">Trạng thái: <strong>{review.status}</strong>{review.updating ? ' · Đang cập nhật; đang hiển thị bản công bố trước.' : ''}</p>
+      <p className="text-xs text-[var(--text-secondary)]">Tính lại {review.affectedContestCount} giải kế tiếp · Bản công bố {review.generationId ?? 'chưa có'} · Phiên bản {review.desiredRevision} · Bản xem trước: {review.previewDigest ?? '—'}</p>
+      {review.reason ? <p className="mt-1 text-sm text-[var(--warning-text)]">Lý do: {review.reason}</p> : null}
+      {review.exclusions.length > 0 ? <ul className="mt-2 text-xs text-[var(--text-secondary)]">{review.exclusions.map((item) => <li key={item.teamId}><span className="font-mono">{item.teamId}</span>: {item.reason === 'PRESTART_EXCLUDED' ? 'Loại trước khi bắt đầu — không tính rating' : item.reason === 'DISQUALIFIED' ? 'Truất quyền thi đấu — không tính rating' : 'Rút sau khi bắt đầu — vẫn tính rating, đồng hạng cuối'}</li>)}</ul> : null}
+      {review.changes.length > 0 ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><caption>Vị trí và thay đổi Rating global dự kiến</caption><thead><tr><th scope="col">Đội</th><th scope="col">Hạng</th><th scope="col">Cũ</th><th scope="col">Δ</th><th scope="col">Mới</th></tr></thead><tbody>{review.changes.map((change) => <tr key={change.teamId}><td><TeamRatingName teamId={change.teamId} name={change.teamId} rating={null}/></td><td>{change.rank}{change.rankEnd > change.rank ? `–${change.rankEnd}` : ''}</td><td>{change.oldPublicRating === null ? 'Unrated (1500 hiệu dụng)' : change.oldRating}</td><td>{change.delta >= 0 ? '+' : ''}{change.delta}</td><td>{change.newRating}</td></tr>)}</tbody></table></div> : null}
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="flex max-w-md items-start gap-2 text-xs"><input type="checkbox" checked={confirmApprove} disabled={disabled} onChange={(event) => setConfirmApprove(event.target.checked)} /> Tôi hiểu việc phê duyệt sẽ công bố thay đổi Rating global và có thể tính lại các giải bị ảnh hưởng.</label>
+        <button type="button" disabled={disabled || review.status === 'BLOCKED' || !confirmApprove || !review.previewDigest} onClick={() => void decide('approve')} className={PRIMARY_BUTTON_CLASS}>{pending === 'approve' ? 'Đang duyệt…' : 'Phê duyệt Rating'}</button>
+      </div>
+      <div className="mt-3 flex flex-wrap items-end gap-3"><label className={LABEL_CLASS}>Lý do từ chối (bắt buộc, 3–500 ký tự)<textarea maxLength={500} value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} disabled={disabled} className="min-h-20 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] p-2 text-sm" /></label><button type="button" disabled={disabled || rejectReason.trim().length < 3} onClick={() => void decide('reject')} className={SECONDARY_BUTTON_CLASS}>{pending === 'reject' ? 'Đang từ chối…' : 'Từ chối Rating'}</button></div>
+      {retry ? <div className="mt-3 flex flex-wrap items-end gap-3 rounded-md border border-[var(--warning-text)] p-3"><label className={LABEL_CLASS}><span>{REAUTH_PROMPT_TEXT}</span><input type="password" autoComplete="current-password" value={reauthPassword} onChange={(event) => setReauthPassword(event.target.value)} className={INPUT_CLASS} /></label><button type="button" onClick={() => void confirmReauth()} disabled={pending !== null} className={PRIMARY_BUTTON_CLASS}>{pending === 'reauth' ? 'Đang xác nhận…' : 'Xác nhận'}</button></div> : null}
+    </> : null}
+  </section>;
+}
+
 export default function OrganizerConsole({
+  section,
   authProfile,
   tournaments,
   entriesByTournament,
   commitmentsByTournament,
   poolsByTournament,
   maps,
+  accountsScope = false,
 }: OrganizerConsoleProps) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
@@ -275,6 +428,7 @@ export default function OrganizerConsole({
   const [runOutcomes, setRunOutcomes] = useState<Record<string, RunPendingOutcome>>({});
   const [reauthRetries, setReauthRetries] = useState<Record<string, ReauthRetry>>({});
   const [reauthPasswords, setReauthPasswords] = useState<Record<string, string>>({});
+  const archiveRequests = useRef<Record<string, { key: string; expectedVersion?: number }>>({});
 
   function setCardNotice(tournamentId: string, notice: Notice | null) {
     setCardNotices((current) => {
@@ -311,7 +465,7 @@ export default function OrganizerConsole({
     if (closesAt) body.registrationClosesAt = closesAt;
 
     setPending('create-tournament');
-    const result = await apiRequest<{ tournament?: { name?: string } }>('/api/v2/organizer/tournaments', {
+    const result = await apiRequest<{ tournament?: { id?: string; name?: string } }>('/api/v2/organizer/tournaments', {
       method: 'POST',
       body,
     });
@@ -325,6 +479,10 @@ export default function OrganizerConsole({
       text: `Đã tạo giải “${result.data?.tournament?.name ?? name}” ở trạng thái bản nháp.`,
     });
     form.reset();
+    if (result.data?.tournament?.id) {
+      router.push(`/organizer/tournaments/${encodeURIComponent(result.data.tournament.id)}`);
+      return;
+    }
     router.refresh();
   }
 
@@ -359,6 +517,20 @@ export default function OrganizerConsole({
 
   async function runAction(tournament: TournamentSummary, action: string, label: string) {
     const body: Record<string, unknown> = {};
+    let archiveRequest: { key: string; expectedVersion?: number } | undefined;
+    if (action === 'archive') {
+      if (tournament.state !== 'FINALIZED') {
+        setCardNotice(tournament.id, { kind: 'error', text: 'Chỉ giải đã hoàn tất mới có thể lưu trữ.' });
+        return;
+      }
+      archiveRequest = archiveRequests.current[tournament.id];
+      if (!archiveRequest) {
+        if (!window.confirm('Lưu trữ giải đã hoàn tất? Kết quả, mã nguồn đã nộp, replay và các yêu cầu giữ dữ liệu vẫn được bảo toàn theo chính sách lưu giữ. Bài nộp chính thức tiếp tục đóng; đội vẫn có thể chạy thử riêng tư. Đây không phải thao tác xóa dữ liệu.')) return;
+        archiveRequest = { key: crypto.randomUUID(), expectedVersion: tournament.version };
+        archiveRequests.current[tournament.id] = archiveRequest;
+      }
+      if (archiveRequest.expectedVersion !== undefined) body.expectedVersion = archiveRequest.expectedVersion;
+    }
     let startMapSlug = '';
     if (action === 'open-registration') {
       const closesInput = closesAtDraft[tournament.id] ?? '';
@@ -385,6 +557,7 @@ export default function OrganizerConsole({
     const result = await apiRequest(`/api/v2/organizer/tournaments/${tournament.id}/${action}`, {
       method: 'POST',
       body,
+      ...(archiveRequest ? { headers: { 'idempotency-key': archiveRequest.key } } : {}),
     });
     setPending(null);
     if (!result.ok) {
@@ -394,6 +567,10 @@ export default function OrganizerConsole({
         setReauthRetries((current) => ({ ...current, [tournament.id]: { action, label } }));
         setCardNotice(tournament.id, null);
         return;
+      }
+      if (action === 'archive' && result.status >= 400 && result.status < 500 && !result.message?.includes('IDEMPOTENT_IN_FLIGHT')) {
+        delete archiveRequests.current[tournament.id];
+        if (result.message?.includes('STALE_VERSION')) router.refresh();
       }
       let text =
         action === 'finalize'
@@ -411,6 +588,7 @@ export default function OrganizerConsole({
       setCardNotice(tournament.id, { kind: 'error', text });
       return;
     }
+    if (action === 'archive') delete archiveRequests.current[tournament.id];
     setCardNotice(tournament.id, {
       kind: 'success',
       text: action === 'start' ? `${label}: thành công với bản đồ “${startMapSlug}”.` : `${label}: thành công.`,
@@ -655,7 +833,11 @@ export default function OrganizerConsole({
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <div className="grid items-start gap-4 xl:grid-cols-2">
+      {accountsScope === true && section === 'teams' && (
+        <AccountsInspectionPanel authProfile={authProfile} tournaments={tournaments} entriesByTournament={entriesByTournament} />
+      )}
+      <div className="grid items-start gap-4">
+        {section === 'create' ? (
         <form onSubmit={createTournament} className="flex min-w-0 flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">
           <div>
             <h2 className="text-base font-semibold">Tạo giải đấu</h2>
@@ -713,7 +895,9 @@ export default function OrganizerConsole({
             {pending === 'create-tournament' ? 'Đang tạo…' : 'Tạo giải'}
           </button>
         </form>
+        ) : null}
 
+        {section === 'teams' ? (
         <form onSubmit={createTeam} className="flex min-w-0 flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">
           <div>
             <h2 className="text-base font-semibold">Tạo đội</h2>
@@ -739,13 +923,15 @@ export default function OrganizerConsole({
             Sau khi tạo, dùng teamId ở ô “Thêm đội trực tiếp” của giải để ghi danh.
           </p>
         </form>
+        ) : null}
       </div>
 
-      <MapEditor initialMaps={maps} />
+      {section === 'maps' ? <MapEditor initialMaps={maps} /> : null}
 
+      {!['create', 'teams', 'maps'].includes(section) ? (
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="text-lg font-semibold">Giải đấu & điều khiển</h2>
+          <h2 className="text-lg font-semibold">Console giải</h2>
           <span className="text-sm text-[var(--text-secondary)]">{tournaments.length} giải</span>
         </div>
 
@@ -771,7 +957,7 @@ export default function OrganizerConsole({
                     </p>
                     <h3 className="mt-1 break-words text-base font-semibold">{tournament.name}</h3>
                     <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      <span className="font-mono">{tournament.id}</span> · tối đa {tournament.maxTeams} đội · đóng đăng ký:{' '}
+                      Tối đa {tournament.maxTeams} đội · đóng đăng ký:{' '}
                       {tournament.registrationClosesAt
                         ? `${tournament.registrationClosesAt.slice(0, 16).replace('T', ' ')} UTC`
                         : '—'}
@@ -780,12 +966,18 @@ export default function OrganizerConsole({
                   <span className="whitespace-nowrap rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--live-accent)]">
                     {stateLabel[tournament.state] ?? tournament.state}
                   </span>
+                  <span className="whitespace-nowrap rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold">
+                    {tournament.isRated ? 'Rated' : 'Unrated'}
+                  </span>
                 </header>
 
                 <div className="flex min-w-0 flex-col gap-4 p-3 sm:p-4">
-                  {actions.length > 0 || canEnroll ? (
+                  {section === 'overview' ? (
+                    <p className="text-sm text-[var(--text-secondary)]">{entriesByTournament[tournament.id] ? `${entriesByTournament[tournament.id]?.length} đội` : tournament.state === 'DRAFT' ? 'Bản nháp' : 'Chưa tải được danh sách đội'} · {commitment ? `Bản đồ: ${commitment.displayName}` : 'Chưa chốt bản đồ'}. Chọn mục để quản lý giải.</p>
+                  ) : null}
+                  {section === 'operations' || section === 'entries' ? (actions.length > 0 || canEnroll || WITHDRAWABLE_STATES.includes(tournament.state) ? (
                     <div className="flex flex-wrap items-end gap-3">
-                      {tournament.state === 'PUBLISHED' ? (
+                      {section === 'operations' && tournament.state === 'PUBLISHED' ? (
                         <label className={`${LABEL_CLASS} text-xs`}>
                           <span className="text-[var(--text-secondary)]">Hạn đăng ký (tùy chọn)</span>
                           <input
@@ -799,7 +991,7 @@ export default function OrganizerConsole({
                         </label>
                       ) : null}
 
-                      {tournament.state === 'READY_TO_START' && !commitment ? (
+                      {section === 'operations' && tournament.state === 'READY_TO_START' && !commitment ? (
                         <label className={`${LABEL_CLASS} text-xs`}>
                           <span className="text-[var(--text-secondary)]">Bản đồ vòng 1</span>
                           <select
@@ -821,7 +1013,7 @@ export default function OrganizerConsole({
                         </label>
                       ) : null}
 
-                      {actions.map(({ action, label }) => (
+                      {(section === 'operations' ? actions : []).map(({ action, label }) => (
                         <button
                           key={action}
                           type="button"
@@ -837,7 +1029,7 @@ export default function OrganizerConsole({
                         </button>
                       ))}
 
-                      {tournament.state === 'RUNNING' || tournament.state === 'PAUSED' ? (
+                      {section === 'operations' && (tournament.state === 'RUNNING' || tournament.state === 'PAUSED') ? (
                         <button
                           type="button"
                           disabled={pending !== null}
@@ -848,7 +1040,7 @@ export default function OrganizerConsole({
                         </button>
                       ) : null}
 
-                      {canEnroll ? (
+                      {section === 'entries' && canEnroll ? (
                         <div className="flex flex-1 flex-wrap items-end gap-3">
                           <label className={`${LABEL_CLASS} min-w-[200px] flex-1 text-xs`}>
                             <span className="text-[var(--text-secondary)]">Thêm đội trực tiếp (teamId)</span>
@@ -872,7 +1064,7 @@ export default function OrganizerConsole({
                         </div>
                       ) : null}
 
-                      {canEnroll ? (
+                      {section === 'entries' && canEnroll ? (
                         <div className="flex min-w-0 basis-64 flex-1 flex-col gap-2">
                           <label className={`${LABEL_CLASS} text-xs`}>
                             <span className="text-[var(--text-secondary)]">Nhập hàng loạt teamId (mỗi dòng một đội)</span>
@@ -886,6 +1078,10 @@ export default function OrganizerConsole({
                               className="w-full rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 py-2 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
                             />
                           </label>
+                          <TeamSearchPicker disabled={pending !== null} onSelect={(teamId) => setBulkDraft((current) => {
+                            const existing = parseBulkIds(current[tournament.id] ?? '');
+                            return { ...current, [tournament.id]: existing.includes(teamId) ? (current[tournament.id] ?? '') : [...existing, teamId].join('\n') };
+                          })} />
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
@@ -910,7 +1106,7 @@ export default function OrganizerConsole({
                         </div>
                       ) : null}
 
-                      {WITHDRAWABLE_STATES.includes(tournament.state) ? (
+                      {section === 'entries' && WITHDRAWABLE_STATES.includes(tournament.state) ? (
                         <div className="flex flex-1 flex-wrap items-end gap-3">
                           <label className={`${LABEL_CLASS} min-w-[200px] flex-1 text-xs`}>
                             <span className="text-[var(--text-secondary)]">Rút đội (teamId)</span>
@@ -938,8 +1134,9 @@ export default function OrganizerConsole({
                     <p className="text-sm text-[var(--text-secondary)]">
                       Không có thao tác nào cho trạng thái này.
                     </p>
-                  )}
+                  )) : null}
 
+                  {section === 'configuration' ? (
                   <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-4 py-3">
                     <p className="text-xs font-semibold text-[var(--text-secondary)]">Bản đồ</p>
                     {canCommitMap ? (
@@ -1066,8 +1263,11 @@ export default function OrganizerConsole({
                       </p>
                     )}
                   </div>
+                  ) : null}
 
-                  <NoticeLine notice={notice} />
+                  {section === 'configuration' && (tournament.state === 'DRAFT' || tournament.state === 'PUBLISHED') ? (
+                    <RatedControl tournament={tournament} />
+                  ) : null}
                   {reauthRetry ? (
                     <div className="flex flex-wrap items-end gap-3 rounded-md border border-[var(--warning-text)] px-3 py-2">
                       <label className={`${LABEL_CLASS} text-xs`}>
@@ -1095,8 +1295,8 @@ export default function OrganizerConsole({
                       </span>
                     </div>
                   ) : null}
-                  {runOutcome?.kind === 'error' ? <NoticeLine notice={{ kind: 'error', text: runOutcome.text }} /> : null}
-                  {runOutcome?.kind === 'result' ? (
+                  {section === 'operations' && runOutcome?.kind === 'error' ? <NoticeLine notice={{ kind: 'error', text: runOutcome.text }} /> : null}
+                  {section === 'operations' && runOutcome?.kind === 'result' ? (
                     <div className="rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-primary)]">
                       <p>
                         Đã chạy <span className="font-semibold">{runOutcome.ran}</span> ván · bỏ qua{' '}
@@ -1114,20 +1314,25 @@ export default function OrganizerConsole({
                       ) : null}
                     </div>
                   ) : null}
-                  {authProfile === 'ONLINE' &&
+                  {section === 'entries' && authProfile === 'ONLINE' &&
                   ['REGISTRATION_OPEN', 'VALIDATING_SUBMISSIONS'].includes(tournament.state) ? (
                     <EntryCodesPanel tournamentId={tournament.id} />
                   ) : null}
-                  <EntriesList entries={entriesByTournament[tournament.id]} state={tournament.state} />
-                  {ADJUDICABLE_STATES[tournament.state] === true ? (
-                    <TournamentAdjudication tournamentId={tournament.id} state={tournament.state} />
+                  {section === 'entries' ? <TournamentRatingProvider tournamentId={tournament.id}><EntriesList entries={entriesByTournament[tournament.id]} state={tournament.state} /></TournamentRatingProvider> : null}
+                  {section === 'adjudication' && ADJUDICABLE_STATES[tournament.state] === true ? (
+                    <>
+                      <TournamentAdjudication tournamentId={tournament.id} state={tournament.state} />
+                      <TournamentRatingProvider tournamentId={tournament.id}><RatingReviewPanel tournament={tournament} /></TournamentRatingProvider>
+                    </>
                   ) : null}
+                  {section === 'adjudication' && tournament.state === 'ARCHIVED' ? <TournamentRatingProvider tournamentId={tournament.id}><RatingReviewPanel tournament={tournament} /></TournamentRatingProvider> : null}
                 </div>
               </article>
             );
           })
         )}
       </section>
+      ) : null}
     </div>
   );
 }

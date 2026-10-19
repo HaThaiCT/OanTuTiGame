@@ -5,9 +5,7 @@ use parking_lot::Mutex;
 use std::thread;
 
 use arena_engine::PlayerSide;
-use arena_execution::{
-    envelope::Message, Envelope, ExecutionFault, GameFinished, RunBotTurn, TurnObservation,
-};
+use arena_execution::{envelope::Message, Envelope, ExecutionFault, TurnObservation};
 use arena_runner::session::{open_session, run_started_session, OpenOutcome, PROTOCOL_VERSION};
 use prost::Message as _;
 use serde_json::json;

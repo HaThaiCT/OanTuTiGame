@@ -661,6 +661,11 @@ export default function TournamentAdjudication({
               <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--canvas)] p-3 text-xs">
                 <p className="font-semibold text-[var(--accent-secondary)]">Bản xem trước tác động</p>
                 <p className="mt-1 text-[var(--text-primary)]">{preview.description}</p>
+                <p className="mt-2 text-[var(--text-secondary)]">
+                  Encounters phụ thuộc: {preview.descendantEncounterIds.length}; vòng ảnh hưởng: {preview.affectedRounds.map(round => `${round.stage}/${round.roundOrdinal}`).join(', ') || '—'};
+                  {' '}ghép cặp lại: {preview.requiredRePair ? 'có' : 'không'}; dựng lại standings: {preview.requiredRebuild ? 'có' : 'không'};
+                  {' '}rating events bị thu hồi: {preview.ratingEventCount}.
+                </p>
                 <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-2">
                   <div className="flex gap-2">
                     <dt className="text-[var(--text-secondary)]">Ván:</dt>

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { WebSocket } from 'ws';
 import { createApp, AppContext } from '../src/app.js';
+import { createHash, randomBytes } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -198,9 +199,12 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
     expect(catchupTypes[catchupTypes.length - 1]).toBe(WebSocketMessageType.MSG_END);
 
     // 4. Download binary replay
+    const replayToken = randomBytes(32).toString('hex');
+    context.db.createSession(createHash('sha256').update(replayToken).digest('hex'), 'usr_admin_default', Date.now() + 60_000);
     const replayRes = await context.app.inject({
       method: 'GET',
       url: `/api/matches/${matchId}/replay`,
+      headers: { cookie: `oantuti_session=${replayToken}` },
     });
 
     expect(replayRes.statusCode).toBe(200);
@@ -221,4 +225,29 @@ describe('Fastify HTTP REST API & Binary WebSocket Hub Suite', () => {
     expect(leaderboard.length).toBeGreaterThanOrEqual(2);
     expect(leaderboard.some((b: { matches_played: number }) => b.matches_played > 0)).toBe(true);
   }, 15000);
+
+  it('refuses legacy self-registration unless the compatibility surface is opted in', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'oantuti-legacy-api-'));
+    const configured = process.env.OANTUTI_LEGACY_API;
+    delete process.env.OANTUTI_LEGACY_API;
+    const legacy = await createApp({ botsDir: join(dir, 'bots'), replaysDir: join(dir, 'replays') });
+    const payload = { username: 'selfserve', email: 'self@example.com', password: 'self serve password' };
+    try {
+      // LAN_OFFLINE issues accounts: the compatibility endpoint must not create one by itself.
+      const refused = await legacy.app.inject({ method: 'POST', url: '/api/auth/register', payload });
+      expect(refused.statusCode).toBe(403);
+      expect(refused.json()).toEqual({ error: 'LEGACY_SELF_REGISTRATION_DISABLED' });
+
+      // The same app honours the endpoint once the operator opts in (the flag is read per request).
+      process.env.OANTUTI_LEGACY_API = '1';
+      const allowed = await legacy.app.inject({ method: 'POST', url: '/api/auth/register', payload });
+      expect(allowed.statusCode).toBe(201);
+    } finally {
+      if (configured === undefined) delete process.env.OANTUTI_LEGACY_API;
+      else process.env.OANTUTI_LEGACY_API = configured;
+      await legacy.app.close();
+      legacy.db.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

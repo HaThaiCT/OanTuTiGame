@@ -50,6 +50,7 @@ const PUBLIC_ANNOUNCEMENT_TOPICS = [
   'TOURNAMENT_REOPENED',
   'TOURNAMENT_NO_CHAMPION',
   'TOURNAMENT_FINALIZED',
+  'TOURNAMENT_ARCHIVED',
   'TEAM_WITHDRAWN',
   'ENCOUNTER_WALKOVER',
   'ENCOUNTER_DOUBLE_WITHDRAWAL',
@@ -162,7 +163,7 @@ export function registerTournamentRoutes(
     const actor = await optionalActor(req);
     const whereClause = actor?.role === 'ADMIN' ? '' : "WHERE state != 'DRAFT'";
     const res = await db.query(
-      `SELECT id, name, format, state, rules_revision, max_teams,
+      `SELECT id, name, format, state, version, rules_revision, max_teams,
               registration_opens_at, registration_closes_at, started_at, finalized_at, created_at
        FROM tournaments
        ${whereClause}
@@ -640,6 +641,23 @@ export function registerTournamentRoutes(
       }
     }
   );
+
+  // Archiving never purges source, results, replay objects or retention holds.
+  app.post<{ Params: { id: string } }>(
+    '/api/v2/organizer/tournaments/:id/archive',
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      if (actor.role !== 'ADMIN' || actor.scope !== 'FULL') return reply.code(403).send({ error: 'FORBIDDEN' });
+      if (!(await requireRecentReauth(identityService, req, reply))) return;
+      try {
+        const receipt = await lifecycleService.archive(req.params.id, lifecycleContext(req, actor, 'req_archive'));
+        return reply.code(200).send(receipt);
+      } catch (err: unknown) {
+        return sendError(reply, err);
+      }
+    }
+  );
 }
 
 /** Organizer admission surface: creation, publication, registration intake, enrollment, finalization. */
@@ -665,6 +683,7 @@ export function registerAdmissionRoutes(
       maxTeamSize?: unknown;
       registrationOpensAt?: unknown;
       registrationClosesAt?: unknown;
+      isRated?: unknown;
     };
     if (typeof body.courseCode !== 'string' || typeof body.name !== 'string' || typeof body.format !== 'string') {
       return reply.code(400).send({ error: 'courseCode, name, and format are required' });
@@ -672,6 +691,7 @@ export function registerAdmissionRoutes(
     if (!TOURNAMENT_FORMATS.includes(body.format as TournamentFormat)) {
       return reply.code(400).send({ error: `format must be one of ${TOURNAMENT_FORMATS.join(', ')}` });
     }
+    if (body.isRated !== undefined && typeof body.isRated !== 'boolean') return reply.code(400).send({ error: 'isRated must be a boolean' });
 
     try {
       const tournament = await admissionService.createTournament(
@@ -683,6 +703,7 @@ export function registerAdmissionRoutes(
           minTeamSize: typeof body.minTeamSize === 'number' ? body.minTeamSize : undefined,
           maxTeamSize: typeof body.maxTeamSize === 'number' ? body.maxTeamSize : undefined,
           registrationOpensAt: typeof body.registrationOpensAt === 'string' ? body.registrationOpensAt : undefined,
+          isRated: body.isRated as boolean | undefined,
           registrationClosesAt: typeof body.registrationClosesAt === 'string' ? body.registrationClosesAt : undefined,
         },
         { actor, requestId: req.id }

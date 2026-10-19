@@ -84,7 +84,7 @@ export function reauthErrorText(result: ApiResult<unknown>): string {
 
 export async function apiRequest<T>(
   path: string,
-  init: { method?: string; body?: unknown } = {}
+  init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<ApiResult<T>> {
   const method = init.method ?? 'GET';
   // The API CSRF guard requires application/json on mutations; bodyless POSTs send {}.
@@ -92,7 +92,7 @@ export async function apiRequest<T>(
   try {
     const response = await fetch(path, {
       method,
-      headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
+      headers: { ...init.headers, ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       cache: 'no-store',
     });

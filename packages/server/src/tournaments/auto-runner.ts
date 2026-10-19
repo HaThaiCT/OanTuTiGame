@@ -38,7 +38,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import type { Digest, JobLease, JobType, ResultEvidence } from '@oantuti/protocol';
+import type { CompletionEvidence, Digest, JobLease } from '@oantuti/protocol';
 import type { BuildPipeline } from '../builds/build-pipeline.js';
 import type { PrivateTestRunner } from '../builds/private-test-runner.js';
 import { LEASE_HEARTBEAT_SECONDS, type JobBroker } from '../jobs/broker.js';
@@ -95,6 +95,7 @@ export interface TournamentAutoRunnerOptions {
   readonly retentionIntervalMs?: number;
   /** Cap on the runnable-game scan per tick (bootstrap and claim filter). */
   readonly runnableGamesLimit?: number;
+  readonly controlPlaneManaged?: boolean;
 }
 
 /** One tournament's outcome inside a tick. `failed` counts games the executor rejected. */
@@ -157,6 +158,7 @@ export class TournamentAutoRunner {
   private readonly buildsPerTick: number;
   private readonly testsPerTick: number;
   private readonly runnableGamesLimit: number;
+  private readonly controlPlaneManaged: boolean;
 
   private timer: NodeJS.Timeout | null = null;
   private inFlight = false;
@@ -192,6 +194,7 @@ export class TournamentAutoRunner {
     options: TournamentAutoRunnerOptions = {}
   ) {
     this.intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
+    this.controlPlaneManaged = options.controlPlaneManaged ?? false;
     this.retentionService = options.retentionService;
     const envInterval = Number(process.env.OANTUTI_RETENTION_INTERVAL_MS ?? '');
     this.retentionIntervalMs =
@@ -230,6 +233,7 @@ export class TournamentAutoRunner {
     if (this.inFlight) return this.lastResults;
     this.inFlight = true;
     try {
+      if (!this.controlPlaneManaged) {
       try {
         const report = await this.reconciler.reconcile(PROCESS_RECONCILER_IDENTITY);
         this.leasesRequeued += report.expiredLeasesReclaimed;
@@ -242,6 +246,7 @@ export class TournamentAutoRunner {
         this.registrationsClosed += await this.sweepRegistrationDeadlines();
       } catch (err: unknown) {
         console.warn(`[auto-runner] registration deadline sweep failed: ${describeError(err)}`);
+      }
       }
 
       // Builds first: a receipt a match would freeze must already have passed its smoke test,
@@ -260,6 +265,7 @@ export class TournamentAutoRunner {
         console.warn(`[auto-runner] private test execution failed: ${describeError(err)}`);
       }
 
+      if (!this.controlPlaneManaged) {
       // Seal every round whose grace window has elapsed before anything is claimed, so the games
       // a seal creates are visible to both the bootstrap below and this tick's claim. Runs outside
       // the `gamesPerTick` budget: a worker that claims no games must still advance rounds.
@@ -294,6 +300,7 @@ export class TournamentAutoRunner {
             console.warn(`[auto-runner] retention sweep failed: ${describeError(err)}`);
           }
         }
+      }
       }
 
       try {
@@ -351,7 +358,7 @@ export class TournamentAutoRunner {
 
         const completion = await this.jobBroker.prepareCompletion(
           lease.identity,
-          this.buildEvidence(lease.jobType, lease.targetId, outcome.status, outcome.reason, outcome.sourceDigest)
+          this.buildEvidence(outcome.status, outcome.reason, outcome.sourceDigest, outcome.stderrDigest)
         );
         await this.jobBroker.complete(
           {
@@ -441,7 +448,7 @@ export class TournamentAutoRunner {
    * failure, why. As with builds the trace/replay digests are the digest of this payload itself —
    * a private test's replay is stored on the snapshot, never as an official result.
    */
-  private testGameEvidence(testId: string, status: string, reason: string | undefined): ResultEvidence {
+  private testGameEvidence(testId: string, status: string, reason: string | undefined): CompletionEvidence {
     const details = {
       testId,
       status,
@@ -449,46 +456,44 @@ export class TournamentAutoRunner {
     };
     const digest = createHash('sha256').update(JSON.stringify(details)).digest('hex');
 
+    // The in-process executor hands the private-test service a real match, but only reports its
+    // status back: this pin is a summary of the job's verdict, not the engine's trace digests.
     return {
-      verdict: status === 'COMPLETED' ? 'DECISIVE' : 'NO_CONTEST',
-      reason: status,
-      actionTraceDigest: digest,
-      replayDigest: digest,
-      manifestDigest: digest,
-      cpuUsec: '0',
-      wallUsec: '0',
-      details,
+      kind: 'TEST_GAME',
+      game: {
+        verdict: status === 'COMPLETED' ? 'DECISIVE' : 'NO_CONTEST',
+        reason: status,
+        actionTraceDigest: digest,
+        replayDigest: digest,
+        manifestDigest: digest,
+        cpuUsec: '0',
+        wallUsec: '0',
+        details,
+      },
     };
   }
 
   /**
-   * Evidence pinned to a build job's completion: which target was processed, its terminal
-   * build status and, for a rejection, why. The trace/replay digests are the digest of this
-   * payload itself (a build has no move trace) and `manifestDigest` is the built source digest.
+   * Evidence pinned to a development build job's completion. The in-process executor gates source
+   * and stores what it built, but it runs no sandbox: there is no image digest, no measured
+   * toolchain and no compiled artifact. The verdict is therefore named `DEV_SOURCE_GATE` (03 §173)
+   * rather than dressed up as a sandboxed build, and carries exactly the facts it has.
    */
   private buildEvidence(
-    jobType: JobType,
-    targetId: string,
     status: string,
     reason: string | undefined,
-    sourceDigest: Digest
-  ): ResultEvidence {
-    const details = {
-      ...(jobType === 'TEST_BUILD' ? { testId: targetId } : { submissionId: targetId }),
-      status,
-      ...(reason === undefined ? {} : { reason }),
-    };
-    const digest = createHash('sha256').update(JSON.stringify(details)).digest('hex');
-
+    sourceDigest: Digest,
+    diagnosticDigest: Digest
+  ): CompletionEvidence {
     return {
-      verdict: status === 'READY' || status === 'COMPLETED' ? 'DECISIVE' : 'NO_CONTEST',
-      reason: status,
-      actionTraceDigest: digest,
-      replayDigest: digest,
-      manifestDigest: sourceDigest,
-      cpuUsec: '0',
-      wallUsec: '0',
-      details,
+      kind: 'BUILD',
+      build: {
+        outcome: 'DEV_SOURCE_GATE',
+        accepted: status === 'READY' || status === 'COMPLETED',
+        sourceDigest,
+        diagnosticDigest,
+        ...(reason === undefined ? {} : { reason }),
+      },
     };
   }
 

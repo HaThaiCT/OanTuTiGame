@@ -6,6 +6,7 @@ import type { PostgresDatabase } from '../persistence/db.js';
 import { TournamentError } from './lifecycle-service.js';
 import { isEncounterStarted } from './encounter-state.js';
 
+import type { GlobalTeamRatingService } from '../ratings/service.js';
 export type TournamentFormat = 'SINGLE_ELIMINATION' | 'SWISS_PLAYOFF' | 'ROUND_ROBIN' | 'ELO_ARENA';
 
 export const TOURNAMENT_FORMATS: readonly TournamentFormat[] = [
@@ -28,8 +29,8 @@ export type BulkEnrollmentStatus =
   | 'UNKNOWN_TEAM'
   | 'INVALID_ID'
   | 'CAPACITY_EXCEEDED'
-  | 'OUT_OF_COURSE'
-  | 'TEAM_SIZE_INVALID';
+  | 'TEAM_SIZE_INVALID'
+  | 'TEAM_MEMBER_ALREADY_ENROLLED';
 
 export interface BulkEnrollmentEntry {
   readonly teamId: string;
@@ -94,6 +95,8 @@ export type TournamentSummary = {
   readonly state: string;
   readonly rules_revision: string;
   readonly max_teams: number;
+  readonly is_rated: boolean;
+  readonly global_rating_policy: 'ArenaContestRating/v1';
   readonly registration_opens_at: Date | null;
   readonly registration_closes_at: Date | null;
   readonly created_at: Date;
@@ -130,6 +133,7 @@ export interface CreateTournamentInput {
   readonly maxTeamSize?: number;
   readonly registrationOpensAt?: string;
   readonly registrationClosesAt?: string;
+  readonly isRated?: boolean;
 }
 
 export interface CreateTeamInput {
@@ -148,7 +152,8 @@ export class TournamentAdmissionService {
      */
     private readonly onEncounterResolution?: (tournamentId: string) => Promise<unknown>,
     /** Protected-write fence: direct enrollment pauses while the backup heartbeat is stale. */
-    private readonly backupFence?: BackupFence
+    private readonly backupFence?: BackupFence,
+    private readonly ratingService?: GlobalTeamRatingService
   ) {}
 
   /** Creates a course by code when absent and a DRAFT tournament under it. */
@@ -163,6 +168,7 @@ export class TournamentAdmissionService {
     if (!TOURNAMENT_FORMATS.includes(input.format)) {
       throw new TournamentError(400, `Unsupported tournament format: ${input.format}`);
     }
+    if (input.isRated !== undefined && typeof input.isRated !== 'boolean') throw new TournamentError(400, 'isRated must be a boolean');
 
     const maxTeams = input.maxTeams ?? 500;
     const minTeamSize = input.minTeamSize ?? 1;
@@ -181,11 +187,11 @@ export class TournamentAdmissionService {
       const res = await client.query<TournamentSummary>(
         `INSERT INTO tournaments
            (course_id, name, format, max_teams, min_team_size, max_team_size,
-            registration_opens_at, registration_closes_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::timestamptz)
-         RETURNING id, name, format, state, rules_revision, max_teams,
+            registration_opens_at, registration_closes_at, is_rated)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::timestamptz, $9)
+         RETURNING id, name, format, state, rules_revision, max_teams, is_rated, global_rating_policy,
                    registration_opens_at, registration_closes_at, created_at`,
-        [courseId, name, input.format, maxTeams, minTeamSize, maxTeamSize, registrationOpensAt, registrationClosesAt]
+        [courseId, name, input.format, maxTeams, minTeamSize, maxTeamSize, registrationOpensAt, registrationClosesAt, input.isRated ?? false]
       );
       const tournament = res.rows[0];
 
@@ -323,6 +329,38 @@ export class TournamentAdmissionService {
     });
   }
 
+  /**
+   * 01 §59/§66: a student may belong to only one team per tournament. Returns the first member of
+   * `teamId` who already plays for another team of this tournament — counting teams this same bulk
+   * request is about to enroll — so enrollment is where the rule becomes true for a field.
+   */
+  private async memberEnrollmentConflict(
+    client: PoolClient,
+    tournamentId: string,
+    teamId: string,
+    pendingTeamIds: readonly string[] = []
+  ): Promise<{ username: string; teamName: string } | null> {
+    const res = await client.query<{ username: string; team_name: string }>(
+      `SELECT u.username, other.name AS team_name
+         FROM team_memberships mine
+         JOIN team_memberships theirs
+           ON theirs.user_id = mine.user_id AND theirs.team_id <> mine.team_id
+         JOIN teams other ON other.id = theirs.team_id
+         JOIN users u ON u.id = mine.user_id
+        WHERE mine.team_id = $2
+          AND (
+            EXISTS (SELECT 1 FROM tournament_entries e
+                     WHERE e.tournament_id = $1 AND e.team_id = theirs.team_id)
+            OR theirs.team_id = ANY($3::uuid[])
+          )
+        ORDER BY u.username
+        LIMIT 1`,
+      [tournamentId, teamId, pendingTeamIds.length > 0 ? [...pendingTeamIds] : []]
+    );
+    const row = res.rows[0];
+    return row ? { username: row.username, teamName: row.team_name } : null;
+  }
+
   /** Admits a team directly and creates its ELIGIBLE entry. */
   async enrollTeam(
     tournamentId: string,
@@ -330,13 +368,13 @@ export class TournamentAdmissionService {
     ctx: CommandContext
   ): Promise<DirectEnrollmentSummary> {
     this.requireAdmin(ctx, 'enroll teams into tournaments');
-    await this.backupFence?.assertFresh();
     if (typeof teamId !== 'string' || !teamId.trim()) {
       throw new TournamentError(400, 'teamId is required');
     }
     const requestId = auditRequestId(ctx.requestId);
 
     return this.db.withTransaction(async (client) => {
+      await this.backupFence?.assertFresh(client);
       const tournament = await this.lockTournament(client, tournamentId);
       if (!ENROLLABLE_STATES.includes(tournament.state)) {
         throw new TournamentError(
@@ -365,9 +403,6 @@ export class TournamentAdmissionService {
       }>('SELECT course_id, min_team_size, max_team_size FROM tournaments WHERE id = $1', [tournamentId]);
       const team = teamRes.rows[0];
       const tournamentLimits = limits.rows[0];
-      if (tournamentLimits && team.course_id !== tournamentLimits.course_id) {
-        throw new TournamentError(400, 'TEAM_COURSE_MISMATCH: team belongs to a different course');
-      }
       const memberCount = Number(team.members);
       if (
         tournamentLimits &&
@@ -385,6 +420,14 @@ export class TournamentAdmissionService {
       );
       if (existing.rows.length > 0) {
         throw new TournamentError(409, 'Team is already enrolled in this tournament');
+      }
+
+      const conflict = await this.memberEnrollmentConflict(client, tournamentId, teamId);
+      if (conflict) {
+        throw new TournamentError(
+          409,
+          `TEAM_MEMBER_ALREADY_ENROLLED: ${conflict.username} already plays for '${conflict.teamName}' in this tournament`
+        );
       }
 
       // `maxTeams` is an explicit operator limit, not a display hint.
@@ -449,7 +492,6 @@ export class TournamentAdmissionService {
     ctx: CommandContext
   ): Promise<BulkEnrollmentReport> {
     this.requireAdmin(ctx, 'enroll teams into tournaments');
-    await this.backupFence?.assertFresh();
     if (!Array.isArray(teamIds) || teamIds.length === 0) {
       throw new TournamentError(400, 'teamIds must be a non-empty array');
     }
@@ -460,6 +502,7 @@ export class TournamentAdmissionService {
     const requestId = auditRequestId(ctx.requestId);
 
     return this.db.withTransaction(async (client) => {
+      await this.backupFence?.assertFresh(client);
       const tournament = await this.lockTournament(client, tournamentId);
       if (!ENROLLABLE_STATES.includes(tournament.state)) {
         throw new TournamentError(
@@ -530,10 +573,6 @@ export class TournamentAdmissionService {
           statuses[candidate.index] = 'UNKNOWN_TEAM';
           continue;
         }
-        if (tournamentLimits && team.course_id !== tournamentLimits.course_id) {
-          statuses[candidate.index] = 'OUT_OF_COURSE';
-          continue;
-        }
         const memberCount = Number(team.members);
         if (
           tournamentLimits &&
@@ -544,6 +583,11 @@ export class TournamentAdmissionService {
         }
         if (alreadyEnrolled.has(candidate.teamId)) {
           statuses[candidate.index] = 'ALREADY_ENROLLED';
+          continue;
+        }
+        const memberConflict = await this.memberEnrollmentConflict(client, tournamentId, candidate.teamId, ready);
+        if (memberConflict) {
+          statuses[candidate.index] = 'TEAM_MEMBER_ALREADY_ENROLLED';
           continue;
         }
         if (used + ready.length >= maxTeams) {
@@ -756,9 +800,10 @@ export class TournamentAdmissionService {
 
       await client.query(
         `UPDATE tournament_entries
-            SET status = 'EXCLUDED', frozen_submission_id = NULL
+            SET status = 'EXCLUDED', frozen_submission_id = NULL,
+                global_rating_exclusion = $3
           WHERE tournament_id = $1 AND team_id = $2`,
-        [tournamentId, teamId]
+        [tournamentId, teamId, preStart ? 'PRESTART_EXCLUDED' : 'WITHDRAWN']
       );
       await this.recordAudit(client, ctx, requestId, 'TEAM_WITHDRAWN', 'tournament', tournamentId, {
         teamId,
@@ -893,7 +938,14 @@ export class TournamentAdmissionService {
     this.requireAdmin(ctx, 'finalize tournaments');
     const requestId = auditRequestId(ctx.requestId);
 
+
     return this.db.withTransaction(async (client) => {
+      await this.backupFence?.assertFresh(client);
+      const rated = this.ratingService ? await this.ratingService.lockForTournamentTransition(client, tournamentId) : false;
+      if (!this.ratingService) {
+        const ratingConfig = await client.query<{ is_rated: boolean }>('SELECT is_rated FROM tournaments WHERE id=$1', [tournamentId]);
+        if (ratingConfig.rows[0]?.is_rated) throw new TournamentError(503, 'GLOBAL_RATING_SERVICE_UNAVAILABLE');
+      }
       const tournament = await this.lockTournament(client, tournamentId);
       if (!FINALIZABLE_STATES.includes(tournament.state)) {
         throw new TournamentError(
@@ -947,6 +999,7 @@ export class TournamentAdmissionService {
         [tournamentId]
       );
       const finalizedAt = updated.rows[0].finalized_at;
+      if (rated) await this.ratingService!.prepareFinalization(client, tournamentId);
 
       await this.recordAudit(client, ctx, requestId, 'TOURNAMENT_FINALIZED', 'tournament', tournamentId, {
         finalizedAt: finalizedAt.toISOString(),
@@ -1063,7 +1116,14 @@ export class TournamentAdmissionService {
     this.requireAdmin(ctx, 'reopen tournaments');
     const requestId = auditRequestId(ctx.requestId);
 
+
     return this.db.withTransaction(async (client) => {
+      await this.backupFence?.assertFresh(client);
+      const rated = this.ratingService ? await this.ratingService.lockForTournamentTransition(client, tournamentId) : false;
+      if (!this.ratingService) {
+        const ratingConfig = await client.query<{ is_rated: boolean }>('SELECT is_rated FROM tournaments WHERE id=$1', [tournamentId]);
+        if (ratingConfig.rows[0]?.is_rated) throw new TournamentError(503, 'GLOBAL_RATING_SERVICE_UNAVAILABLE');
+      }
       const tournament = await this.lockTournament(client, tournamentId);
       if (tournament.state !== 'FINALIZED') {
         throw new TournamentError(
@@ -1072,6 +1132,7 @@ export class TournamentAdmissionService {
         );
       }
 
+      if (rated) await this.ratingService!.invalidateOnReopen(client, tournamentId, ctx);
       const updated = await client.query<{ provisional_at: Date }>(
         `UPDATE tournaments
          SET state = 'PROVISIONAL',

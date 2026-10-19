@@ -1,16 +1,20 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { getOrganizerSession } from '../../../lib/api';
 import LiveViewer from './LiveViewer';
 
 export const metadata: Metadata = { title: 'Trực tiếp — OanTuTi Arena' };
+export const dynamic = 'force-dynamic';
 
 /**
- * Live spectator page of one game. Nothing is fetched on the server: the board only exists once the
- * socket sends its snapshot, and `LiveViewer` opens that socket in a client effect, so the first
- * paint is the deterministic "đang kết nối" state.
+ * Public live board; the server session only controls the official replay entry point.
  */
 export default async function LivePage({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
+  const store = await cookies();
+  const cookie = store.getAll().map((item) => `${item.name}=${item.value}`).join('; ');
+  const session = await getOrganizerSession({ cookie });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -22,7 +26,7 @@ export default async function LivePage({ params }: { params: Promise<{ gameId: s
         <span className="text-[var(--text-primary)]">Trực tiếp</span>
       </nav>
 
-      <LiveViewer gameId={gameId} />
+      <LiveViewer gameId={gameId} canViewReplay={session?.role === 'ADMIN' && session.scope === 'FULL'} />
     </div>
   );
 }

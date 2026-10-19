@@ -115,9 +115,10 @@ class Blossom {
  * Exact minimum-weight perfect matching of the graph on vertices
  * `0..vertexCount-1` whose allowed edges are exactly `edges`.
  *
- * Returns the pairs `[a, b]` with `a < b`, each vertex covered exactly once.
- * Throws {@link PairingSolverError} when no perfect matching exists or when the
- * time budget is exhausted.
+ * Returns the lexicographically smallest sorted list of pairs `[a, b]` with
+ * `a < b` among all minimum-weight perfect matchings. Every vertex is covered
+ * exactly once. Throws {@link PairingSolverError} when no perfect matching
+ * exists or when the shared search/refinement time budget is exhausted.
  */
 export function minimumWeightPerfectMatching(
   vertexCount: number,
@@ -128,11 +129,16 @@ export function minimumWeightPerfectMatching(
     throw new Error(`vertexCount must be a non-negative integer, received ${String(vertexCount)}`);
   }
   const n = vertexCount;
-  assertSafeWeights(edges.map((edge) => edge.weight));
-
   const budgetMs = options.budgetMs ?? DEFAULT_PAIRING_BUDGET_MS;
   const now = options.now ?? (() => Date.now());
   const deadline = now() + budgetMs;
+  const checkBudget = (): void => {
+    if (now() >= deadline) {
+      throw new PairingSolverError(`pairing budget of ${String(budgetMs)}ms exhausted`);
+    }
+  };
+  checkBudget();
+  assertSafeWeights(edges.map((edge) => edge.weight));
 
   const adjacency: number[][] = [];
   for (let v = 0; v < n; v++) adjacency.push([]);
@@ -140,6 +146,7 @@ export function minimumWeightPerfectMatching(
   const rawWeight = new Map<number, number>();
   let maxWeight = 0;
   for (const edge of edges) {
+    checkBudget();
     const { a, b, weight } = edge;
     if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a >= n || b >= n) {
       throw new Error(`edge endpoint out of range for ${n} vertices: (${String(a)}, ${String(b)})`);
@@ -166,11 +173,7 @@ export function minimumWeightPerfectMatching(
     );
   }
 
-  const checkBudget = (): void => {
-    if (now() >= deadline) {
-      throw new PairingSolverError(`pairing budget of ${String(budgetMs)}ms exhausted`);
-    }
-  };
+  checkBudget();
 
   const mate = blossomMaxWeightMatching(n, adjacency, weightOf, true, checkBudget);
 
@@ -184,8 +187,93 @@ export function minimumWeightPerfectMatching(
       `no perfect matching exists for ${String(n)} vertices (best matching covers ${String(pairs.length * 2)})`,
     );
   }
-  pairs.sort((left, right) => left[0] - right[0] || left[1] - right[1]);
-  return pairs;
+  // Keep an optimal witness on the unfixed vertices. The first pair of any
+  // sorted completion contains its smallest remaining vertex a. Try a's
+  // partners in increasing order, accepting only an edge for which an optimal
+  // completion exists. Induction on the fixed prefix proves the L1 tie-break;
+  // ordering the blossom traversal alone would not prove it.
+  //
+  // Only original weights enter blossom. BigInt is used for exact objective
+  // comparisons, never as an exponential edge-rank perturbation of JS doubles.
+  let remainingWeight = 0n;
+  for (const [a, b] of pairs) remainingWeight += BigInt(rawWeight.get(edgeKey(a, b))!);
+  const active = new Uint8Array(n).fill(1);
+  const canonical: Array<[number, number]> = [];
+  for (const neighbors of adjacency) neighbors.sort((a, b) => a - b);
+
+  for (let a = 0; a < n; a++) {
+    checkBudget();
+    if (!active[a]) continue;
+    for (const b of adjacency[a]) {
+      checkBudget();
+      if (!active[b]) continue;
+      const abWeight = BigInt(rawWeight.get(edgeKey(a, b))!);
+      const c = mate[a];
+      if (b !== c) {
+        const d = mate[b];
+        const cdWeight = rawWeight.get(edgeKey(c, d));
+        // A zero-cost alternating four-cycle supplies an optimal witness
+        // directly. This is a proof-preserving shortcut, not greedy matching;
+        // in particular it avoids repeated blossom solves on uniform cliques.
+        const swapsOptimally = cdWeight !== undefined
+          && abWeight + BigInt(cdWeight)
+            === BigInt(rawWeight.get(edgeKey(a, c))!) + BigInt(rawWeight.get(edgeKey(b, d))!);
+        if (swapsOptimally) {
+          mate[c] = d;
+          mate[d] = c;
+        } else {
+          // Force (a,b), then ask the exact solver for the best completion on
+          // the induced residual graph. Compact vertex IDs keep fixed vertices
+          // out of every subsequent blossom search.
+          const vertices: number[] = [];
+          const index = new Int32Array(n).fill(NO_NODE);
+          for (let v = a + 1; v < n; v++) {
+            if (active[v] && v !== b) {
+              index[v] = vertices.length;
+              vertices.push(v);
+            }
+          }
+          const residualAdjacency = vertices.map((v) => {
+            checkBudget();
+            const neighbors: number[] = [];
+            for (const w of adjacency[v]) if (index[w] !== NO_NODE) neighbors.push(index[w]);
+            return neighbors;
+          });
+          const residual = blossomMaxWeightMatching(
+            vertices.length,
+            residualAdjacency,
+            (v, w) => weightOf(vertices[v], vertices[w]),
+            true,
+            checkBudget,
+          );
+          checkBudget();
+          let candidateWeight = abWeight;
+          let perfect = true;
+          for (let v = 0; v < vertices.length; v++) {
+            const w = residual[v];
+            if (w === NO_NODE) {
+              perfect = false;
+              break;
+            }
+            if (v < w) candidateWeight += BigInt(rawWeight.get(edgeKey(vertices[v], vertices[w]))!);
+          }
+          if (!perfect || candidateWeight !== remainingWeight) continue;
+          for (let v = 0; v < vertices.length; v++) mate[vertices[v]] = vertices[residual[v]];
+        }
+      }
+      // The existing witness proves feasibility when b === mate[a]. Thus the
+      // loop always accepts by that partner, without another optimality solve.
+      mate[a] = b;
+      mate[b] = a;
+      active[a] = 0;
+      active[b] = 0;
+      remainingWeight -= abWeight;
+      canonical.push([a, b]);
+      break;
+    }
+  }
+  checkBudget();
+  return canonical;
 }
 
 /**

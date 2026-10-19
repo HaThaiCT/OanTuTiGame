@@ -25,12 +25,14 @@
     "demo:login": "tsx deploy/linux/dev-demo.ts login",
     "demo:accounts": "tsx deploy/linux/dev-demo.ts accounts"
   },
+  "dependencies": {
+    "tsx": "^4.19.2"
+  },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "ajv": "^8.17.1",
     "protobufjs": "^7.4.0",
     "ts-proto": "2.15.3",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

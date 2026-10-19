@@ -4,11 +4,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../../lib/client';
 import { fetchAuthMe, probeAuthProfile, type AuthProfile } from '../../lib/api';
-import { entryStatusLabel, stateLabel } from '../../lib/labels';
-import DisputePanel from './DisputePanel';
+import { stateLabel } from '../../lib/labels';
 import FirstPasswordChange from './FirstPasswordChange';
-import PrivateTestPanel from './PrivateTestPanel';
-import SubmissionPanel from './SubmissionPanel';
+import { TeamRatingName } from '../_components/TeamRatingName';
+import { TournamentRatingProvider } from '../_components/TournamentRatingContext';
 
 interface SessionUser {
   username: string;
@@ -29,22 +28,9 @@ interface BoardedTournament {
   name: string;
   state: string;
   registrationClosesAt: string | null;
-  entriesLoaded: boolean;
   myEntries: MyEntry[];
 }
 
-/** Tournaments whose entry list is worth showing a team: intake open, intake locked, or live. */
-const BOARDED_STATES: Record<string, true> = {
-  REGISTRATION_OPEN: true,
-  VALIDATING_SUBMISSIONS: true,
-  LOCKED: true,
-  READY_TO_START: true,
-  RUNNING: true,
-  PAUSED: true,
-  PROVISIONAL: true,
-  FINALIZED: true,
-  ARCHIVED: true,
-};
 
 export default function WorkspacePage() {
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -54,6 +40,7 @@ export default function WorkspacePage() {
   const [boarded, setBoarded] = useState<BoardedTournament[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   /**
    * Active authentication profile. `null` = not established yet: `/auth/me` answers 401 without a
    * session, so the signed-out screen stays without self-service links until the API reports ONLINE.
@@ -67,6 +54,7 @@ export default function WorkspacePage() {
   async function refreshSession() {
     const result = await fetchAuthMe();
     if (!result.ok || !result.data) {
+      setUser(null);
       setTeamIds([]);
       setScope(null);
       if (result.status === 0) setError(result.message);
@@ -91,14 +79,21 @@ export default function WorkspacePage() {
   }, []);
 
   useEffect(() => {
-    if (!user || teamIds.length === 0) {
+    if (!user || scope !== 'FULL' || user.role !== 'STUDENT' || teamIds.length === 0) {
       setBoarded([]);
+      setLoading(false);
       return;
     }
     let cancelled = false;
+    setLoading(true);
     void (async () => {
       const list = await apiRequest<{ tournaments?: Record<string, unknown>[] }>('/api/v2/tournaments');
       if (cancelled) return;
+      if (!list.ok) {
+        setError('Không tải được danh sách giải. Vui lòng thử lại.');
+        setLoading(false);
+        return;
+      }
       const rows = Array.isArray(list.data?.tournaments) ? list.data.tournaments : [];
       const relevant = rows
         .map((row) => ({
@@ -107,7 +102,7 @@ export default function WorkspacePage() {
           state: String(row.state ?? ''),
           registrationClosesAt: typeof row.registration_closes_at === 'string' ? row.registration_closes_at : null,
         }))
-        .filter((row) => row.id !== '' && BOARDED_STATES[row.state] === true);
+        .filter((row) => row.id !== '');
 
       const mine: BoardedTournament[] = [];
       for (const tournament of relevant) {
@@ -115,8 +110,12 @@ export default function WorkspacePage() {
           `/api/v2/tournaments/${tournament.id}/entries`
         );
         if (cancelled) return;
-        // A failed entries call must not break the workspace: report it for that tournament only.
-        const rawEntries = entries.ok && Array.isArray(entries.data?.entries) ? entries.data.entries : [];
+        if (!entries.ok) {
+          setError('Không tải được đầy đủ danh sách giải của đội. Vui lòng thử lại.');
+          setLoading(false);
+          return;
+        }
+        const rawEntries = Array.isArray(entries.data?.entries) ? entries.data.entries : [];
         const myEntries = rawEntries
           .map((row) => ({
             entryId: String(row.id ?? ''),
@@ -126,14 +125,19 @@ export default function WorkspacePage() {
             seedOrdinal: typeof row.seedOrdinal === 'number' ? row.seedOrdinal : null,
           }))
           .filter((entry) => teamIds.includes(entry.teamId));
-        mine.push({ ...tournament, entriesLoaded: entries.ok, myEntries });
+        if (myEntries.length > 1) {
+          setError('Tài khoản có nhiều đội trong cùng giải. Vui lòng liên hệ ban tổ chức.');
+          setLoading(false);
+          return;
+        }
+        if (myEntries.length === 1) mine.push({ ...tournament, myEntries });
       }
-      if (!cancelled) setBoarded(mine);
+      if (!cancelled) { setBoarded(mine); setLoading(false); }
     })();
     return () => {
       cancelled = true;
     };
-  }, [user, teamIds]);
+  }, [user, teamIds, scope]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,99 +171,29 @@ export default function WorkspacePage() {
   }
 
   if (user) {
+    if (user.role === 'ADMIN') {
+      return <section className="flex flex-col gap-4"><h1 className="text-2xl font-semibold">Ban tổ chức</h1><p>Quản lý giải và tài nguyên trong trang điều hành.</p><Link href="/organizer" className="text-[var(--action)] underline">Vào Ban tổ chức →</Link></section>;
+    }
     return (
-      <div className="flex min-w-0 flex-col gap-5">
+      <section className="flex flex-col gap-5">
         <h1 className="text-2xl font-semibold tracking-tight">Không gian đội</h1>
-        <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">
-          <p className="text-xs text-[var(--text-secondary)]">Đăng nhập với</p>
-          <p className="mt-1 text-lg font-semibold">{user.displayName || user.username}</p>
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">Vai trò: {user.role}</p>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Cấu hình xác thực của server: <span className="font-mono">{authProfile ?? 'chưa xác định'}</span>
-          </p>
-          <p className="mt-4 border-t border-[var(--border-subtle)] pt-3 text-xs leading-relaxed text-[var(--text-secondary)]">
-            Form nộp mã nguồn bên dưới nộp thẳng lên server và hiển thị receipt thật. Mỗi đội còn có khối “Test riêng tư” để chạy thử bot mà không ảnh hưởng đến kết quả chính thức.
-          </p>
-        </section>
-
-        <section className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">Đội của tôi trong giải đang mở / đang đấu</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Lấy từ danh sách đội tham dự của giải; chỉ hiển thị đội mà tài khoản này là thành viên.
-            </p>
-          </div>
-          {teamIds.length === 0 ? (
-            <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-6 text-sm text-[var(--text-secondary)]">
-              Tài khoản này chưa thuộc đội nào. Hãy nhờ ban tổ chức tạo đội với bạn là đội trưởng và ghi danh vào giải.
-            </p>
-          ) : boarded.length === 0 ? (
-            <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-6 text-sm text-[var(--text-secondary)]">
-              Chưa có giải nào đang mở đăng ký, đã khóa danh sách hoặc đang diễn ra.
-            </p>
-          ) : (
-            boarded.map((tournament) => (
-              <article key={tournament.id} className="min-w-0 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)]">
-                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="break-words text-base font-semibold">{tournament.name}</h3>
-                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      {stateLabel[tournament.state] ?? tournament.state} · đóng đăng ký:{' '}
-                      {tournament.registrationClosesAt
-                        ? `${tournament.registrationClosesAt.slice(0, 16).replace('T', ' ')} UTC`
-                        : '—'}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/tournaments/${tournament.id}`}
-                    className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-medium hover:border-[var(--action)]"
-                  >
-                    Xem giải →
-                  </Link>
-                </header>
-                <div className="p-3 sm:p-4">
-                  {!tournament.entriesLoaded ? (
-                    <p className="text-sm text-[var(--warning-text)]">Không tải được danh sách đội của giải này.</p>
-                  ) : tournament.myEntries.length === 0 ? (
-                    <p className="text-sm text-[var(--text-secondary)]">Bạn chưa có đội nào trong giải này.</p>
-                  ) : (
-                    <ul className="flex flex-col gap-3">
-                      {tournament.myEntries.map((entry) => (
-                        <li
-                          key={entry.entryId}
-                          className="min-w-0 rounded-md border border-[var(--border-subtle)] bg-[var(--canvas)] p-3 sm:p-4"
-                        >
-                          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-                            <span className="font-semibold">{entry.teamName}</span>
-                            <span className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
-                              <span className="break-all font-mono">teamId: {entry.teamId}</span>
-                              <span>Seed {entry.seedOrdinal ?? '—'}</span>
-                              <span className="rounded-sm border border-[var(--border-subtle)] px-2 py-0.5">
-                                {entryStatusLabel[entry.status] ?? entry.status}
-                              </span>
-                            </span>
-                          </div>
-                          <SubmissionPanel
-                            tournamentId={tournament.id}
-                            teamId={entry.teamId}
-                            tournamentState={tournament.state}
-                          />
-                          <PrivateTestPanel tournamentId={tournament.id} teamId={entry.teamId} />
-                          <DisputePanel
-                            tournamentId={tournament.id}
-                            teamId={entry.teamId}
-                            tournamentState={tournament.state}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </article>
-            ))
-          )}
-        </section>
-      </div>
+        {authProfile === 'ONLINE' && user.role === 'STUDENT' && scope === 'FULL' ? <Link href="/workspace/join" className="text-sm text-[var(--action)] underline">Tham gia giải bằng mã →</Link> : null}
+        {error ? <p role="alert" className="text-[var(--danger-text)]">{error}</p> : null}
+        {loading ? <p role="status">Đang tải giải của đội…</p> : !error && boarded.length === 0 ? (
+          <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">Chưa có giải nào ghi danh đội của bạn. Liên hệ ban tổ chức để tham gia.</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {boarded.flatMap((tournament) => tournament.myEntries.map((entry) => (
+              <li key={`${tournament.id}:${entry.teamId}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                <TournamentRatingProvider tournamentId={tournament.id}>
+                <div><h2 className="font-semibold">{tournament.name}</h2><p className="mt-1 text-xs text-[var(--text-secondary)]"><TeamRatingName teamId={entry.teamId} name={entry.teamName} rating={null}/> · {stateLabel[tournament.state] ?? tournament.state}</p></div>
+                <Link prefetch={false} href={`/workspace/tournaments/${encodeURIComponent(tournament.id)}/teams/${encodeURIComponent(entry.teamId)}`} className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-medium hover:border-[var(--action)]">Xem giải →</Link>
+                </TournamentRatingProvider>
+              </li>
+            )))}
+          </ul>
+        )}
+      </section>
     );
   }
 

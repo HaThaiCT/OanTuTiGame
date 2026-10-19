@@ -23,6 +23,8 @@ const CLOSE_NORMAL = 1000;
 /** Liveness: ping every 20 s; close a spectator whose pongs have been missing for 60 s. */
 const HEARTBEAT_INTERVAL_MS = 20_000;
 const STALE_TIMEOUT_MS = 60_000;
+/** Includes the next serialized frame, not merely bytes already queued by ws. */
+export const LIVE_MAX_BUFFERED_BYTES = 1024 * 1024;
 
 export function registerLiveRoutes(app: FastifyInstance, hub: LiveMatchHub): void {
   app.route<{ Params: { gameId: string } }>({
@@ -47,7 +49,12 @@ function handleSpectator(socket: WebSocket, gameId: string, hub: LiveMatchHub): 
 
   const send: LiveSend = (message) => {
     if (socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify(message));
+    const frame = JSON.stringify(message);
+    if (socket.bufferedAmount + Buffer.byteLength(frame) > LIVE_MAX_BUFFERED_BYTES) {
+      socket.close(CLOSE_SPECTATOR_CAPACITY, 'SLOW_SPECTATOR');
+      return;
+    }
+    socket.send(frame);
     // The contract ends a stream with RESULT: a late joiner gets it inside the snapshot, a live
     // one as the last frame, and the socket is closed either way.
     if (message.type === 'RESULT' || (message.type === 'SNAPSHOT' && message.status === 'FINISHED')) {

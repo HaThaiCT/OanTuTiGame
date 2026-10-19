@@ -35,14 +35,26 @@ interface TournamentRow {
   readonly rules_revision: string;
   readonly max_teams: number;
   readonly min_team_size: number;
+  readonly is_rated: boolean;
   readonly max_team_size: number;
   readonly registration_opens_at: Date | null;
   readonly registration_closes_at: Date | null;
   readonly created_at: Date;
 }
 
+
 export class TeamService {
   constructor(private readonly db: Database) {}
+  async listTeamsForOrganizer(options: { readonly q: string; readonly limit: number; readonly offset: number }, actor: Actor): Promise<{ teams: readonly { id: string; name: string; courseId: string; courseCode: string }[]; total: number }> {
+    if (actor.role !== 'ADMIN' || actor.scope !== 'FULL') throw new TeamError(403, 'Only fully authenticated administrators can search teams');
+    const q = typeof options.q === 'string' ? options.q.trim() : '';
+    if (q.length > 100 || !Number.isInteger(options.limit) || options.limit < 1 || options.limit > 100 || !Number.isInteger(options.offset) || options.offset < 0 || options.offset > 10000) throw new TeamError(400, 'Invalid team search query');
+    const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
+    const result = await this.db.query<{ id: string; name: string; course_id: string; course_code: string; total: string }>(
+      `SELECT t.id,t.name,t.course_id,c.code AS course_code,count(*) OVER()::text AS total FROM teams t JOIN courses c ON c.id=t.course_id
+       WHERE t.name ILIKE $1 ESCAPE '\\' OR t.id::text ILIKE $1 ESCAPE '\\' ORDER BY t.name,t.id LIMIT $2 OFFSET $3`, [pattern, options.limit, options.offset]);
+    return { teams: result.rows.map((row) => ({ id: row.id, name: row.name, courseId: row.course_id, courseCode: row.course_code })), total: Number(result.rows[0]?.total ?? 0) };
+  }
 
   async createCourse(code: string, name: string, actor: Actor): Promise<CourseRow> {
     if (actor.role !== 'ADMIN') {
@@ -153,6 +165,28 @@ export class TeamService {
         throw new TeamError(404, 'User not found');
       }
 
+      // 01 §59/§66: one team per student per tournament. Membership is the other door into a field.
+      const clash = await client.query<{ tournament_name: string; team_name: string }>(
+        `SELECT t.name AS tournament_name, other.name AS team_name
+           FROM tournament_entries mine
+           JOIN tournament_entries theirs
+             ON theirs.tournament_id = mine.tournament_id AND theirs.team_id <> mine.team_id
+           JOIN team_memberships m ON m.team_id = theirs.team_id AND m.user_id = $2
+           JOIN tournaments t ON t.id = mine.tournament_id
+           JOIN teams other ON other.id = theirs.team_id
+          WHERE mine.team_id = $1
+          ORDER BY t.name
+          LIMIT 1`,
+        [teamId, userId]
+      );
+      const enrolledElsewhere = clash.rows[0];
+      if (enrolledElsewhere) {
+        throw new TeamError(
+          409,
+          `MEMBER_ALREADY_ENROLLED: this user already plays for '${enrolledElsewhere.team_name}' in '${enrolledElsewhere.tournament_name}'`
+        );
+      }
+
       // Check current members count
       const countRes = await client.query<{ count: string }>(
         'SELECT count(*)::text AS count FROM team_memberships WHERE team_id = $1',
@@ -228,12 +262,14 @@ export class TeamService {
       maxTeams?: number;
       minTeamSize?: number;
       maxTeamSize?: number;
+      isRated?: boolean;
     },
     actor: Actor
   ): Promise<TournamentSubstrateDto> {
     if (actor.role !== 'ADMIN') {
       throw new TeamError(403, 'Only ADMIN can create tournaments');
     }
+    if (input.isRated !== undefined && typeof input.isRated !== 'boolean') throw new TeamError(400, 'isRated must be a boolean');
 
     const cleanName = input.name.trim();
     if (!cleanName || cleanName.length < 2 || cleanName.length > 100) {
@@ -249,10 +285,10 @@ export class TeamService {
     }
 
     const res = await this.db.query<TournamentRow>(
-      `INSERT INTO tournaments (course_id, name, format, max_teams, min_team_size, max_team_size)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO tournaments (course_id, name, format, max_teams, min_team_size, max_team_size, is_rated)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [input.courseId, cleanName, input.format, maxTeams, minTeamSize, maxTeamSize]
+      [input.courseId, cleanName, input.format, maxTeams, minTeamSize, maxTeamSize, input.isRated ?? false]
     );
 
     const t = res.rows[0];
@@ -261,6 +297,8 @@ export class TeamService {
       courseId: t.course_id,
       name: t.name,
       format: t.format,
+      isRated: t.is_rated,
+      globalRatingPolicy: 'ArenaContestRating/v1',
       state: t.state,
       version: t.version,
       rulesRevision: t.rules_revision,
@@ -332,6 +370,8 @@ export class TeamService {
       id: t.id,
       courseId: t.course_id,
       name: t.name,
+      isRated: t.is_rated,
+      globalRatingPolicy: 'ArenaContestRating/v1',
       format: t.format,
       state: t.state,
       version: t.version,

@@ -1,42 +1,111 @@
+# Portable v2 control-plane deployment. Bot execution is intentionally disabled until the
+# UID-bound sandbox supervisor and off-host recovery gates are certified on the target host.
 services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: arena
+      POSTGRES_USER: arena_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_owner_password
+      POSTGRES_INITDB_ARGS: --data-checksums
+    secrets: [pg_owner_password, pg_app_password]
+    volumes:
+      - arena-postgres:/var/lib/postgresql/data
+      - ./deploy/linux/init-postgres.sh:/docker-entrypoint-initdb.d/10-arena.sh:ro
+      - ./packages/server/src/persistence/migrations:/opt/arena-migrations:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U arena_owner -d arena']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
   server:
     build:
       context: .
       dockerfile: Dockerfile.server
     init: true
     environment:
-      PORT: "3001"
-      HOST: "0.0.0.0"
+      PORT: '3001'
+      HOST: 0.0.0.0
       NODE_ENV: production
-      DB_LOCATION: /app/storage/arena.sqlite
-      PUBLIC_ORIGINS: "${PUBLIC_ORIGINS:-http://localhost:${WEB_PORT:-3000},http://127.0.0.1:${WEB_PORT:-3000}}"
-    expose:
-      - "3001"
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGDATABASE: arena
+      PGUSER: arena_app
+      PGPASSWORD_FILE: /run/secrets/pg_app_password
+      DB_LOCATION: /app/storage/legacy.sqlite
+      PUBLIC_ORIGINS: '${PUBLIC_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}'
+      OANTUTI_AUTH_PROFILE: LAN_OFFLINE
+      OANTUTI_DEV_EXECUTION: '0'
+      # The bundled nginx front must be named as the trusted proxy, otherwise every client shares the
+      # proxy address and therefore one login-throttle bucket. Empty keeps the socket address.
+      OANTUTI_TRUSTED_PROXIES: '${OANTUTI_TRUSTED_PROXIES:-}'
+      OANTUTI_BACKUP_FENCE: '${OANTUTI_BACKUP_FENCE:?Set OANTUTI_BACKUP_FENCE explicitly to off or enforce}'
+    secrets: [pg_app_password]
     volumes:
       - arena-storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/api/v2/tournaments').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
-      start_period: 20s
-      retries: 3
+      retries: 6
     restart: unless-stopped
-
   web:
     build:
       context: .
       dockerfile: Dockerfile.web
-    ports:
-      - "127.0.0.1:${WEB_PORT:-3000}:80"
+    environment:
+      API_BASE: http://server:3001
     depends_on:
       server:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    restart: unless-stopped
+  gateway:
+    image: nginx:stable-alpine
+    ports:
+      - '${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:80'
+    volumes:
+      - ./packages/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [web]
     restart: unless-stopped
 
+  # One-shot operator container (profile `ops`). It runs the migration applier and the first-ADMIN
+  # bootstrap against the same database, and it is the only container that carries the database
+  # owner secret; the API keeps the application role. It never runs as part of `up`.
+  #
+  #   docker compose --profile ops run --rm ops deploy/linux/apply-migrations.mts --apply --grant-to arena_app
+  #   docker compose --profile ops run --rm -it ops deploy/linux/bootstrap-admin.mts <username>
+  ops:
+    profiles: ['ops']
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    init: true
+    entrypoint: ['node', '--import', 'tsx']
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGDATABASE: arena
+      PGUSER: arena_owner
+      PGPASSWORD_FILE: /run/secrets/pg_owner_password
+      OANTUTI_MIGRATION_ROLE: arena_migrator
+      OANTUTI_MIGRATE_CONFIRM: '${OANTUTI_MIGRATE_CONFIRM:-}'
+      OANTUTI_BOOTSTRAP_CONFIRM: '${OANTUTI_BOOTSTRAP_CONFIRM:-}'
+      OANTUTI_ACCOUNT_CAPACITY: '${OANTUTI_ACCOUNT_CAPACITY:-}'
+    secrets: [pg_owner_password]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
 volumes:
+  arena-postgres:
   arena-storage:
+secrets:
+  pg_owner_password:
+    file: '${PG_OWNER_PASSWORD_FILE:?Set PG_OWNER_PASSWORD_FILE to an external secret file}'
+  pg_app_password:
+    file: '${PG_APP_PASSWORD_FILE:?Set PG_APP_PASSWORD_FILE to an external secret file}'

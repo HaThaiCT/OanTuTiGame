@@ -38,7 +38,18 @@ export function liveSocketUrl(gameId: string): string {
   return `${liveSocketBase()}${LIVE_WS_PATH}/${encodeURIComponent(gameId)}`;
 }
 
-export type LiveStatus = 'RUNNING' | 'FINISHED';
+export type LiveStatus = 'RUNNING' | 'PREVIEW_ENDED' | 'FINISHED';
+
+export interface LiveIdentity {
+  readonly gameId: string;
+  readonly attemptId: string;
+  readonly fencingToken: string;
+  readonly deploymentGeneration: number;
+}
+
+export function sameLiveIdentity(a: LiveIdentity, b: LiveIdentity): boolean {
+  return a.gameId === b.gameId && a.attemptId === b.attemptId && a.fencingToken === b.fencingToken && a.deploymentGeneration === b.deploymentGeneration;
+}
 
 export interface LiveTeam {
   readonly id: string;
@@ -52,7 +63,7 @@ export type LiveAction =
 
 /** One ply of the game: the snapshot's history entries and the per-ply `EVENT` messages. */
 export interface LivePly {
-  /** 1-based server sequence; null for older frames without it. */
+  /** Parsed sequence; malformed or missing values are rejected at the message boundary. */
   readonly seq: number | null;
   readonly turnNumber: number;
   readonly side: number;
@@ -64,8 +75,10 @@ export interface LiveOutcome {
   readonly reason: string;
 }
 
-export interface LiveSnapshot {
-  readonly gameId: string;
+export interface LiveSnapshot extends LiveIdentity {
+  readonly tournamentId?: string;
+  readonly seq: number;
+  readonly historyComplete: boolean;
   readonly status: LiveStatus;
   /** `null` when the server sent no usable board descriptor — the viewer must say so, not guess. */
   readonly map: ReplayMapDescriptor | null;
@@ -78,8 +91,9 @@ export interface LiveSnapshot {
 
 export type LiveMessage =
   | { readonly type: 'SNAPSHOT'; readonly snapshot: LiveSnapshot }
-  | { readonly type: 'EVENT'; readonly ply: LivePly }
-  | { readonly type: 'RESULT'; readonly outcome: LiveOutcome }
+  | { readonly type: 'EVENT'; readonly identity: LiveIdentity; readonly ply: LivePly }
+  | { readonly type: 'RESULT'; readonly identity: LiveIdentity; readonly outcome: LiveOutcome }
+  | { readonly type: 'PREVIEW_ENDED'; readonly identity: LiveIdentity }
   | { readonly type: 'PING' };
 
 function normalizeTeam(value: unknown): LiveTeam | null {
@@ -131,21 +145,36 @@ function normalizeOutcome(value: unknown): LiveOutcome | null {
   return { winner: isFiniteNumber(winner) ? winner : null, reason: typeof record.reason === 'string' ? record.reason : '' };
 }
 
+function normalizeIdentity(record: Record<string, unknown>): LiveIdentity | null {
+  if (typeof record.gameId !== 'string' || typeof record.attemptId !== 'string' || typeof record.fencingToken !== 'string' ||
+      !Number.isSafeInteger(record.deploymentGeneration) || (record.deploymentGeneration as number) < 0) return null;
+  return { gameId: record.gameId, attemptId: record.attemptId, fencingToken: record.fencingToken, deploymentGeneration: record.deploymentGeneration as number };
+}
+
 function normalizeSnapshot(value: unknown): LiveSnapshot | null {
   const record = asRecord(value);
   if (!record) return null;
-  if (record.status !== 'RUNNING' && record.status !== 'FINISHED') return null;
+  const identity = normalizeIdentity(record);
+  if (!identity || (record.status !== 'RUNNING' && record.status !== 'PREVIEW_ENDED' && record.status !== 'FINISHED')) return null;
+  if (!Number.isSafeInteger(record.seq) || (record.seq as number) < 0 || typeof record.historyComplete !== 'boolean') return null;
   const events = Array.isArray(record.events) ? record.events : [];
+  const plies = events.map(normalizePly);
+  if (plies.some((ply) => !ply || !Number.isSafeInteger(ply.seq) || (ply.seq as number) < 1)) return null;
+  if (plies.some((ply, i) => i > 0 && ply!.seq !== plies[i - 1]!.seq! + 1)) return null;
+  if (plies.length > 0 && plies[plies.length - 1]!.seq !== record.seq) return null;
+  if (record.status === 'FINISHED' && !normalizeOutcome(record.result)) return null;
+  if (record.historyComplete && (plies.length !== record.seq || (plies.length > 0 && plies[0]!.seq !== 1))) return null;
   return {
-    gameId: typeof record.gameId === 'string' ? record.gameId : '',
+    ...identity,
+    tournamentId: typeof record.tournamentId === 'string' ? record.tournamentId : undefined,
+    seq: record.seq as number,
+    historyComplete: record.historyComplete,
     status: record.status,
     map: isMapDescriptor(record.map) ? record.map : null,
     whiteTeam: normalizeTeam(record.whiteTeam),
     blackTeam: normalizeTeam(record.blackTeam),
-    events: events
-      .map(normalizePly)
-      .filter((ply): ply is LivePly => ply !== null),
-    outcome: normalizeOutcome(record.result),
+    events: plies as LivePly[],
+    outcome: record.status === 'FINISHED' ? normalizeOutcome(record.result) : null,
   };
 }
 
@@ -157,32 +186,21 @@ export function parseLiveMessage(raw: unknown): LiveMessage | null {
     const snapshot = normalizeSnapshot(record);
     return snapshot ? { type: 'SNAPSHOT', snapshot } : null;
   }
+  const identity = normalizeIdentity(record);
+  if (record.type !== 'PING' && !identity) return null;
+  if (record.type === 'PREVIEW_ENDED') return { type: 'PREVIEW_ENDED', identity: identity! };
   if (record.type === 'EVENT') {
     const ply = normalizePly(record);
-    return ply ? { type: 'EVENT', ply } : null;
+    return ply && Number.isSafeInteger(ply.seq) && (ply.seq as number) > 0 ? { type: 'EVENT', identity: identity!, ply } : null;
   }
   if (record.type === 'RESULT') {
     const outcome = normalizeOutcome(record);
-    return outcome ? { type: 'RESULT', outcome } : null;
+    return outcome ? { type: 'RESULT', identity: identity!, outcome } : null;
   }
   if (record.type === 'PING') return { type: 'PING' };
   return null;
 }
 
-/** True when the incoming ply repeats the previous one — a re-delivered event is not a new ply. */
-export function isSamePly(previous: LivePly | null, next: LivePly): boolean {
-  if (!previous) return false;
-  if (previous.turnNumber !== next.turnNumber || previous.side !== next.side) return false;
-  if (previous.action.action !== next.action.action) return false;
-  if (previous.action.action === 'MOVE' && next.action.action === 'MOVE') {
-    return (
-      previous.action.pieceId === next.action.pieceId &&
-      previous.action.target[0] === next.action.target[0] &&
-      previous.action.target[1] === next.action.target[1]
-    );
-  }
-  return true;
-}
 
 /**
  * Adapter from a live ply to the reconstruction engine's ply shape (`lib/replay.ts`). The server's

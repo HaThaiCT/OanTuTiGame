@@ -56,3 +56,20 @@ export type AcceptedResultReceipt = Receipt<{
   readonly state: 'ACCEPTED';
   readonly acceptedAt: Instant;
 }>;
+
+/** Immutable impact used to confirm a ledger correction; apply recomputes it under locks. */
+export interface CorrectionImpact {
+  readonly gameId: UUID;
+  readonly encounterId: UUID;
+  readonly roundOrdinal: number;
+  readonly currentRevision: number;
+  readonly action: 'VOID' | 'REJUDGE';
+  readonly affectedRevisions: readonly { readonly gameId: UUID; readonly revision: number }[];
+  readonly descendantEncounterIds: readonly UUID[];
+  readonly affectedRounds: readonly { readonly stage: string; readonly roundOrdinal: number }[];
+  readonly requiredRePair: boolean;
+  readonly requiredRebuild: boolean;
+  readonly ratingImpact: { readonly eventIds: readonly UUID[]; readonly teamIds: readonly UUID[] };
+  readonly previewDigest: Digest;
+  readonly description: string;
+}

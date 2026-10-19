@@ -96,14 +96,29 @@ interface OfficialCounts {
   maxReceiptOrdinal: string;
 }
 
-/** Evidence a TEST_GAME completion pins: the private test and its verdict live under `details`. */
+/** The pinned completion payload of a TEST_GAME job: the tag plus the game-shaped verdict. */
 interface TestGameEvidence {
-  verdict: string;
-  reason: string;
-  actionTraceDigest: string;
-  replayDigest: string;
-  manifestDigest: string;
-  details: { testId: string; status: string; reason?: string };
+  kind: 'TEST_GAME';
+  game: {
+    verdict: string;
+    reason: string;
+    actionTraceDigest: string;
+    replayDigest: string;
+    manifestDigest: string;
+    details: { testId: string; status: string; reason?: string };
+  };
+}
+
+/** The pinned completion payload of a development build job: a source gate, not a sandbox build. */
+interface BuildGateEvidence {
+  kind: 'BUILD';
+  build: {
+    outcome: 'DEV_SOURCE_GATE';
+    accepted: boolean;
+    sourceDigest: string;
+    diagnosticDigest: string;
+    reason?: string;
+  };
 }
 
 /** Narrows a row's payload to the played-match shape; a failed run carries `{error}` instead. */
@@ -588,6 +603,21 @@ describe('Private TEST execution leaves no official trace', () => {
       { job_type: 'TEST_GAME', state: 'SUCCEEDED' },
     ]);
 
+    // The development build verdict is named for what the in-process executor actually did (03
+    // §173): it gates source and stores it, so it pins `DEV_SOURCE_GATE` with real digests and no
+    // invented artifact or sandbox toolchain — never the shape of a compiled sandbox build.
+    const buildCompletion = await db.query<{ evidence_payload: BuildGateEvidence }>(
+      `SELECT jc.evidence_payload
+       FROM job_completions jc
+       JOIN jobs j ON j.id = jc.job_id
+       WHERE j.job_type = 'TEST_BUILD' AND j.target_id = $1`,
+      [testId]
+    );
+    expect(buildCompletion.rows[0].evidence_payload).toMatchObject({
+      kind: 'BUILD',
+      build: { outcome: 'DEV_SOURCE_GATE', accepted: true },
+    });
+
     // Evidence pinned by the TEST_GAME completion: the snapshot it ran and the verdict.
     const completion = await db.query<{ evidence_payload: TestGameEvidence }>(
       `SELECT jc.evidence_payload
@@ -597,9 +627,12 @@ describe('Private TEST execution leaves no official trace', () => {
       [testId]
     );
     expect(completion.rows[0].evidence_payload).toMatchObject({
-      verdict: 'DECISIVE',
-      reason: 'COMPLETED',
-      details: { testId, status: 'COMPLETED' },
+      kind: 'TEST_GAME',
+      game: {
+        verdict: 'DECISIVE',
+        reason: 'COMPLETED',
+        details: { testId, status: 'COMPLETED' },
+      },
     });
 
     const row = await loadRow(testId);

@@ -28,14 +28,19 @@
 //! (Rust field names). `actions[].side` is optional: when omitted the ply's side comes from
 //! the alternating turn order the engine enforces (ply 1 = WHITE).
 //!
-//! Success prints `{"ok":true,"appliedPly":N,"winner":…,"reason":…}` with exit code 0.
+//! Success prints `{"ok":true,"appliedPly":N,"isGameOver":true,"winner":…,"reason":…}` with exit code 0.
 //! Every rejection and every malformed input prints `{"ok":false,"error":"…"}` with exit code 2.
+//! `prefix_only: true` instead verifies a legal prefix without certifying a fault; callers
+//! must inspect `isGameOver` and independently authenticate supervisor observations.
+//! Optional action `ply` values, when present, must equal their 1-based position.
 
 use arena_engine::{
     Coord, Disposition, MapTopology, MoveAction, Piece, PieceType, PlayerSide, ReplayAction,
     VictoryOutcome, VictoryReason,
 };
 use serde::{Deserialize, Serialize};
+
+mod fault;
 
 /// Exit code for every rejected trace and every malformed input.
 pub const REJECTED_CODE: u8 = 2;
@@ -44,8 +49,11 @@ pub const REJECTED_CODE: u8 = 2;
 struct Input {
     manifest: ManifestInput,
     #[serde(default)]
+    prefix_only: bool,
+    #[serde(default)]
     actions: Vec<ActionInput>,
     outcome: Option<OutcomeInput>,
+    fault: Option<fault::FaultInput>,
 }
 
 #[derive(Deserialize)]
@@ -123,6 +131,8 @@ impl PieceTypeInput {
 
 #[derive(Deserialize)]
 struct ActionInput {
+    #[serde(default)]
+    ply: Option<u32>,
     piece_id: u32,
     target_pos: [i32; 2],
     /// Optional; omitted means "the side whose turn this ply is".
@@ -141,6 +151,8 @@ struct OutcomeInput {
 pub struct Verified {
     pub ok: bool,
     pub applied_ply: u32,
+    pub is_game_over: bool,
+    pub fault_verified: bool,
     pub winner: Option<&'static str>,
     pub reason: Option<&'static str>,
 }
@@ -155,14 +167,29 @@ pub struct Rejected<'a> {
 pub fn verify_json(raw: &[u8]) -> Result<Verified, String> {
     let input: Input =
         serde_json::from_slice(raw).map_err(|error| format!("INVALID_INPUT_JSON: {error}"))?;
-    let claimed = claimed_outcome(&input.outcome)?;
+    let claimed = if input.prefix_only { None } else { Some(claimed_outcome(&input.outcome)?) };
     let (map, pieces, max_ply) = to_manifest(input.manifest)?;
     let actions = to_actions(&input.actions)?;
+    if input.fault.is_some() && !input.prefix_only { return Err("FAULT_REQUIRES_PREFIX".into()); }
+    let (prefix, state) = arena_engine::replay::verify_prefix_state(map, pieces, max_ply, &actions)
+        .map_err(|error| format!("TRACE_REJECTED: {error}"))?;
+    let fault_verified = if let Some(fault) = &input.fault {
+        if prefix.outcome.is_game_over { return Err("FAULT_AFTER_TERMINAL".into()); }
+        fault::verify_fault(&state, fault)?;
+        true
+    } else { false };
 
-    match arena_engine::verify_actions(map, pieces, max_ply, &actions, &claimed) {
+    let replay = match claimed {
+        Some(_) if !prefix.outcome.is_game_over => Err(arena_engine::ReplayError::TraceIncomplete),
+        Some(claimed) if prefix.outcome != claimed => Err(arena_engine::ReplayError::ClaimedOutcomeMismatch),
+        _ => Ok(prefix),
+    };
+    match replay {
         Ok(evidence) => Ok(Verified {
             ok: true,
             applied_ply: evidence.applied_ply,
+            is_game_over: evidence.outcome.is_game_over,
+            fault_verified,
             winner: evidence.outcome.winner.map(PlayerSide::to_str),
             reason: evidence.outcome.reason.map(VictoryReason::to_str),
         }),
@@ -277,6 +304,9 @@ fn to_actions(input: &[ActionInput]) -> Result<Vec<ReplayAction>, String> {
     let mut actions = Vec::with_capacity(input.len());
     for (index, action) in input.iter().enumerate() {
         let ply = u32::try_from(index + 1).map_err(|_| "TOO_MANY_ACTIONS".to_string())?;
+        if action.ply.is_some_and(|claimed| claimed != ply) {
+            return Err(format!("INVALID_PLY: expected {ply}"));
+        }
         let side = match action.side {
             Some(side) => side.to_player(),
             None if index % 2 == 0 => PlayerSide::White,
@@ -321,6 +351,46 @@ mod tests {
         assert_eq!(verified.applied_ply, 1);
         assert_eq!(verified.winner, Some("WHITE"));
         assert_eq!(verified.reason, Some("THRONE_BREACH"));
+    }
+
+    #[test]
+    fn observed_fault_is_checked_independently_of_host_claim() {
+        let mut doc: serde_json::Value = serde_json::from_str(MINIMAL).unwrap();
+        doc["prefix_only"] = serde_json::json!(true);
+        doc["actions"] = serde_json::json!([]);
+        doc["fault"] = serde_json::json!({"side":"WHITE","ply":1,"kind":"RESPONSE","reason":"ILLEGAL_MOVE","cpu_usec":1,"wall_usec":1,"response_ndjson":"{\"action\":\"MOVE\",\"piece_id\":1,\"target\":[9,9]}\n"});
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap().fault_verified);
+        doc["fault"]["response_ndjson"] = serde_json::json!("{\"action\":\"MOVE\",\"piece_id\":1,\"target\":[2,2]}\n");
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap_err().contains("FAULT_NOT_PROVEN"));
+        doc["fault"] = serde_json::json!({"side":"WHITE","ply":1,"kind":"CPU_TIMEOUT","reason":"TIMEOUT","cpu_usec":100000,"wall_usec":1});
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).is_err());
+        doc["fault"]["cpu_usec"] = serde_json::json!(100001);
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap().fault_verified);
+        doc["fault"]["side"] = serde_json::json!("BLACK");
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap_err().contains("FAULT_TURN_BINDING"));
+    }
+
+    #[test]
+    fn terminal_suffix_and_skipped_ply_are_rejected() {
+        let mut doc: serde_json::Value = serde_json::from_str(MINIMAL).unwrap();
+        doc["actions"][0]["ply"] = serde_json::json!(2);
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap_err().contains("INVALID_PLY"));
+        doc["actions"][0]["ply"] = serde_json::json!(1);
+        let mut suffix = doc["actions"][0].clone();
+        suffix["ply"] = serde_json::json!(2);
+        doc["actions"].as_array_mut().unwrap().push(suffix);
+        assert!(verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap_err().contains("TrailingActions"));
+    }
+
+    #[test]
+    fn prefix_mode_does_not_certify_a_forfeit() {
+        let mut doc: serde_json::Value = serde_json::from_str(MINIMAL).unwrap();
+        doc["prefix_only"] = serde_json::json!(true);
+        doc["actions"] = serde_json::json!([]);
+        let result = verify_json(&serde_json::to_vec(&doc).unwrap()).unwrap();
+        assert!(!result.is_game_over);
+        assert_eq!(result.winner, None);
+        assert_eq!(result.reason, None);
     }
 
     #[test]

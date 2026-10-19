@@ -113,6 +113,10 @@ describe('S11: finalized results require an explicit reopen before corrections',
         ctx
       )
     ).rejects.toMatchObject({ statusCode: 409, message: expect.stringContaining('TOURNAMENT_REOPEN_REQUIRED') });
+    await db.query("UPDATE tournaments SET state = 'ARCHIVED' WHERE id = $1", [ids.tournamentId]);
+    await expect(corrections.previewCorrection(ids.gameId, { action: 'VOID', reason: 'archived check', expectedRevision: 1 } as never, ctx))
+      .rejects.toMatchObject({ statusCode: 409, message: expect.stringContaining('TOURNAMENT_REOPEN_REQUIRED') });
+    await db.query("UPDATE tournaments SET state = 'FINALIZED' WHERE id = $1", [ids.tournamentId]);
 
     const reopened = await admission.reopenTournament(ids.tournamentId, ctx);
     expect(reopened.state).toBe('PROVISIONAL');

@@ -45,6 +45,11 @@ export function registerSubmissionRoutes(
   /** Reads of the team's private practice runs (list, detail, replay). */
   privateTestRunner: PrivateTestRunner
 ): void {
+  app.addHook('onRequest', async (request, reply) => {
+    if (/^\/api\/v2\/(?:submissions\/|private-tests\/|tournaments\/[^/]+\/(?:submissions|private-tests|entries\/me))/.test(request.url)) {
+      reply.header('Cache-Control', 'private, no-store');
+    }
+  });
   async function requireActor(request: FastifyRequest): Promise<Actor> {
     const token = extractToken(request);
     if (!token) {
@@ -173,12 +178,20 @@ export function registerSubmissionRoutes(
     }
   });
 
+  app.get('/api/v2/submissions/:id/build-log', async (request, reply) => {
+    try {
+      const actor = await requireActor(request);
+      const { id } = request.params as { id: string };
+      return reply.send(await submissionService.getSubmissionBuildLog(id, actor, request.id));
+    } catch (err) { return sendError(reply, err, 'GET_BUILD_LOG_FAILED', 'Get build log failed'); }
+  });
+
   // GET /api/v2/submissions/:id/source
   app.get('/api/v2/submissions/:id/source', async (request, reply) => {
     try {
       const actor = await requireActor(request);
       const params = request.params as { id: string };
-      const source = await submissionService.getSubmissionSource(params.id, actor);
+      const source = await submissionService.getSubmissionSource(params.id, actor, request.id);
       return reply.send(source);
     } catch (err: unknown) {
       return sendError(reply, err, 'GET_SOURCE_FAILED', 'Get submission source failed');

@@ -1,7 +1,18 @@
 import { createHash } from 'node:crypto';
+import type { PoolClient } from 'pg';
+
+/** Stable across PostgreSQL jsonb key ordering and a process restart. */
+export function completionJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(completionJson).join(',')}]`;
+  if (value !== null && typeof value === 'object') return `{${Object.entries(value).filter(([, item]) => item !== undefined).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${completionJson(item)}`).join(',')}}`;
+  return JSON.stringify(value);
+}
+export type CompletionConsumer = (evidence: CompletionEvidence, lease: LeaseIdentity, client: PoolClient) => Promise<ResultReceipt['data']>;
+export type AcceptanceFence = (client: PoolClient) => Promise<void>;
 import type { Database } from '../persistence/db.js';
 import type {
   CompletionReceipt,
+  CompletionEvidence,
   Digest,
   JobLease,
   JobType,
@@ -9,7 +20,6 @@ import type {
   LeaseStatus,
   PinnedCompletion,
   ReconcilerIdentity,
-  ResultEvidence,
   ResultReceipt,
   SlotOffer,
   UUID,
@@ -84,9 +94,22 @@ interface CompletionRow {
   readonly state: string;
   readonly created_at: Date;
   readonly accepted_at: Date | null;
+  readonly result_receipt: ResultReceipt | null;
 }
 
 export class JobBroker {
+  private consumer?: CompletionConsumer;
+  private acceptanceFence?: AcceptanceFence;
+  private afterAccepted?: (receipt: ResultReceipt) => Promise<void>;
+  registerCompletionPublication(publish: (receipt: ResultReceipt) => Promise<void>): void { this.afterAccepted = publish; }
+  registerCompletionConsumer(consumer: CompletionConsumer): void { this.consumer = consumer; }
+  setAcceptanceFence(fence: AcceptanceFence): void { this.acceptanceFence = fence; }
+  async assertAcceptanceFence(client: PoolClient): Promise<void> { await this.acceptanceFence?.(client); }
+
+  async enqueueInTransaction(client: PoolClient, jobType: JobType, targetId: UUID, priority = 100, payload: unknown = {}): Promise<UUID> {
+    const result = await client.query<{ id: string }>(`INSERT INTO jobs (job_type,target_id,priority,state,deployment_generation,payload) VALUES ($1,$2,$3,'QUEUED',$4,$5) RETURNING id`, [jobType,targetId,priority,this.currentDeploymentGeneration,JSON.stringify(payload)]);
+    return result.rows[0].id;
+  }
   constructor(
     private readonly db: Database,
     private readonly currentDeploymentGeneration = 1
@@ -197,10 +220,11 @@ export class JobBroker {
            AND available_at <= clock_timestamp()
            AND job_type = ANY($1::text[])
            AND ($2::uuid[] IS NULL OR target_id = ANY($2::uuid[]))
+           AND deployment_generation = $3
          ORDER BY priority DESC, available_at ASC, id ASC
          LIMIT 1
          FOR UPDATE SKIP LOCKED`,
-        [claimTypes, options.targetIds ? [...options.targetIds] : null]
+        [claimTypes, options.targetIds ? [...options.targetIds] : null, this.currentDeploymentGeneration]
       );
 
       const job = jobRes.rows[0];
@@ -294,13 +318,23 @@ export class JobBroker {
 
   async prepareCompletion(
     lease: LeaseIdentity,
-    evidence: ResultEvidence
+    evidence: CompletionEvidence
   ): Promise<CompletionReceipt> {
     const fenceBigInt = BigInt(lease.fencingToken).toString();
-    const evidenceJson = JSON.stringify(evidence);
+    const evidenceJson = completionJson(evidence);
     const evidenceDigest = createHash('sha256').update(evidenceJson).digest('hex');
 
     return this.db.withTransaction(async (client) => {
+      // An attempt that already pinned exactly this evidence gets the persisted receipt back before
+      // the freshness fence is consulted: the write already happened, and a paused ledger must still
+      // answer an idempotent retry of it. Only a *new* pin is a protected write.
+      const prior = await client.query<CompletionRow>(`SELECT * FROM job_completions WHERE job_id=$1 AND attempt_id=$2 AND fencing_token=$3 AND deployment_generation=$4`, [lease.jobId,lease.attemptId,fenceBigInt,lease.deploymentGeneration]);
+      if (prior.rows[0]) {
+        const row = prior.rows[0];
+        if (row.evidence_digest !== evidenceDigest) throw new JobBrokerError('COMPLETION_CONFLICT', 'Attempt already pinned different evidence');
+        return { receiptId: row.id, timestamp: row.created_at.toISOString(), data: { completionId: row.id, state: 'COMPLETION_PENDING' as const, evidenceDigest } };
+      }
+      await this.assertAcceptanceFence(client);
       // Check attempt is active and not expired
       const attemptRes = await client.query<AttemptRow>(
         `SELECT ja.*
@@ -355,58 +389,33 @@ export class JobBroker {
     });
   }
 
-  async complete(
-    completion: PinnedCompletion,
-    _actor: ReconcilerIdentity
-  ): Promise<ResultReceipt> {
-    return this.db.withTransaction(async (client) => {
-      const compRes = await client.query<CompletionRow>(
-        `SELECT * FROM job_completions
-         WHERE id = $1
-           AND evidence_digest = $2
-           AND deployment_generation = $3
-           AND state = 'PENDING'
-         FOR UPDATE`,
-        [completion.completionId, completion.evidenceDigest, completion.deploymentGeneration]
-      );
-
-      const row = compRes.rows[0];
-      if (!row) {
-        throw new JobBrokerError('COMPLETION_INVALID', 'Invalid completion record, digest mismatch, or already completed');
-      }
-
-      // Mark completion ACCEPTED
-      await client.query(
-        `UPDATE job_completions
-         SET state = 'ACCEPTED', accepted_at = clock_timestamp()
-         WHERE id = $1`,
-        [completion.completionId]
-      );
-
-      // Transition job to SUCCEEDED
-      await client.query(
-        `UPDATE jobs
-         SET state = 'SUCCEEDED', updated_at = clock_timestamp()
-         WHERE id = $1`,
-        [row.job_id]
-      );
-
-      // Transition attempt to COMPLETED
-      await client.query(
-        `UPDATE job_attempts
-         SET state = 'COMPLETED', evidence_digest = $1
-         WHERE id = $2`,
-        [completion.evidenceDigest, row.attempt_id]
-      );
-
-      return {
-        receiptId: completion.completionId,
-        timestamp: new Date().toISOString(),
-        data: {
-          resultVersionId: completion.completionId,
-          state: 'ACCEPTED',
-        },
-      };
+  async complete(completion: PinnedCompletion, _actor: ReconcilerIdentity): Promise<ResultReceipt> {
+    const receipt = await this.db.withTransaction(async (client) => {
+      const found = await client.query<CompletionRow & { target_id: string; grant_id: string }>(
+        `SELECT c.*,j.target_id,a.grant_id FROM job_completions c JOIN jobs j ON j.id=c.job_id JOIN job_attempts a ON a.id=c.attempt_id
+         WHERE c.id=$1 AND c.evidence_digest=$2 AND c.deployment_generation=$3
+           AND j.deployment_generation=c.deployment_generation AND j.fencing_token=c.fencing_token
+           AND j.active_lease_id=c.attempt_id AND a.fencing_token=c.fencing_token
+           AND ((c.state='PENDING' AND j.state='COMPLETION_PENDING' AND a.state='ACTIVE')
+             OR (c.state='ACCEPTED' AND j.state='SUCCEEDED' AND a.state='COMPLETED'))
+         FOR UPDATE OF c,j,a`, [completion.completionId,completion.evidenceDigest,completion.deploymentGeneration]);
+      // Pinned immutable evidence retains authority without the worker lease clock.
+      const row = found.rows[0];
+      if (!row) throw new JobBrokerError('COMPLETION_INVALID', 'Invalid completion identity or fence');
+      const evidence = row.evidence_payload as CompletionEvidence;
+      if (createHash('sha256').update(completionJson(evidence)).digest('hex') !== row.evidence_digest) throw new JobBrokerError('EVIDENCE_CORRUPT', 'Pinned evidence digest mismatch');
+      if (row.result_receipt) return row.result_receipt;
+      if (evidence.native !== undefined && !this.consumer) throw new JobBrokerError('CONSUMER_UNAVAILABLE', 'Durable native completion consumer is not configured');
+      const data = evidence.native !== undefined
+        ? await this.consumer!(evidence, { jobId: row.job_id, attemptId: row.attempt_id, fencingToken: String(row.fencing_token), deploymentGeneration: row.deployment_generation, grantId: row.grant_id }, client)
+        : { state: 'ACCEPTED' as const, kind: evidence.kind, targetId: row.target_id };
+      const receipt: ResultReceipt = { receiptId: row.id, timestamp: row.created_at.toISOString(), data };
+      await client.query(`UPDATE job_completions SET state='ACCEPTED',accepted_at=clock_timestamp(),result_receipt=$2 WHERE id=$1`, [row.id,JSON.stringify(receipt)]);
+      await client.query(`UPDATE jobs SET state='SUCCEEDED',updated_at=clock_timestamp() WHERE id=$1`, [row.job_id]);
+      await client.query(`UPDATE job_attempts SET state='COMPLETED',evidence_digest=$1 WHERE id=$2`, [row.evidence_digest,row.attempt_id]);
+      return receipt;
     });
+    await this.afterAccepted?.(receipt);
+    return receipt;
   }
 }

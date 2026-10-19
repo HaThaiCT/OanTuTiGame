@@ -1,22 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
+import { getOrganizerSession } from '../../lib/api';
 import ReplayViewer from './ReplayViewer';
 
 export const metadata: Metadata = { title: 'Xem lại ván đấu — OanTuTi Arena' };
 
-/**
- * Replay entry point. Two ways in, one page:
- *
- *   /replays?game=<game id>   → đọc `/api/v2/games/:id/result` để lấy `replayDigest` rồi tải replay
- *   /replays?digest=<digest>  → tải thẳng `/api/v2/replays/:digest` (dùng cho replay bài kiểm thử riêng tư)
- *
- * Both values are read on the server, so the viewer only ever parses inside its own effects.
- */
+export const dynamic = 'force-dynamic';
 export default async function ReplaysPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const store = await cookies();
+  const cookie = store.getAll().map((item) => `${item.name}=${item.value}`).join('; ');
+  const session = await getOrganizerSession({ cookie });
+  if (!session || session.scope === 'PASSWORD_CHANGE_ONLY') redirect('/workspace');
+  if (session.role !== 'ADMIN' || session.scope !== 'FULL') notFound();
   const params = await searchParams;
   const rawGame = params.game;
   const rawDigest = params.digest;
@@ -36,9 +37,7 @@ export default async function ReplaysPage({
       <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4">
         <h1 className="text-xl font-semibold">Xem lại ván đấu</h1>
         <p className="mt-2 max-w-3xl text-sm text-[var(--text-secondary)]">
-          Mở bằng <span className="font-mono">mã ván</span> (server sẽ tra digest của replay từ kết quả đã được chấp
-          nhận) hoặc bằng <span className="font-mono">digest replay</span> khi bạn đã có digest — ví dụ replay của
-          một bài kiểm thử riêng tư. Tệp replay được kiểm tra SHA-256 ngay trên trình duyệt trước khi hiển thị.
+          Replay chính thức dành cho ban tổ chức. Nhập mã ván hoặc digest để xem.
         </p>
         <form action="/replays" method="get" className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input
@@ -68,8 +67,7 @@ export default async function ReplaysPage({
         <ReplayViewer gameId={gameId} digest={digest} />
       ) : (
         <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
-          Chưa có mã ván hoặc digest để mở. Hãy nhập một trong hai ô ở trên, hoặc bấm “Xem replay” từ nhánh đấu của
-          giải (mã ván) hay từ bảng kiểm thử riêng tư (digest).
+          Nhập mã ván hoặc mở replay từ nhánh đấu của giải.
         </p>
       )}
     </div>

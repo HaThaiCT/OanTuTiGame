@@ -2,10 +2,10 @@
  * Live spectator stream: the hub's snapshot/event/result contract and the wire route that
  * exposes it (`GET /api/v2/live/:gameId`).
  *
- * These tests use no PostgreSQL and no match execution: the hub is fed by hand, which is exactly
- * what the executor does with `publishTurn`. The route half runs a real Fastify server on an
- * ephemeral port with real WebSocket clients, so the frozen wire shape (SNAPSHOT → EVENT →
- * RESULT, close 4404 for an unknown game) is exercised as the web client will see it.
+ * These tests use no PostgreSQL and no match execution: the hub is fed by hand through the same
+ * publisher handle the executor uses. The route half runs a real Fastify server on an ephemeral
+ * port with real WebSocket clients, so the frozen wire shape (SNAPSHOT → EVENT → RESULT, close
+ * 4404 for an unknown game) is exercised as the web client will see it.
  *
  * Time is never slept on: frames are awaited as events (`events.once`), the retention timer is
  * driven by fake timers, and the few hub-side conditions without an event to await are observed
@@ -20,6 +20,9 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import { WebSocket } from 'ws';
 import type { MapDescriptor } from '@oantuti/engine';
+import type { LeaseIdentity } from '@oantuti/protocol';
+import type { Database } from '../src/persistence/db.js';
+import { NativeLiveProjector } from '../src/live/native-live-projector.js';
 import {
   LIVE_EVENT_BUFFER_LIMIT,
   LiveMatchHub,
@@ -27,7 +30,7 @@ import {
   type LiveSend,
   type LiveTurnInput,
 } from '../src/live/live-match-hub.js';
-import { registerLiveRoutes } from '../src/live/live-routes.js';
+import { LIVE_MAX_BUFFERED_BYTES, registerLiveRoutes } from '../src/live/live-routes.js';
 
 const MAP: MapDescriptor = {
   mapName: 'live-test-map',
@@ -41,11 +44,12 @@ const MAP: MapDescriptor = {
   ],
   whiteThrone: [0, 0],
   blackThrone: [7, 7],
-  startingPieces: [{ pieceId: 1, owner: 1, type: 0, pos: { x: 0, y: 1 } }],
+  startingPieces: [{ id: 1, owner: 'WHITE', type: 'ROCK', pos: [0, 1] }],
 };
 
 const WHITE_TEAM = { id: 'team-white', name: 'White Wolves' };
 const BLACK_TEAM = { id: 'team-black', name: 'Black Bears' };
+const IDENTITY = { attemptId: 'live-attempt', fencingToken: '12', deploymentGeneration: 3 };
 
 /** Captures everything a hub sends to one subscriber. */
 function recorder(): { readonly messages: LiveServerMessage[]; readonly send: LiveSend } {
@@ -58,7 +62,7 @@ function move(turnNumber: number, side: 1 | 2, pieceId: number, target: [number,
 }
 
 function openRequest(gameId: string) {
-  return { gameId, map: MAP, whiteTeam: WHITE_TEAM, blackTeam: BLACK_TEAM };
+  return { gameId, map: MAP, whiteTeam: WHITE_TEAM, blackTeam: BLACK_TEAM, identity: IDENTITY };
 }
 
 /** Waits for a condition that has no event to await (hub counters), without sleeping. */
@@ -75,12 +79,43 @@ function parseFrame(raw: unknown): LiveServerMessage {
 }
 
 describe('LiveMatchHub', () => {
+  it('keeps preview termination distinct from durable accepted outcome and preserves reconnect identity', () => {
+    const hub = new LiveMatchHub();
+    const gameId = randomUUID();
+    const publisher = hub.openGame(openRequest(gameId));
+    publisher.publishTurn(move(1, 1, 1, [1, 1]));
+    const spectator = recorder();
+    hub.subscribe(gameId, spectator.send);
+    publisher.previewEnd();
+    publisher.publishTurn(move(2, 2, 2, [2, 2]));
+    expect(spectator.messages).toHaveLength(2);
+    expect(spectator.messages[1]).toEqual({ type: 'PREVIEW_ENDED', gameId, ...IDENTITY });
+    const reconnect = recorder();
+    hub.subscribe(gameId, reconnect.send);
+    expect(reconnect.messages[0]).toMatchObject({ status: 'PREVIEW_ENDED', seq: 1, ...IDENTITY });
+    expect(reconnect.messages[0]).not.toHaveProperty('result');
+    hub.confirmAccepted(gameId, { winner: 2, reason: 'EXTINCTION' });
+    expect(spectator.messages[2]).toEqual({ type: 'RESULT', gameId, ...IDENTITY, winner: 2, reason: 'EXTINCTION' });
+    hub.dispose();
+  });
+
+  it('marks a truncated snapshot as incomplete instead of pretending it reconstructs the board', () => {
+    const hub = new LiveMatchHub({ eventBufferLimit: 1 });
+    const gameId = randomUUID();
+    const publisher = hub.openGame(openRequest(gameId));
+    publisher.publishTurn(move(1, 1, 1, [1, 1]));
+    publisher.publishTurn(move(2, 2, 2, [2, 2]));
+    const spectator = recorder();
+    hub.subscribe(gameId, spectator.send);
+    expect(spectator.messages[0]).toMatchObject({ seq: 2, historyComplete: false, events: [{ seq: 2 }] });
+    hub.dispose();
+  });
   it('gives a late joiner a snapshot carrying every event published before it subscribed', () => {
     const gameId = randomUUID();
     const hub = new LiveMatchHub();
-    hub.openGame(openRequest(gameId));
-    hub.publishTurn(gameId, move(1, 1, 3, [2, 3]));
-    hub.publishTurn(gameId, {
+    const live = hub.openGame(openRequest(gameId));
+    live.publishTurn(move(1, 1, 3, [2, 3]));
+    live.publishTurn({
       turnNumber: 2,
       side: 2,
       action: { action: 'MOVE', pieceId: 5, target: [4, 4] },
@@ -96,6 +131,9 @@ describe('LiveMatchHub', () => {
     expect(snapshot).toEqual({
       type: 'SNAPSHOT',
       gameId,
+      ...IDENTITY,
+      seq: 2,
+      historyComplete: true,
       status: 'RUNNING',
       map: MAP,
       whiteTeam: WHITE_TEAM,
@@ -116,10 +154,11 @@ describe('LiveMatchHub', () => {
     expect(parseFrame(JSON.stringify(snapshot))).toEqual(snapshot);
 
     // Events published after the subscribe arrive as EVENT frames, in order.
-    hub.publishTurn(gameId, move(3, 1, 3, [1, 1]));
+    live.publishTurn(move(3, 1, 3, [1, 1]));
     expect(spectator.messages[1]).toEqual({
       type: 'EVENT',
       gameId,
+      ...IDENTITY,
       seq: 3,
       turnNumber: 3,
       side: 1,
@@ -130,20 +169,21 @@ describe('LiveMatchHub', () => {
   it('delivers one published event to both subscribers', () => {
     const gameId = randomUUID();
     const hub = new LiveMatchHub();
-    hub.openGame(openRequest(gameId));
+    const live = hub.openGame(openRequest(gameId));
 
     const first = recorder();
     const second = recorder();
     expect(hub.subscribe(gameId, first.send)).not.toBeNull();
     expect(hub.subscribe(gameId, second.send)).not.toBeNull();
 
-    hub.publishTurn(gameId, move(1, 2, 9, [6, 6]));
+    live.publishTurn(move(1, 2, 9, [6, 6]));
 
     for (const spectator of [first, second]) {
       expect(spectator.messages).toHaveLength(2);
       expect(spectator.messages[1]).toEqual({
         type: 'EVENT',
         gameId,
+        ...IDENTITY,
         seq: 1,
         turnNumber: 1,
         side: 2,
@@ -156,7 +196,7 @@ describe('LiveMatchHub', () => {
   it('stops delivering to an unsubscribed spectator, idempotently', () => {
     const gameId = randomUUID();
     const hub = new LiveMatchHub();
-    hub.openGame(openRequest(gameId));
+    const live = hub.openGame(openRequest(gameId));
 
     const leaving = recorder();
     const staying = recorder();
@@ -167,15 +207,16 @@ describe('LiveMatchHub', () => {
     unsubscribe();
     expect(hub.stats().subscribers).toBe(1);
 
-    hub.publishTurn(gameId, move(1, 1, 1, [1, 1]));
+    live.publishTurn(move(1, 1, 1, [1, 1]));
     expect(leaving.messages).toHaveLength(1); // snapshot only
     expect(staying.messages).toHaveLength(2);
 
-    hub.publishTurn(gameId, { turnNumber: 2, side: 2, action: { action: 'PASS' } });
+    live.publishTurn({ turnNumber: 2, side: 2, action: { action: 'PASS' } });
     expect(leaving.messages).toHaveLength(1);
     expect(staying.messages[2]).toEqual({
       type: 'EVENT',
       gameId,
+      ...IDENTITY,
       seq: 2,
       turnNumber: 2,
       side: 2,
@@ -186,19 +227,19 @@ describe('LiveMatchHub', () => {
   it('marks the game FINISHED, publishes RESULT once, and serves the result to a later joiner', () => {
     const gameId = randomUUID();
     const hub = new LiveMatchHub();
-    hub.openGame(openRequest(gameId));
+    const live = hub.openGame(openRequest(gameId));
 
-    const live = recorder();
-    hub.subscribe(gameId, live.send);
-    hub.publishTurn(gameId, move(1, 1, 1, [7, 7]));
+    const spectator = recorder();
+    hub.subscribe(gameId, spectator.send);
+    live.publishTurn(move(1, 1, 1, [7, 7]));
 
-    hub.finishGame(gameId, { winner: 1, reason: 'THRONE_BREACH' });
-    expect(live.messages[2]).toEqual({ type: 'RESULT', gameId, winner: 1, reason: 'THRONE_BREACH' });
+    live.finishGame({ winner: 1, reason: 'THRONE_BREACH' });
+    expect(spectator.messages[2]).toEqual({ type: 'RESULT', gameId, ...IDENTITY, winner: 1, reason: 'THRONE_BREACH' });
 
     // A finished game accepts nothing further, and a repeated finish emits no second frame.
-    hub.publishTurn(gameId, move(2, 2, 2, [0, 0]));
-    hub.finishGame(gameId, { winner: 2, reason: 'EXTINCTION' });
-    expect(live.messages).toHaveLength(3);
+    live.publishTurn(move(2, 2, 2, [0, 0]));
+    live.finishGame({ winner: 2, reason: 'EXTINCTION' });
+    expect(spectator.messages).toHaveLength(3);
 
     const late = recorder();
     expect(hub.subscribe(gameId, late.send)).not.toBeNull();
@@ -206,6 +247,9 @@ describe('LiveMatchHub', () => {
       {
         type: 'SNAPSHOT',
         gameId,
+        ...IDENTITY,
+        seq: 1,
+        historyComplete: true,
         status: 'FINISHED',
         map: MAP,
         whiteTeam: WHITE_TEAM,
@@ -216,27 +260,31 @@ describe('LiveMatchHub', () => {
     ]);
   });
 
-  it('reports an unknown game for subscribe and ignores publications to it', () => {
+  it('reports an unknown game for subscribe and keeps no channel for it', () => {
     const hub = new LiveMatchHub();
     const spectator = recorder();
 
     expect(hub.hasGame('no-such-game')).toBe(false);
     expect(hub.subscribe('no-such-game', spectator.send)).toBeNull();
-
-    // Publications for a game the hub never opened are dropped, and no channel appears.
-    hub.publishTurn('no-such-game', move(1, 1, 1, [1, 1]));
-    hub.finishGame('no-such-game', { winner: null, reason: 'EXECUTION_FAILED' });
-    expect(hub.hasGame('no-such-game')).toBe(false);
     expect(spectator.messages).toHaveLength(0);
+    expect(hub.stats()).toEqual({ games: 0, subscribers: 0 });
+
+    // A handle from a disposed hub cannot resurrect its channel either.
+    const gameId = randomUUID();
+    const live = hub.openGame(openRequest(gameId));
+    hub.dispose();
+    live.publishTurn(move(1, 1, 1, [1, 1]));
+    live.finishGame({ winner: 1, reason: 'THRONE_BREACH' });
+    expect(hub.hasGame(gameId)).toBe(false);
     expect(hub.stats()).toEqual({ games: 0, subscribers: 0 });
   });
 
   it('bounds the late-join buffer to the newest events', () => {
     const gameId = randomUUID();
     const hub = new LiveMatchHub();
-    hub.openGame(openRequest(gameId));
+    const live = hub.openGame(openRequest(gameId));
     for (let turn = 1; turn <= LIVE_EVENT_BUFFER_LIMIT + 50; turn++) {
-      hub.publishTurn(gameId, move(turn, turn % 2 === 0 ? 2 : 1, 1, [1, 1]));
+      live.publishTurn(move(turn, turn % 2 === 0 ? 2 : 1, 1, [1, 1]));
     }
 
     const spectator = recorder();
@@ -280,11 +328,11 @@ describe('LiveMatchHub', () => {
     try {
       const gameId = randomUUID();
       const hub = new LiveMatchHub({ finishedRetentionMs: 25 });
-      hub.openGame(openRequest(gameId));
+      const live = hub.openGame(openRequest(gameId));
 
       const spectator = recorder();
       const unsubscribe = hub.subscribe(gameId, spectator.send)!;
-      hub.finishGame(gameId, { winner: 2, reason: 'EXTINCTION' });
+      live.finishGame({ winner: 2, reason: 'EXTINCTION' });
       expect(hub.hasGame(gameId)).toBe(true);
 
       vi.advanceTimersByTime(24);
@@ -306,26 +354,97 @@ describe('LiveMatchHub', () => {
   it('re-opens a requeued game by re-syncing its subscribers on a fresh snapshot', () => {
     const gameId = randomUUID();
     const hub = new LiveMatchHub();
-    hub.openGame(openRequest(gameId));
+    const firstAttempt = hub.openGame(openRequest(gameId));
 
     const spectator = recorder();
     hub.subscribe(gameId, spectator.send);
-    hub.publishTurn(gameId, move(1, 1, 1, [1, 1]));
-    hub.finishGame(gameId, { winner: 1, reason: 'THRONE_BREACH' });
+    firstAttempt.publishTurn(move(1, 1, 1, [1, 1]));
+    firstAttempt.finishGame({ winner: 1, reason: 'THRONE_BREACH' });
 
-    hub.openGame({ ...openRequest(gameId), whiteTeam: { id: 'team-white', name: 'Renamed Wolves' } });
+    const secondAttempt = hub.openGame({ ...openRequest(gameId), whiteTeam: { id: 'team-white', name: 'Renamed Wolves' } });
 
     expect(spectator.messages[3]).toEqual({
       type: 'SNAPSHOT',
       gameId,
+      ...IDENTITY,
+      seq: 0,
+      historyComplete: true,
       status: 'RUNNING',
       map: MAP,
       whiteTeam: { id: 'team-white', name: 'Renamed Wolves' },
       blackTeam: BLACK_TEAM,
       events: [],
     });
-    hub.publishTurn(gameId, move(1, 2, 2, [2, 2]));
+    secondAttempt.publishTurn(move(1, 2, 2, [2, 2]));
     expect(spectator.messages[4]).toMatchObject({ type: 'EVENT', turnNumber: 1, side: 2 });
+  });
+
+  it('accepts nothing from the attempt that lost the game to a requeue', () => {
+    const gameId = randomUUID();
+    const hub = new LiveMatchHub();
+    const stale = hub.openGame(openRequest(gameId));
+
+    const spectator = recorder();
+    hub.subscribe(gameId, spectator.send);
+    stale.publishTurn(move(1, 1, 1, [1, 1]));
+
+    // The lease expired and the game was requeued: the new attempt owns the channel.
+    const current = hub.openGame(openRequest(gameId));
+    const snapshotsAfterReopen = spectator.messages.filter((message) => message.type === 'SNAPSHOT').length;
+
+    // Everything the stale attempt still emits is ignored: no ply, no result, no closure.
+    stale.publishTurn(move(2, 2, 2, [2, 2]));
+    stale.finishGame({ winner: 1, reason: 'THRONE_BREACH' });
+    expect(spectator.messages.filter((message) => message.type === 'EVENT')).toHaveLength(1);
+    expect(spectator.messages.filter((message) => message.type === 'RESULT')).toHaveLength(0);
+    expect(spectator.messages.filter((message) => message.type === 'SNAPSHOT')).toHaveLength(snapshotsAfterReopen);
+
+    // The channel is still open and still belongs to the current attempt.
+    current.publishTurn(move(1, 1, 9, [3, 3]));
+    const events = spectator.messages.filter((message) => message.type === 'EVENT');
+    expect(events).toHaveLength(2);
+    expect(events[1]).toMatchObject({ seq: 1, turnNumber: 1, side: 1, action: { action: 'MOVE', pieceId: 9, target: [3, 3] } });
+
+    current.finishGame({ winner: 2, reason: 'EXTINCTION' });
+    const results = spectator.messages.filter((message) => message.type === 'RESULT');
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ winner: 2, reason: 'EXTINCTION' });
+  });
+});
+
+describe('NativeLiveProjector', () => {
+  const lease: LeaseIdentity = { jobId: randomUUID(), attemptId: randomUUID(), grantId: randomUUID(), fencingToken: '9', deploymentGeneration: 4 };
+
+  it('refuses private/nonofficial targets before creating any public channel', async () => {
+    const db = { query: vi.fn().mockResolvedValue({ rows: [] }) } as unknown as Database;
+    const hub = new LiveMatchHub();
+    const projector = new NativeLiveProjector(db, hub);
+    await expect(projector.open(lease, randomUUID(), MAP)).rejects.toThrow('official GAME');
+    expect(hub.stats()).toEqual({ games: 0, subscribers: 0 });
+    expect(() => projector.turn(lease, { seq: 1, turnNumber: 1, side: 1, action: { action: 'PASS' } })).toThrow();
+  });
+
+  it('rejects stale fences and sequence gaps, deduplicates retries, and never scores a preview', async () => {
+    const db = { query: vi.fn().mockResolvedValue({ rows: [{ white_team_id: 'white', black_team_id: 'black', white_name: 'White', black_name: 'Black' }] }) } as unknown as Database;
+    const hub = new LiveMatchHub();
+    const projector = new NativeLiveProjector(db, hub);
+    const gameId = randomUUID();
+    await projector.open(lease, gameId, MAP);
+    const spectator = recorder();
+    hub.subscribe(gameId, spectator.send);
+    const turn = { seq: 1, turnNumber: 1, side: 1, action: { action: 'PASS' } };
+    expect(() => projector.turn({ ...lease, fencingToken: '8' }, turn)).toThrow('stale');
+    expect(() => projector.turn(lease, { ...turn, seq: 2 })).toThrow('gap');
+    projector.turn(lease, turn);
+    projector.turn(lease, turn);
+    expect(spectator.messages).toHaveLength(2);
+    expect(spectator.messages[1]).toMatchObject({ type: 'EVENT', seq: 1, attemptId: lease.attemptId, fencingToken: '9', deploymentGeneration: 4 });
+    projector.previewEnd(lease);
+    expect(spectator.messages[2]).toMatchObject({ type: 'PREVIEW_ENDED' });
+    expect(spectator.messages.some((message) => message.type === 'RESULT')).toBe(false);
+    projector.accepted(gameId, { winner: 2, reason: 'EXTINCTION' });
+    expect(spectator.messages[3]).toMatchObject({ type: 'RESULT', winner: 2 });
+    hub.dispose();
   });
 });
 
@@ -363,8 +482,8 @@ describe('GET /api/v2/live/:gameId (spectator WebSocket route)', () => {
 
   it('streams SNAPSHOT, then each EVENT, then RESULT, and closes the socket', async () => {
     const gameId = randomUUID();
-    hub.openGame(openRequest(gameId));
-    hub.publishTurn(gameId, move(1, 1, 4, [3, 3]));
+    const live = hub.openGame(openRequest(gameId));
+    live.publishTurn(move(1, 1, 4, [3, 3]));
 
     const socket = new WebSocket(`ws://${origin}/api/v2/live/${gameId}`);
     socket.on('error', () => undefined);
@@ -380,11 +499,12 @@ describe('GET /api/v2/live/:gameId (spectator WebSocket route)', () => {
     });
 
     const eventFrame = once(socket, 'message');
-    hub.publishTurn(gameId, move(2, 2, 7, [5, 5]));
+    live.publishTurn(move(2, 2, 7, [5, 5]));
     const [eventRaw] = await eventFrame;
     expect(parseFrame(eventRaw)).toEqual({
       type: 'EVENT',
       gameId,
+      ...IDENTITY,
       seq: 2,
       turnNumber: 2,
       side: 2,
@@ -392,9 +512,9 @@ describe('GET /api/v2/live/:gameId (spectator WebSocket route)', () => {
     });
 
     const resultFrame = once(socket, 'message');
-    hub.finishGame(gameId, { winner: 2, reason: 'EXTINCTION' });
+    live.finishGame({ winner: 2, reason: 'EXTINCTION' });
     const [resultRaw] = await resultFrame;
-    expect(parseFrame(resultRaw)).toEqual({ type: 'RESULT', gameId, winner: 2, reason: 'EXTINCTION' });
+    expect(parseFrame(resultRaw)).toEqual({ type: 'RESULT', gameId, ...IDENTITY, winner: 2, reason: 'EXTINCTION' });
 
     const [closeCode] = await closed;
     expect(closeCode).toBe(1000);
@@ -402,9 +522,9 @@ describe('GET /api/v2/live/:gameId (spectator WebSocket route)', () => {
 
   it('serves a finished game to a late joiner and closes right after the snapshot', async () => {
     const gameId = randomUUID();
-    hub.openGame(openRequest(gameId));
-    hub.publishTurn(gameId, move(1, 1, 4, [3, 3]));
-    hub.finishGame(gameId, { winner: 1, reason: 'THRONE_BREACH' });
+    const live = hub.openGame(openRequest(gameId));
+    live.publishTurn(move(1, 1, 4, [3, 3]));
+    live.finishGame({ winner: 1, reason: 'THRONE_BREACH' });
 
     const socket = new WebSocket(`ws://${origin}/api/v2/live/${gameId}`);
     socket.on('error', () => undefined);
@@ -415,6 +535,9 @@ describe('GET /api/v2/live/:gameId (spectator WebSocket route)', () => {
     expect(parseFrame(snapshotRaw)).toEqual({
       type: 'SNAPSHOT',
       gameId,
+      ...IDENTITY,
+      seq: 1,
+      historyComplete: true,
       status: 'FINISHED',
       map: MAP,
       whiteTeam: WHITE_TEAM,
@@ -425,6 +548,37 @@ describe('GET /api/v2/live/:gameId (spectator WebSocket route)', () => {
 
     const [closeCode] = await closed;
     expect(closeCode).toBe(1000);
+    await waitFor(() => hub.stats().subscribers === 0);
+  });
+
+  it('keeps a preview-ended socket open until an accepted official outcome arrives', async () => {
+    const gameId = randomUUID();
+    const publisher = hub.openGame(openRequest(gameId));
+    const socket = new WebSocket(`ws://${origin}/api/v2/live/${gameId}`);
+    await once(socket, 'message');
+    const terminalPreview = once(socket, 'message');
+    publisher.previewEnd();
+    expect(parseFrame((await terminalPreview)[0])).toMatchObject({ type: 'PREVIEW_ENDED', ...IDENTITY });
+    expect(socket.readyState).toBe(WebSocket.OPEN);
+    const result = once(socket, 'message');
+    const closed = once(socket, 'close');
+    hub.confirmAccepted(gameId, { winner: 1, reason: 'THRONE_BREACH' });
+    expect(parseFrame((await result)[0])).toMatchObject({ type: 'RESULT', winner: 1 });
+    expect((await closed)[0]).toBe(1000);
+    await waitFor(() => hub.stats().subscribers === 0);
+  });
+
+  it('disconnects a slow spectator before sending beyond the one MiB queue cap', async () => {
+    const gameId = randomUUID();
+    const publisher = hub.openGame(openRequest(gameId));
+    const socket = new WebSocket(`ws://${origin}/api/v2/live/${gameId}`);
+    await once(socket, 'message');
+    const serverSocket = [...app.websocketServer.clients].find((client) => client.readyState === WebSocket.OPEN)!;
+    const buffered = vi.spyOn(serverSocket, 'bufferedAmount', 'get').mockReturnValue(LIVE_MAX_BUFFERED_BYTES);
+    const closed = once(socket, 'close');
+    publisher.publishTurn(move(1, 1, 1, [1, 1]));
+    expect((await closed)[0]).toBe(4405);
+    buffered.mockRestore();
     await waitFor(() => hub.stats().subscribers === 0);
   });
 

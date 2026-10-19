@@ -18,6 +18,7 @@ export default function TournamentCatalog({tournaments}:{tournaments:TournamentS
     <div className="arena-section-heading"><h2>Đấu trường OanTuTi</h2><div className="arena-pagination"><span aria-live="polite">{visible.length} giải · {currentPage + 1}/{pageCount}</span><button aria-label="Trang giải trước" disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>←</button><button aria-label="Trang giải tiếp" disabled={currentPage>=pageCount-1} onClick={()=>setPage(currentPage+1)}>→</button></div></div>
     {visible.length===0?<div className="arena-empty">{tournaments.length===0?'Chưa có giải được công bố.':'Không có giải phù hợp bộ lọc.'}</div>:<div className="arena-catalog">{visible.slice(currentPage*4,currentPage*4+4).map((t,index)=><Link className="arena-tournament-card" key={t.id} href={`/tournaments/${t.id}`}>
       <div className="arena-tournament-card-art"><BoardArtwork variant={index%4}/></div>
+      <span className="mx-4 mt-3 inline-flex rounded-full border border-[var(--border-subtle)] px-2 py-1 text-xs" title={t.globalRatingPolicy}>{t.isRated ? 'Rated' : 'Unrated'}</span>
       <div className="arena-tournament-card-body"><span className="arena-status" style={t.state==='RUNNING'?{color:'var(--live-accent)'}:undefined}>{stateLabel[t.state]??t.state}</span><h3>{t.name}</h3><p className="mt-2 text-xs text-[var(--text-secondary)]">{formatLabel[t.format]??t.format}</p><div className="arena-card-meta"><span>Tối đa {t.maxTeams} đội</span><span>·</span><span>{t.rulesRevision}</span></div></div>
     </Link>)}</div>}
   </section>;

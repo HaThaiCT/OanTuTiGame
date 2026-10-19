@@ -1,6 +1,6 @@
 //! Fixed development integration driver. Operator-created bundle paths only;
 //! not a public API or general-purpose privileged launcher.
-use arena_supervisor::{execution::{Envelope, TurnObservation, envelope::Message}, ipc::{read_frame, write_frame}, session::{ExecutionSession, Sender}, sandbox::Sandbox};
+use arena_supervisor::{execution::{Envelope, TurnObservation, envelope::Message}, ipc::{read_frame, write_frame}, session::{ExecutionSession, Sender}, sandbox::{Budgets, Sandbox}};
 use prost::Message as ProstMessage;
 use std::{fs, io, os::fd::AsFd, os::unix::net::UnixStream, path::PathBuf};
 
@@ -12,6 +12,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !work.starts_with("/var/lib/oantuti/development") || !group.starts_with("/sys/fs/cgroup/system.slice") {
         return Err("invalid operator workspace".into());
     }
+    // The operator names the verified runtime; nothing here guesses a path.
+    let runsc = PathBuf::from(std::env::var("OANTUTI_WORKER_RUNSC")
+        .map_err(|_| "OANTUTI_WORKER_RUNSC must name the verified runsc binary")?);
     let start = Envelope::decode(fs::read(work.join("start.pb"))?.as_slice())?;
     if start.manifest_sha256.len() != 32 { return Err("invalid manifest digest".into()); }
     let manifest: [u8;32] = start.manifest_sha256.as_slice().try_into()?;
@@ -49,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if bots[index].is_none() {
                         if turn.ply != 0 { return Err("sandbox INIT required".into()); }
                         let side = if index == 0 { "white" } else { "black" };
-                        bots[index] = Some(Sandbox::launch(&work.join(side), &work.join("state"), side, &group.join(side))?);
+                        bots[index] = Some(Sandbox::launch(&runsc, &work.join(side), &work.join("state"), side, &group.join(side), Budgets::game())?);
                     }
                     let payload = match bots[index].as_mut().unwrap().exchange(&turn.request_ndjson, turn.ply == 0) {
                         Ok(observation) => Message::TurnObservation(TurnObservation { side: turn.side, ply: turn.ply,

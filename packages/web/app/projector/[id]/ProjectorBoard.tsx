@@ -23,6 +23,8 @@ import {
 } from '../../../lib/labels';
 import { summarizeAnnouncement } from '../../tournaments/[id]/AnnouncementsSection';
 import { groupByStageAndRound } from '../../tournaments/[id]/BracketSection';
+import { TeamRatingName } from '../../_components/TeamRatingName';
+import { TournamentRatingProvider } from '../../_components/TournamentRatingContext';
 
 /** The public endpoints are the projector's only source; it re-reads them on this cadence. */
 const REFRESH_MS = 10_000;
@@ -147,7 +149,7 @@ export default function ProjectorBoard({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col gap-5 overflow-y-auto bg-[var(--canvas)] p-4 font-mono text-base text-[var(--text-primary)] sm:p-6 xl:p-8">
+    <div className="fixed inset-0 z-50 flex flex-col gap-5 overflow-y-auto bg-[var(--canvas)] p-4 font-mono text-base text-[var(--text-primary)] sm:p-6 xl:p-8"><TournamentRatingProvider tournamentId={tournamentId}>
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border-subtle)] pb-5">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
@@ -309,7 +311,7 @@ export default function ProjectorBoard({
                         <span
                           className={`break-words text-base ${teamAWon ? 'font-semibold text-[var(--success-text)]' : 'font-medium'}`}
                         >
-                          {encounter.teamAName ?? 'Đội chưa đặt tên'}
+                          <TeamRatingName teamId={encounter.teamAId} name={encounter.teamAName ?? 'Đội chưa đặt tên'} rating={null}/>
                           {teamAWon ? <span className="ml-2 text-xs font-semibold text-[var(--success-text)]">Thắng</span> : null}
                         </span>
                         <span className="text-xl font-semibold tabular-nums">
@@ -324,7 +326,7 @@ export default function ProjectorBoard({
                             <span className="text-[var(--text-secondary)]">Bye — miễn đấu</span>
                           ) : (
                             <>
-                              {encounter.teamBName ?? 'Đội chưa đặt tên'}
+                              <TeamRatingName teamId={encounter.teamBId} name={encounter.teamBName ?? 'Đội chưa đặt tên'} rating={null}/>
                               {teamBWon ? <span className="ml-2 text-xs font-semibold text-[var(--success-text)]">Thắng</span> : null}
                             </>
                           )}
@@ -361,7 +363,7 @@ export default function ProjectorBoard({
                 <th className="px-5 py-3 text-center">T–H–B</th>
                 <th className="px-5 py-3 text-center">Điểm</th>
                 {showBuchholz ? <th className="px-5 py-3 text-center">Buchholz</th> : null}
-                {showRatingElo ? <th className="px-5 py-3 text-center">Elo</th> : null}
+                {showRatingElo ? <th className="px-5 py-3 text-center">Elo trong giải</th> : null}
                 <th className="px-5 py-3 text-center">Trạng thái</th>
               </tr>
             </thead>
@@ -379,7 +381,7 @@ export default function ProjectorBoard({
                     className={`border-t border-[var(--border-subtle)] ${row.isQualified ? 'bg-[var(--success-tint)]' : ''}`}
                   >
                     <td className="px-5 py-4 text-lg font-semibold text-[var(--action)]">#{row.rank}</td>
-                    <td className="px-5 py-4 text-base font-semibold">{row.teamName}</td>
+                    <td className="px-5 py-4 text-base font-semibold"><TeamRatingName teamId={row.teamId} name={row.teamName} rating={null}/></td>
                     <td className="px-5 py-4 text-center tabular-nums">{row.matchesPlayed}</td>
                     <td className="px-5 py-4 text-center tabular-nums text-[var(--text-secondary)]">
                       {row.wins}–{row.draws}–{row.losses}
@@ -407,6 +409,7 @@ export default function ProjectorBoard({
           </table>
         </div>
       </section>
+    </TournamentRatingProvider>
     </div>
   );
 }

@@ -126,6 +126,8 @@ function toBase64(bytes: Uint8Array): string {
   }
   return btoa(parts.join(''));
 }
+const zipDrafts = new Map<string, File>();
+
 
 export default function SubmissionPanel({
   tournamentId,
@@ -150,6 +152,27 @@ export default function SubmissionPanel({
   /** undefined = not loaded yet, null = no READY submission. */
   const [candidate, setCandidate] = useState<SubmissionRow | null | undefined>(undefined);
   const [candidateError, setCandidateError] = useState<string | null>(null);
+  const draftKey = `oantuti:submission-draft:${tournamentId}:${teamId}`;
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  useEffect(() => {
+    setFile(zipDrafts.get(draftKey) ?? null);
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as { mode?: unknown; language?: unknown; entrypoint?: unknown };
+        if (draft.mode === 'zip' || draft.mode === 'ide') setMode(draft.mode);
+        if (typeof draft.language === 'string') setLanguage(draft.language);
+        if (typeof draft.entrypoint === 'string') setEntrypoint(draft.entrypoint);
+      }
+    } catch { setFormError('Không đọc được bản nháp bài nộp.'); }
+    setDraftLoaded(true);
+  }, [draftKey]);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    if (file) zipDrafts.set(draftKey, file); else zipDrafts.delete(draftKey);
+    try { sessionStorage.setItem(draftKey, JSON.stringify({ mode, language, entrypoint })); }
+    catch { setFormError('Không lưu được tùy chọn bài nộp.'); }
+  }, [draftLoaded, draftKey, mode, language, entrypoint, file]);
 
   const loadPanelData = useCallback(async () => {
     const [list, mine] = await Promise.all([
@@ -313,6 +336,7 @@ export default function SubmissionPanel({
                 onChange={onFileChange}
                 className="w-full rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none file:mr-3 file:rounded file:border-0 file:bg-[var(--surface-subtle)] file:px-2 file:py-1 file:text-[var(--text-primary)] focus:border-[var(--accent-secondary)]"
               />
+              {file ? <span className="text-xs">Đã chọn: {file.name}. Sau khi tải lại trang, hãy chọn lại tệp ZIP.</span> : null}
             </label>
             <label className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
               <span className="font-medium text-[var(--text-primary)]">Ngôn ngữ</span>
@@ -377,16 +401,11 @@ export default function SubmissionPanel({
                 {receiptStatus ? submissionStatusLabel[receiptStatus] ?? receiptStatus : '—'}
               </dd>
             </div>
-            <div className="flex gap-2">
-              <dt className="text-[var(--text-secondary)]">Digest nguồn:</dt>
-              <dd className="font-mono break-all" title={receiptDigest ?? undefined}>
-                {receiptDigest ? `${receiptDigest.slice(0, 16)}${receiptDigest.length > 16 ? '…' : ''}` : '—'}
-              </dd>
-            </div>
+            <details className="sm:col-span-2"><summary className="cursor-pointer text-[var(--text-secondary)]">Chi tiết mã nguồn</summary><p className="mt-1 break-all font-mono">{receiptDigest ?? '—'}</p></details>
           </dl>
           {receiptStatus !== null && PENDING_STATUSES[receiptStatus] === true ? (
             <p className="mt-2 text-[var(--warning-text)]">
-              Receipt biên dịch/chạy thử và kết quả TEST riêng tư chưa có trong phiên này — server trả về khi bài chuyển sang trạng thái “Sẵn sàng”.
+              Đang kiểm tra và biên dịch bài nộp. Tải lại để cập nhật trạng thái.
             </p>
           ) : null}
         </div>
@@ -401,7 +420,7 @@ export default function SubmissionPanel({
         ) : candidate === null ? (
           <p className="mt-1 text-[var(--text-secondary)]">Chưa có bản nộp nào ở trạng thái “Sẵn sàng” (READY) cho đội này.</p>
         ) : (
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="font-mono font-semibold">#{candidate.receiptOrdinal ?? '—'}</span>
             <span>{candidate.language ? languageLabel[candidate.language] ?? candidate.language : '—'}</span>
             <span className="font-mono break-all">{candidate.entrypoint || '—'}</span>
@@ -409,13 +428,8 @@ export default function SubmissionPanel({
               {candidate.status ? submissionStatusLabel[candidate.status] ?? candidate.status : '—'}
             </span>
             <span className="text-[var(--text-secondary)]">{formatInstant(candidate.createdAt) ?? '—'}</span>
-            <span className="font-mono text-[var(--text-secondary)]" title={candidate.sourceDigest || undefined}>
-              digest:{' '}
-              {candidate.sourceDigest
-                ? `${candidate.sourceDigest.slice(0, 16)}${candidate.sourceDigest.length > 16 ? '…' : ''}`
-                : '—'}
-            </span>
-          </p>
+            <details><summary className="cursor-pointer text-[var(--text-secondary)]">Chi tiết</summary><span className="break-all font-mono">{candidate.sourceDigest || '—'}</span></details>
+          </div>
         )}
       </div>
 
@@ -450,12 +464,10 @@ export default function SubmissionPanel({
                     </span>
                     <span className="text-[var(--text-secondary)]">{created ?? '—'}</span>
                   </div>
-                  <p className="mt-1 font-mono text-[var(--text-secondary)]" title={row.sourceDigest || undefined}>
-                    digest: {digest}
-                  </p>
+                  <details className="mt-1 text-[var(--text-secondary)]"><summary className="cursor-pointer">Chi tiết mã nguồn</summary><p className="break-all font-mono" title={row.sourceDigest || undefined}>{digest}</p></details>
                   {row.status !== '' && PENDING_STATUSES[row.status] === true ? (
                     <p className="mt-1 text-[var(--warning-text)]">
-                      Receipt biên dịch/chạy thử và kết quả TEST riêng tư chưa có trong phiên này.
+                      Đang kiểm tra và biên dịch bài nộp.
                     </p>
                   ) : null}
                 </li>

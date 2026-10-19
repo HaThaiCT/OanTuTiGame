@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { PostgresDatabase } from '../src/persistence/db.js';
-import { TournamentSchedulerService } from '../src/tournaments/scheduler-service.js';
+import { TournamentSchedulerService, invalidateDownstream } from '../src/tournaments/scheduler-service.js';
 import { EliminationFormat } from '../src/tournaments/formats/elimination.js';
 import { SwissFormat } from '../src/tournaments/formats/swiss.js';
 import { RoundRobinFormat } from '../src/tournaments/formats/round-robin.js';
@@ -121,8 +121,21 @@ describe('S11: downstream invalidation cancels rounds, games and their disputes'
   });
 
   it('cancels the later round, blocks its game jobs, closes disputes and reopens the tournament', async () => {
-    const result = await scheduler.invalidateAfterGame(ids.round1Game);
-    expect(result).toMatchObject({ tournamentId: ids.tournamentId, stage: 'MAIN', roundOrdinal: 1, cancelledEncounters: 1 });
+    // Production reaches the rebuild through this exact call: the correction service resolves the
+    // game's round and runs `invalidateDownstream` inside its own ledger transaction.
+    const game = await db.query<{ tournament_id: string; stage: string; round_ordinal: number }>(
+      `SELECT e.tournament_id, e.stage, e.round_ordinal
+         FROM games g JOIN encounters e ON e.id = g.encounter_id WHERE g.id = $1`,
+      [ids.round1Game]
+    );
+    expect(game.rows).toHaveLength(1);
+    const result = await db.withTransaction((client) => invalidateDownstream(client, {
+      tournamentId: game.rows[0].tournament_id,
+      stage: game.rows[0].stage,
+      roundOrdinal: game.rows[0].round_ordinal,
+      extraEncounterIds: [],
+    }));
+    expect(result.cancelledEncounters).toBe(1);
 
     const encounters = await db.query<{ id: string; status: string }>(
       `SELECT id, status FROM encounters WHERE tournament_id = $1 ORDER BY round_ordinal`,
@@ -152,5 +165,30 @@ describe('S11: downstream invalidation cancels rounds, games and their disputes'
       [ids.tournamentId]
     );
     expect(outbox.rows.some((row) => row.topic === 'ROUND_INVALIDATED')).toBe(true);
+  });
+
+  it('refuses to rebuild rounds of a finalized tournament and mutates nothing', async () => {
+    await db.query(
+      `UPDATE tournaments SET state = 'FINALIZED', finalized_at = clock_timestamp() WHERE id = $1`,
+      [ids.tournamentId]
+    );
+    const before = await db.query<{ rounds: number; encounters: number }>(
+      `SELECT (SELECT count(*) FROM tournament_rounds WHERE tournament_id = $1)::int AS rounds,
+              (SELECT count(*) FROM encounters WHERE tournament_id = $1)::int AS encounters`,
+      [ids.tournamentId]
+    );
+
+    // Only an explicit reopen may lift the immutability of a finalized ledger.
+    await expect(scheduler.invalidateAfterRound(ids.tournamentId, 'MAIN', 1)).rejects.toThrow(
+      /TOURNAMENT_REOPEN_REQUIRED/
+    );
+
+    const after = await db.query<{ rounds: number; encounters: number; state: string }>(
+      `SELECT (SELECT count(*) FROM tournament_rounds WHERE tournament_id = $1)::int AS rounds,
+              (SELECT count(*) FROM encounters WHERE tournament_id = $1)::int AS encounters,
+              (SELECT state FROM tournaments WHERE id = $1) AS state`,
+      [ids.tournamentId]
+    );
+    expect(after.rows[0]).toEqual({ ...before.rows[0], state: 'FINALIZED' });
   });
 });

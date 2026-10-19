@@ -1,7 +1,26 @@
-FROM node:24-alpine
+# ---- Rust trace verifier -----------------------------------------------------
+# The server treats Rust as the rules authority and has no TypeScript fallback, so the binary ships in this image.
+# Builder and runtime are both Debian Bookworm, keeping the glibc ABI baseline aligned.
+# The local development toolchain builds the same crate for the host.
+FROM rust:1.98.1-slim-bookworm AS verifier
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends protobuf-compiler \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ ./crates/
+# `crates/arena-execution/build.rs` compiles this exact schema with protoc.
+COPY packages/protocol/proto/ ./packages/protocol/proto/
+RUN cargo build --release --locked -p arena-runner --bin verify-trace
 
-# Python and C++ runtimes are required by the starter bots.
-RUN apk add --no-cache python3 g++
+# ---- Runtime -----------------------------------------------------------------
+FROM node:24-bookworm-slim
+
+# Python and C++ runtimes are required by the starter bots. The image is Debian-based so the glibc
+# verifier built above runs unmodified.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 g++ \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -13,23 +32,35 @@ COPY packages/runner/package.json ./packages/runner/
 COPY packages/server/package.json ./packages/server/
 COPY packages/web/package.json ./packages/web/
 
-RUN npm ci
+# Install only the server runtime graph; test tooling and browser-only packages do not ship in the API image.
+RUN npm ci --omit=dev --workspace=@oantuti/server --workspace=@oantuti/engine --workspace=@oantuti/protocol --workspace=@oantuti/runner --include-workspace-root
 
 # Copy full repository source code
 COPY --chown=node:node packages/ ./packages/
 COPY --chown=node:node docs/specs/ ./docs/specs/
 COPY --chown=node:node bots/ ./bots/
 COPY --chown=node:node sdk/ ./sdk/
+COPY deploy/linux/server-entrypoint.sh /app/server-entrypoint.sh
+# Operator CLIs the deployment contract points at: migrations on an existing volume and the first
+# ADMIN of a new database. Mount nothing; they run from this image.
+COPY --chown=node:node deploy/linux/apply-migrations.mts deploy/linux/bootstrap-admin.mts ./deploy/linux/
 
-# Create persistent storage directories
-RUN mkdir -p /app/storage/replays /app/storage/bots && chown -R node:node /app/storage
+# Rules authority: the server invokes exactly this binary for every accepted trace.
+COPY --from=verifier /src/target/release/verify-trace /app/bin/verify-trace
+RUN chmod 0755 /app/bin/verify-trace
+
+# Persistent storage directories. Object roots must be private to the service identity: the stores
+# refuse a group/world-accessible root, and the checkpoint producer refuses to back one up.
+RUN mkdir -p /app/storage/replays /app/storage/bots /app/storage/execution \
+ && chown -R node:node /app/storage && chmod 700 /app/storage /app/storage/replays /app/storage/bots /app/storage/execution
 
 ENV PORT=3001
 ENV HOST=0.0.0.0
 ENV NODE_ENV=production
 ENV DB_LOCATION=/app/storage/arena.sqlite
+ENV OANTUTI_VERIFIER_BIN=/app/bin/verify-trace
 
 USER node
 EXPOSE 3001
 
-CMD ["node", "--import", "tsx", "packages/server/src/index.ts"]
+CMD ["/bin/sh", "/app/server-entrypoint.sh"]

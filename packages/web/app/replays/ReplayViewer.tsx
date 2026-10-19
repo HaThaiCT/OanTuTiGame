@@ -39,9 +39,12 @@ type ViewerState =
 export default function ReplayViewer({
   gameId,
   digest,
+  replayEndpoint,
 }: {
   readonly gameId: string | null;
   readonly digest: string | null;
+  /** Owner-scoped TEST endpoint; never resolve private TEST through the official archive. */
+  readonly replayEndpoint?: string;
 }) {
   const [state, setState] = useState<ViewerState>({ phase: 'loading', message: 'Đang tải dữ liệu replay…' });
   const [index, setIndex] = useState(0);
@@ -81,7 +84,7 @@ export default function ReplayViewer({
         }
 
         if (!cancelled) setState({ phase: 'loading', message: 'Đang tải tệp replay…' });
-        const binaryResponse = await fetch(`/api/v2/replays/${encodeURIComponent(replayDigest)}`, {
+        const binaryResponse = await fetch(replayEndpoint ?? `/api/v2/replays/${encodeURIComponent(replayDigest)}`, {
           cache: 'no-store',
         });
         if (!binaryResponse.ok) {
@@ -109,7 +112,7 @@ export default function ReplayViewer({
     return () => {
       cancelled = true;
     };
-  }, [gameId, digest]);
+  }, [gameId, digest, replayEndpoint]);
 
   // One timeout per frame: the delay follows the speed selector, and playback stops on the last frame.
   useEffect(() => {

@@ -126,12 +126,17 @@ describe('S09: odd-sized Swiss fields persist BYE encounters', () => {
         : {
             gameId: game.id,
             winner: 2,
-            reason: 'BOT_TIMEOUT',
+            reason: 'THRONE_BREACH',
             disposition: 'DECISIVE' as const,
-            executionStatus: 'BOT_FORFEIT' as const,
+            executionStatus: 'COMPLETED' as const,
             rulesRevision: 'ArenaGameplay/v2',
-            totalPly: 1,
-            trace: [{ ply: 1, side: 1, move: { pieceId: 1, targetPos: { x: 1, y: 2 } } }],
+            totalPly: 4,
+            trace: [
+              { ply: 1, side: 1, move: { pieceId: 1, targetPos: { x: 1, y: 2 } } },
+              { ply: 2, side: 2, move: { pieceId: 2, targetPos: { x: 1, y: 1 } } },
+              { ply: 3, side: 1, move: { pieceId: 1, targetPos: { x: 2, y: 1 } } },
+              { ply: 4, side: 2, move: { pieceId: 2, targetPos: { x: 0, y: 0 } } },
+            ],
           };
       await resultService.recordResult({
         gameId: game.id,

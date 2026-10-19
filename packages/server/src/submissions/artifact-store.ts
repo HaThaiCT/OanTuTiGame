@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
 import { open, mkdir, stat } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import * as path from 'node:path';
 import type { Database } from '../persistence/db.js';
 import type { PoolClient } from 'pg';
 import type { BotLanguage, Digest, ProjectFileEntry, ProjectManifest } from '@oantuti/protocol';
+import { assertPrivateObjectRoot } from '../persistence/private-root.js';
 
 export const MAX_ZIP_BYTES = 2 * 1024 * 1024; // 2 MiB
 export const MAX_REGULAR_FILES = 128;
@@ -227,11 +229,16 @@ export function computeCanonicalManifest(
   return { manifest, digest };
 }
 
+/** Application-owned default; see `assertPrivateObjectRoot` for why the module may tighten it. */
+const DEFAULT_SOURCE_ROOT = '/home/ha-thai/.local/share/oantuti/development/objects/sources';
+
 export class ArtifactStore {
   constructor(
     private readonly db: Database,
-    private readonly storageRoot: string = '/home/ha-thai/.local/share/oantuti/development/objects/sources'
-  ) {}
+    readonly storageRoot: string = DEFAULT_SOURCE_ROOT
+  ) {
+    assertPrivateObjectRoot(this.storageRoot, 'Submission source root', { ownedByConvention: this.storageRoot === DEFAULT_SOURCE_ROOT });
+  }
 
   async storeSource(
     zipBuffer: Buffer,
@@ -239,19 +246,31 @@ export class ArtifactStore {
     entrypoint: string,
     client?: PoolClient
   ): Promise<StoredSourceArtifact> {
+    if (!client) return this.db.withTransaction((transaction) => this.storeSource(zipBuffer, language, entrypoint, transaction));
+    await client.query('SELECT pg_advisory_xact_lock_shared(1868657748, 26)');
     const { files, expandedBytes } = parseAndValidateZip(zipBuffer, language, entrypoint);
     const { manifest, digest } = computeCanonicalManifest(files, language, entrypoint, expandedBytes);
 
     await mkdir(this.storageRoot, { recursive: true, mode: 0o700 });
     const filePath = path.join(this.storageRoot, `${digest}.zip`);
 
-    // Write file with durable fsync
-    const fileHandle = await open(filePath, 'w', 0o600);
+    // Never rewrite a canonical object: different ZIP encodings may name the same source manifest.
+    let storedZipBytes = zipBuffer.length;
     try {
-      await fileHandle.write(zipBuffer);
-      await fileHandle.sync(); // fsync file
-    } finally {
-      await fileHandle.close();
+      const fileHandle = await open(filePath, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+      try { await fileHandle.writeFile(zipBuffer); await fileHandle.sync(); }
+      finally { await fileHandle.close(); }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      const existing = await open(filePath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+      try {
+        const info = await existing.stat();
+        if (!info.isFile() || info.size > MAX_ZIP_BYTES) throw new ArtifactError(500, 'Existing source object is not a bounded regular file');
+        const bytes = await existing.readFile();
+        const parsed = parseAndValidateZip(bytes, language, entrypoint);
+        if (computeCanonicalManifest(parsed.files, language, entrypoint, parsed.expandedBytes).digest !== digest) throw new ArtifactError(500, 'Existing source object is corrupt');
+        storedZipBytes = bytes.length;
+      } finally { await existing.close(); }
     }
 
     // Fsync parent directory
@@ -270,14 +289,14 @@ export class ArtifactStore {
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (digest) DO UPDATE
        SET manifest = EXCLUDED.manifest`,
-      [digest, filePath, zipBuffer.length, expandedBytes, files.length, JSON.stringify(manifest)]
+      [digest, filePath, storedZipBytes, expandedBytes, files.length, JSON.stringify(manifest)]
     );
 
     return {
       digest,
       storagePath: filePath,
       manifest,
-      zipBytes: zipBuffer.length,
+      zipBytes: storedZipBytes,
       expandedBytes,
       fileCount: files.length,
     };

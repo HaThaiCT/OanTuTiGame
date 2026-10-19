@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, openSync, renameSync, unlinkSync, writeFileSync, fsyncSync, closeSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Digest } from '@oantuti/protocol';
+import { assertPrivateObjectRoot } from '../persistence/private-root.js';
 
 export const REPLAY_V2_MAGIC = 'OANTUTI2'; // 8-byte magic for v2 replays
 
@@ -18,6 +19,7 @@ export interface ReplayV2Payload {
   readonly trace: readonly unknown[];
   /** Board descriptor so a viewer can render the replay without a second lookup (optional for old objects). */
   readonly map?: unknown;
+  readonly nativeExecution?: unknown;
 }
 
 export interface StoredReplay {
@@ -26,13 +28,17 @@ export interface StoredReplay {
   readonly absolutePath: string;
 }
 
+const DEFAULT_REPLAY_ROOT = '/home/ha-thai/.local/share/oantuti/development/objects/replays';
+const DEFAULT_REPLAY_STAGING = '/home/ha-thai/.local/share/oantuti/development/objects/staging';
+
 export class ReplayStore {
   constructor(
-    private readonly storageRoot: string = '/home/ha-thai/.local/share/oantuti/development/objects/replays',
-    private readonly stagingRoot: string = '/home/ha-thai/.local/share/oantuti/development/objects/staging'
+    readonly storageRoot: string = DEFAULT_REPLAY_ROOT,
+    private readonly stagingRoot: string = DEFAULT_REPLAY_STAGING
   ) {
-    mkdirSync(this.storageRoot, { recursive: true });
-    mkdirSync(this.stagingRoot, { recursive: true });
+    const byConvention = this.storageRoot === DEFAULT_REPLAY_ROOT && this.stagingRoot === DEFAULT_REPLAY_STAGING;
+    assertPrivateObjectRoot(this.storageRoot, 'Replay object root', { ownedByConvention: byConvention });
+    assertPrivateObjectRoot(this.stagingRoot, 'Replay staging root', { ownedByConvention: byConvention });
   }
 
   /**
@@ -108,10 +114,10 @@ export class ReplayStore {
    */
   stageReplay(stagingKey: string, replayBuffer: Buffer): { stagingPath: string; digest: Digest } {
     const stagingPath = join(this.stagingRoot, stagingKey);
-    mkdirSync(dirname(stagingPath), { recursive: true });
+    mkdirSync(dirname(stagingPath), { recursive: true, mode: 0o700 });
 
     // Write and fsync file
-    const fd = openSync(stagingPath, 'w');
+    const fd = openSync(stagingPath, 'w', 0o600);
     try {
       writeFileSync(fd, replayBuffer);
       fsyncSync(fd);
@@ -173,15 +179,7 @@ export class ReplayStore {
   }
 
   private fsyncDirectory(dirPath: string): void {
-    try {
-      const dirFd = openSync(dirPath, 'r');
-      try {
-        fsyncSync(dirFd);
-      } finally {
-        closeSync(dirFd);
-      }
-    } catch {
-      // Directories on some virtual FS or tmpfs may not support fsync; ignore ENOTSUP / EINVAL
-    }
+    const dirFd = openSync(dirPath, 'r');
+    try { fsyncSync(dirFd); } finally { closeSync(dirFd); }
   }
 }

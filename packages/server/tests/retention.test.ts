@@ -23,6 +23,8 @@ describe('S15: retention report, holds and sweep', () => {
     replayDigest: `sha256:retention-replay-${randomUUID()}`,
     heldSnapshotId: randomUUID(),
     abandonedSnapshotId: randomUUID(),
+    stagingKeptSnapshotId: randomUUID(),
+    stagingJobId: randomUUID(),
     auditId: randomUUID(),
     jobId: randomUUID(),
   };
@@ -112,6 +114,22 @@ describe('S15: retention report, holds and sweep', () => {
       [ids.abandonedSnapshotId, ids.tournamentId, ids.teamId, ids.userId, ids.sourceDigest]
     );
 
+    // A staging snapshot an active job still references survives the row delete, so the diagnostics
+    // pass — the one that strips heavy logs without removing the row — is observable on it.
+    await db.query(
+      `INSERT INTO test_snapshots
+         (id, tournament_id, team_id, created_by_user_id, source_digest, language, entrypoint, status,
+          created_at, build_logs, private_trace)
+       VALUES ($1, $2, $3, $4, $5, 'PYTHON', 'main.py', 'QUEUED',
+               now() - interval '30 hours', 'staging build log', '[]'::jsonb)`,
+      [ids.stagingKeptSnapshotId, ids.tournamentId, ids.teamId, ids.userId, ids.sourceDigest]
+    );
+    await db.query(
+      `INSERT INTO jobs (id, job_type, target_id, state, created_at, updated_at)
+       VALUES ($1, 'TEST_BUILD', $2, 'RUNNING', clock_timestamp(), clock_timestamp())`,
+      [ids.stagingJobId, ids.stagingKeptSnapshotId]
+    );
+
     await db.query(
       `INSERT INTO outbox_events (topic, payload, created_at, delivered_at)
        VALUES ('RETENTION_TEST', '{"k":1}'::jsonb, now() - interval '40 days', now() - interval '40 days')`
@@ -131,7 +149,7 @@ describe('S15: retention report, holds and sweep', () => {
   });
 
   afterAll(async () => {
-    const snapshotIds = [expiredSnapshotId, ids.heldSnapshotId, ids.abandonedSnapshotId].filter(Boolean);
+    const snapshotIds = [expiredSnapshotId, ids.heldSnapshotId, ids.abandonedSnapshotId, ids.stagingKeptSnapshotId].filter(Boolean);
     if (snapshotIds.length > 0) {
       await db.query(`DELETE FROM test_snapshots WHERE id = ANY($1::uuid[])`, [snapshotIds]);
     }
@@ -188,6 +206,21 @@ describe('S15: retention report, holds and sweep', () => {
     expect((await db.query(`SELECT id FROM test_snapshots WHERE id = $1`, [expiredSnapshotId])).rows).toHaveLength(0);
     expect((await db.query(`SELECT id FROM test_snapshots WHERE id = $1`, [ids.abandonedSnapshotId])).rows).toHaveLength(0);
     expect((await db.query(`SELECT id FROM test_snapshots WHERE id = $1`, [ids.heldSnapshotId])).rows).toHaveLength(1);
+
+    // Diagnostics follow the same rule: the unheld staging snapshot keeps its row but loses the
+    // heavy logs, while the held tournament keeps both the row and its private diagnostics.
+    const staging = await db.query<{ build_logs: string | null }>(
+      `SELECT build_logs FROM test_snapshots WHERE id = $1`,
+      [ids.stagingKeptSnapshotId]
+    );
+    expect(staging.rows).toHaveLength(1);
+    expect(staging.rows[0]?.build_logs).toBeNull();
+    const heldDiagnostics = await db.query<{ build_logs: string | null; private_trace: unknown }>(
+      `SELECT build_logs, private_trace FROM test_snapshots WHERE id = $1`,
+      [ids.heldSnapshotId]
+    );
+    expect(heldDiagnostics.rows[0]?.build_logs).toBe('held build log');
+    expect(heldDiagnostics.rows[0]?.private_trace).not.toBeNull();
     expect((await db.query(`SELECT digest FROM replay_objects WHERE digest = $1`, [ids.replayDigest])).rows).toHaveLength(0);
     expect((await db.query(`SELECT id FROM outbox_events WHERE topic = 'RETENTION_TEST'`)).rows).toHaveLength(0);
     expect((await db.query(`SELECT id FROM audit_events WHERE id = $1`, [ids.auditId])).rows).toHaveLength(1);

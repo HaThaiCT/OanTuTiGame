@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import ReplayViewer from '../replays/ReplayViewer';
 import {
   createPrivateTest,
   listPrivateTests,
@@ -140,6 +140,8 @@ function PrivateTestOutcomeView({ test }: { test: PrivateTestSummary }) {
   return null;
 }
 
+const testZipDrafts = new Map<string, File>();
+
 export default function PrivateTestPanel({
   tournamentId,
   teamId,
@@ -157,6 +159,27 @@ export default function PrivateTestPanel({
   const [tests, setTests] = useState<PrivateTestSummary[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [viewingTestId, setViewingTestId] = useState<string | null>(null);
+  const draftKey = `oantuti:test-draft:${tournamentId}:${teamId}`;
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  useEffect(() => {
+    setFile(testZipDrafts.get(draftKey) ?? null);
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as { language?: unknown; entrypoint?: unknown };
+        if (typeof draft.language === 'string') setLanguage(draft.language);
+        if (typeof draft.entrypoint === 'string') setEntrypoint(draft.entrypoint);
+      }
+    } catch { setFormError('Không đọc được bản nháp test riêng tư.'); }
+    setDraftLoaded(true);
+  }, [draftKey]);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    if (file) testZipDrafts.set(draftKey, file); else testZipDrafts.delete(draftKey);
+    try { sessionStorage.setItem(draftKey, JSON.stringify({ language, entrypoint })); }
+    catch { setFormError('Không lưu được tùy chọn test riêng tư.'); }
+  }, [draftLoaded, draftKey, language, entrypoint, file]);
 
   const loadTests = useCallback(async () => {
     setLoading(true);
@@ -388,12 +411,9 @@ export default function PrivateTestPanel({
                       >
                         Tải replay
                       </a>
-                      <Link
-                        href={`/replays?digest=${encodeURIComponent(test.replayDigest)}`}
-                        className="font-semibold text-[var(--action)] underline"
-                      >
-                        Xem
-                      </Link>
+                      <button type="button" onClick={() => setViewingTestId(viewingTestId === test.id ? null : test.id)} className="font-semibold text-[var(--action)] underline">
+                        {viewingTestId === test.id ? 'Đóng bàn cờ' : 'Xem bàn cờ'}
+                      </button>
                     </>
                   ) : null}
                 </div>
@@ -403,6 +423,7 @@ export default function PrivateTestPanel({
                   </p>
                 ) : null}
                 <PrivateTestOutcomeView test={test} />
+                {viewingTestId === test.id && test.replayDigest ? <ReplayViewer gameId={null} digest={test.replayDigest} replayEndpoint={privateTestReplayUrl(test.id)} /> : null}
               </li>
             ))}
           </ul>

@@ -18,7 +18,9 @@ import { TeamService } from './teams/service.js';
 import { registerTeamRoutes } from './teams/routes.js';
 import { ArtifactStore } from './submissions/artifact-store.js';
 import { BuildPipeline } from './builds/build-pipeline.js';
+import { CompiledArtifactStore } from './builds/compiled-artifact-store.js';
 import { PrivateTestRunner } from './builds/private-test-runner.js';
+import { PrivateTestResultService } from './builds/private-test-result-service.js';
 import { SubmissionService } from './submissions/service.js';
 import { registerSubmissionRoutes } from './submissions/routes.js';
 import { ReplayStore } from './results/replay-store.js';
@@ -34,15 +36,23 @@ import { MatchExecutionService } from './tournaments/execution-service.js';
 import { LiveMatchHub } from './live/live-match-hub.js';
 import { registerLiveRoutes } from './live/live-routes.js';
 import { TournamentAutoRunner } from './tournaments/auto-runner.js';
+import { TournamentControlPlane } from './tournaments/control-plane.js';
 import { JobBroker } from './jobs/broker.js';
 import { JobReconciler } from './jobs/reconciler.js';
+import { LocalJobBrokerTransport, type LocalJobBrokerOptions } from './jobs/local-transport.js';
+import { NativeAssignmentService } from './jobs/native-assignment.js';
 import { DisputeService } from './adjudication/dispute-service.js';
 import { CorrectionService } from './adjudication/correction-service.js';
 import { registerAdjudicationRoutes } from './adjudication/routes.js';
 import { TournamentSchedulerService } from './tournaments/scheduler-service.js';
 import { RetentionService } from './operations/retention-service.js';
 import { BackupFence, backupFenceConfigFromEnv } from './operations/backup-fence.js';
+import { readinessReport, type ReadinessInputs } from './operations/readiness.js';
 import { registerOperationsRoutes } from './operations/routes.js';
+import { resolveDeploymentGeneration } from './operations/backup-checkpoint.js';
+import { NativeLiveProjector } from './live/native-live-projector.js';
+import { registerGlobalRatingRoutes } from './ratings/routes.js';
+import { GlobalTeamRatingService } from './ratings/service.js';
 
 export interface ServerOptions {
   readonly dbLocation?: string;
@@ -51,6 +61,8 @@ export interface ServerOptions {
   readonly botsDir?: string;
   readonly allowedOrigins?: readonly string[];
   readonly pgDb?: PostgresDatabase;
+  /** Linux native SO_PEERCRED gateway; never inferred from untrusted request data. */
+  readonly localJobBroker?: LocalJobBrokerOptions;
   /** Scratch root for the dev-only match executor (see MatchExecutionService). */
   readonly executionSpoolDir?: string;
 }
@@ -62,7 +74,30 @@ export interface AppContext {
   readonly tournamentService: TournamentService;
   readonly pgDb?: PostgresDatabase;
 }
+/**
+ * Trusted proxy addresses for `request.ip`.
+ *
+ * Behind the LAN reverse proxy every socket carries the proxy's address, which would collapse the
+ * per-IP login throttle into a single bucket shared by every client. The forwarded client address is
+ * therefore honoured only when an operator names the proxies with `OANTUTI_TRUSTED_PROXIES`
+ * (comma-separated addresses or CIDRs, e.g. `127.0.0.1`); leaving it unset keeps the socket address,
+ * so no caller can pick its own throttle bucket with a spoofed `X-Forwarded-For`.
+ */
+function trustedProxies(env: NodeJS.ProcessEnv = process.env): string[] | false {
+  const configured = (env.OANTUTI_TRUSTED_PROXIES ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  return configured.length > 0 ? configured : false;
+}
+
 export async function createApp(options?: ServerOptions): Promise<AppContext> {
+  if (options?.localJobBroker && !options.pgDb) throw new Error('Local job broker requires PostgreSQL');
+  let localJobBroker: LocalJobBrokerTransport | undefined;
+  /** Backup freshness fence, when a durable control plane is wired; readiness reports its state. */
+  let backupFence: BackupFence | undefined;
+  /** Filled by the control-plane block below; the readiness route is registered outside it. */
+  let objectRootsProbe: ReadinessInputs['objectRoots'];
   const db = new Database(options?.dbLocation ?? ':memory:');
   const matchService = new MatchService(db, options?.mapsDir, options?.replaysDir);
   const wsHub = new WebSocketHub(matchService, db);
@@ -118,8 +153,9 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   }
   migrateBotSourceFiles(db, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
 
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false, trustProxy: trustedProxies() });
   const auth = new AuthService(db);
+  const identityService = options?.pgDb ? new IdentityService(options.pgDb) : undefined;
   app.setErrorHandler((error: unknown, _request, reply) => {
     if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
     if (error && typeof error === 'object' && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500) {
@@ -132,19 +168,40 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     if (['POST', 'PUT', 'DELETE'].includes(request.method) && ['/api/bots', '/api/matches', '/api/matches/test', '/api/tournaments'].some((route) => url === route || (route === '/api/bots' && url.startsWith('/api/bots/')))) auth.requireUser(request);
   });
   protectMutations(app, options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']));
-  auth.registerRoutes(app);
-  registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
+  if (!options?.pgDb) {
+    auth.registerRoutes(app);
+    registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
+  }
   await app.register(fastifyWebsocket);
-  if (options?.pgDb) {
-    const identityService = new IdentityService(options.pgDb);
+  if (options?.pgDb && identityService) {
     const teamService = new TeamService(options.pgDb);
     const artifactStore = new ArtifactStore(options.pgDb, options.botsDir ?? path.resolve(process.cwd(), 'storage/submissions'));
     // Durable queue: intake/scheduler enqueue BUILD/GAME work, the worker claims/executes/
     // completes it, and the reconciler requeues expired leases. It is built before the
     // submission service, which enqueues the BUILD job for every accepted receipt.
-    const jobBroker = new JobBroker(options.pgDb);
-    const jobReconciler = new JobReconciler(options.pgDb);
-    const backupFence = new BackupFence(options.pgDb, backupFenceConfigFromEnv());
+    const deploymentGeneration = await resolveDeploymentGeneration(options.pgDb, options.localJobBroker?.deploymentGeneration);
+    const jobBroker = new JobBroker(options.pgDb, deploymentGeneration);
+    // The reconciler shares the generation: another deployment's leases and pinned completions are
+    // deliberately out of its reach.
+    const jobReconciler = new JobReconciler(options.pgDb, deploymentGeneration, jobBroker);
+    backupFence = new BackupFence(options.pgDb, backupFenceConfigFromEnv());
+    // A restored database names the roots it was captured from. Pointing a store somewhere else
+    // starts cleanly and then serves 404s for evidence that is on disk, so readiness says so.
+    objectRootsProbe = {
+      async check() {
+        for (const [table, root] of [['submission_sources', artifactStore.storageRoot], ['replay_objects', replayStore.storageRoot]] as const) {
+          const escaped = root.replace(/[\\%_]/g, (character) => `\\${character}`);
+          const stray = await options.pgDb!.query<{ storage_path: string }>(
+            `SELECT storage_path FROM ${table} WHERE storage_path NOT LIKE $1 LIMIT 1`, [`${escaped}/%`]);
+          if (stray.rows[0]) {
+            return { ok: false, detail: `${table} references ${stray.rows[0].storage_path}, outside the configured root ${root}` };
+          }
+        }
+        return { ok: true, detail: 'every recorded object path is inside the configured roots' };
+      },
+    };
+    const acceptanceFence = backupFence;
+    jobBroker.setAcceptanceFence((client) => acceptanceFence.assertFresh(client));
     const submissionService = new SubmissionService(options.pgDb, artifactStore, jobBroker, backupFence);
     // Replays must live under this workspace's storage, never a neighbouring install's default.
     const replayObjectsDir = options.replaysDir ?? path.resolve(process.cwd(), 'storage/replays');
@@ -159,18 +216,59 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     registerTeamRoutes(app, teamService, identityService);
     registerSubmissionRoutes(app, submissionService, identityService, privateTestRunner);
     const resultService = new ResultService(options.pgDb, replayStore);
-    registerResultRoutes(app, resultService);
+    registerResultRoutes(app, resultService, identityService);
     const mapService = new MapService(options.pgDb);
-    const tournamentLifecycleService = new TournamentLifecycleService(options.pgDb, backupFence);
+    const tournamentLifecycleService = new TournamentLifecycleService(options.pgDb, backupFence, async () => {
+      if (process.env.OANTUTI_DEV_EXECUTION === '1') return;
+      const capabilities = await localJobBroker?.capabilities();
+      if (!localJobBroker?.isReady() || !capabilities?.officialGame || !capabilities.build || !capabilities.privateTest) {
+        throw Object.assign(new Error('NATIVE_EXECUTION_NOT_READY: authenticated game and build workers are required'), { statusCode: 503 });
+      }
+    });
+    const ratingService = new GlobalTeamRatingService(options.pgDb, backupFence);
     const tournamentAdmissionService = new TournamentAdmissionService(
       options.pgDb,
       async (tournamentId) => {
         // Withdrawals resolve encounters without game completions; let the scheduler notice.
         await schedulerService.markTerminalRounds(tournamentId);
       },
-      backupFence
+      backupFence,
+      ratingService
     );
     const schedulerService = new TournamentSchedulerService(options.pgDb, jobBroker);
+    // Immutable completion capsules live outside the attempt spool so a restarted process can still
+    // accept a pinned completion; the operator may place them explicitly.
+    const completionCapsuleRoot = options.localJobBroker
+      ? options.localJobBroker.completionRoot ?? path.join(options.localJobBroker.spoolRoot, 'completions')
+      : undefined;
+    const liveMatchHub = new LiveMatchHub();
+    registerLiveRoutes(app, liveMatchHub);
+    // The native gateway is built last so it can hand the supervisor a server-built immutable
+    // assignment and accept completions only through the same service that validates them.
+    if (options.localJobBroker) {
+      const assignments = new NativeAssignmentService(
+        options.pgDb,
+        artifactStore,
+        resultService,
+        schedulerService,
+        jobBroker,
+        // Private tests: the same snapshot state machine the dev runner walks, plus the verified
+        // recording that keeps their outcome off every official table.
+        new PrivateTestResultService(options.pgDb, replayStore),
+        {
+          runtimeProfileDigest: options.localJobBroker.runtimeProfileDigest,
+          spoolRoot: options.localJobBroker.spoolRoot,
+          toolchains: options.localJobBroker.toolchains,
+          compiledArtifacts: new CompiledArtifactStore(options.localJobBroker.compiledArtifactsDir),
+          liveProjector: new NativeLiveProjector(options.pgDb, liveMatchHub),
+          completionRoot: completionCapsuleRoot,
+        }
+      );
+      localJobBroker = new LocalJobBrokerTransport(options.pgDb, jobBroker, options.localJobBroker, assignments);
+      const transport = localJobBroker;
+      app.addHook('onReady', async () => { await transport.start(); });
+      app.addHook('onClose', async () => { await transport.stop(); });
+    }
     registerTournamentRoutes(
       app,
       options.pgDb,
@@ -181,6 +279,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     );
     registerAdmissionRoutes(app, tournamentAdmissionService, identityService);
     registerEntryCodeRoutes(app, new TournamentEntryCodeService(options.pgDb), identityService);
+    registerGlobalRatingRoutes(app, ratingService, identityService);
     // Compile + smoke-test gate: a receipt only becomes READY here.
     const buildPipeline = new BuildPipeline(options.pgDb, artifactStore, {
       spoolDir: path.join(executionSpoolDir, 'builds'),
@@ -188,8 +287,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     // Public live spectator stream: the executor publishes each official game into this hub,
     // `GET /api/v2/live/:gameId` fans it out. Private practice tests never reach the executor,
     // so they are never published.
-    const liveMatchHub = new LiveMatchHub();
-    registerLiveRoutes(app, liveMatchHub);
+    // The same spectator projection is shared by native and development execution.
     // Development-only, unsandboxed executor: refuses to run unless OANTUTI_DEV_EXECUTION=1.
     const executionService = new MatchExecutionService(
       options.pgDb,
@@ -204,6 +302,13 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     );
     // Autonomous durable worker: inert unless OANTUTI_DEV_EXECUTION=1 (same flag as the executor).
     const retentionService = new RetentionService(options.pgDb);
+    const controlPlane = new TournamentControlPlane(
+      options.pgDb, jobBroker, jobReconciler, schedulerService, retentionService,
+      undefined, undefined, completionCapsuleRoot, ratingService
+    );
+    app.addHook('onReady', async () => controlPlane.start());
+    app.addHook('onClose', () => controlPlane.stop());
+    app.addHook('onClose', async () => { await ratingService.stop(); });
     const autoRunner = new TournamentAutoRunner(
       options.pgDb,
       executionService,
@@ -212,7 +317,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       buildPipeline,
       privateTestRunner,
       schedulerService,
-      { retentionService }
+      { retentionService, controlPlaneManaged: true }
     );
     registerExecutionRoutes(app, executionService, autoRunner, identityService);
     autoRunner.start();
@@ -222,21 +327,37 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     });
     const disputeService = new DisputeService(options.pgDb);
     const correctionService = new CorrectionService(options.pgDb, async (gameId) => {
-      // A corrected result invalidates the rounds that depended on it before the encounter is
-      // rescored, so the worker re-dispatches from the corrected round.
-      await schedulerService.invalidateAfterGame(gameId);
+      // Downstream invalidation is committed by the correction transaction.
       await schedulerService.handleGameCompletion(gameId);
     }, async (tournamentId, stage, roundOrdinal) => {
       // Disqualification voids encounters and rebuilds the schedule from the affected round.
       return schedulerService.invalidateAfterRound(tournamentId, stage, roundOrdinal);
+    }, backupFence, async (gameId, client) => {
+      await jobBroker.enqueueInTransaction(client, 'GAME', gameId, 100, { reason: 'REJUDGE' });
     });
     registerAdjudicationRoutes(app, disputeService, correctionService, identityService);
     registerOperationsRoutes(app, retentionService, identityService);
   }
-  app.get('/api/health', async () => {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  // Liveness: the process answers and its routes are mounted. It deliberately does not report the
+  // execution plane — readiness does that, so a sandbox outage never looks like a dead API.
+  app.get('/api/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+
+  // Readiness: what this deployment can actually accept right now, with a reason per failing
+  // check. Degraded answers 503 so an orchestrator withholds traffic while reads stay available.
+  app.get('/api/health/ready', async (_request, reply) => {
+    const report = await readinessReport({
+      database: options?.pgDb,
+      executionGateway: localJobBroker,
+      devExecutorEnabled: process.env.OANTUTI_DEV_EXECUTION === '1',
+      backupFence,
+      objectRoots: objectRootsProbe,
+    });
+    return reply.code(report.status === 'ready' ? 200 : 503).send(report);
   });
 
+  // Legacy standalone applications have no PostgreSQL control plane. A v2 deployment exposes
+  // only v2 routes; its separate SQLite account/session plane is never a compatibility backdoor.
+  if (!options?.pgDb) {
   // Maps
   app.get('/api/maps', async () => {
     return { maps: matchService.getAvailableMaps() };
@@ -298,6 +419,10 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   });
 
   app.get<{ Params: { id: string } }>('/api/matches/:id/replay', async (req, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
+    // This block only exists without PostgreSQL, where there is no v2 identity plane: the v1
+    // administrator check is the only authority available, and it never serves anonymous replays.
+    auth.requireAdmin(req);
     const replay = db.getReplayByMatchId(req.params.id)?.replay_data ?? matchService.getActiveMatch(req.params.id)?.replayBinary;
     if (!replay) throw new HttpError(404, 'Replay not found');
     return reply.header('Content-Type', 'application/octet-stream')
@@ -417,6 +542,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       wsHub.handleConnection(socket, matchId);
     }
   );
+  }
 
   return { app, db, matchService, wsHub, tournamentService, pgDb: options?.pgDb };
 }

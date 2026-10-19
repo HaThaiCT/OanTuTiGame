@@ -102,14 +102,15 @@ export function registerIdentityRoutes(
 
   // POST /api/v2/auth/login
   app.post('/api/v2/auth/login', async (request, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
     const body = request.body as { username?: unknown; password?: unknown };
     if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
       return reply.status(400).send({ code: 'INVALID_CREDENTIALS', message: 'Username and password required' });
     }
 
     try {
-      const session = await identityService.login(body.username, body.password);
-      const isHttps = request.headers['x-forwarded-proto'] === 'https' || request.protocol === 'https';
+      const session = await identityService.login(body.username, body.password, request.ip);
+      const isHttps = request.protocol === 'https';
       setSessionCookie(reply, session.token, session.expiresAt, isHttps);
       return reply.send({
         user: session.user,
@@ -123,6 +124,7 @@ export function registerIdentityRoutes(
 
   // POST /api/v2/auth/change-password
   app.post('/api/v2/auth/change-password', async (request, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
     const token = extractToken(request);
     if (!token) {
       return reply.status(401).send({ code: 'UNAUTHENTICATED', message: 'Authentication required' });
@@ -139,7 +141,7 @@ export function registerIdentityRoutes(
 
     try {
       const newSession = await identityService.changePassword(auth.actor.userId, body.oldPassword, body.newPassword);
-      const isHttps = request.headers['x-forwarded-proto'] === 'https' || request.protocol === 'https';
+      const isHttps = request.protocol === 'https';
       setSessionCookie(reply, newSession.token, newSession.expiresAt, isHttps);
       return reply.send({
         user: newSession.user,
@@ -188,6 +190,7 @@ export function registerIdentityRoutes(
 
   // GET /api/v2/auth/me
   app.get('/api/v2/auth/me', async (request, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
     const token = extractToken(request);
     if (!token) {
       return reply.status(401).send({ code: 'UNAUTHENTICATED', message: 'Authentication required' });
@@ -199,13 +202,14 @@ export function registerIdentityRoutes(
     return reply.send({
       user: auth.user,
       scope: auth.actor.scope,
-      teamIds: auth.actor.teamIds,
+      teamIds: auth.actor.scope === 'FULL' ? auth.actor.teamIds : [],
       authProfile: identityService.authProfile,
     });
   });
 
   // POST /api/v2/organizer/accounts/provision-lan (ADMIN only)
   app.post('/api/v2/organizer/accounts/provision-lan', async (request, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
     const token = extractToken(request);
     if (!token) {
       return reply.status(401).send({ code: 'UNAUTHENTICATED', message: 'Authentication required' });
@@ -228,6 +232,49 @@ export function registerIdentityRoutes(
       const message = err instanceof Error ? err.message : 'Provisioning failed';
       return reply.status(status).send({ code: 'PROVISION_FAILED', message });
     }
+  });
+
+  async function requireAdmin(request: FastifyRequest, reply: FastifyReply): Promise<Actor | undefined> {
+    reply.header('Cache-Control', 'private, no-store');
+    const token = extractToken(request);
+    const auth = token ? await identityService.authenticateToken(token) : undefined;
+    if (!auth) { reply.status(401).send({ code: 'UNAUTHENTICATED', message: 'Authentication required' }); return; }
+    if (auth.actor.role !== 'ADMIN' || auth.actor.scope !== 'FULL') {
+      reply.status(403).send({ code: 'FORBIDDEN', message: 'Fully authenticated ADMIN required' }); return;
+    }
+    return auth.actor;
+  }
+
+  app.get('/api/v2/organizer/accounts', async (request, reply) => {
+    const actor = await requireAdmin(request, reply);
+    if (!actor) return;
+    return reply.send({ accounts: await identityService.listAccounts(actor) });
+  });
+
+  app.get('/api/v2/organizer/audit-events', async (request, reply) => {
+    const actor = await requireAdmin(request, reply);
+    if (!actor) return;
+    const query = request.query as { resourceId?: unknown };
+    if (query.resourceId !== undefined && typeof query.resourceId !== 'string') return reply.status(400).send({ code: 'INVALID_PAYLOAD', message: 'resourceId must be a string' });
+    return reply.send({ events: await identityService.listAuditEvents(actor, query.resourceId as string | undefined) });
+  });
+
+  app.post('/api/v2/organizer/accounts/:id/reset-password', async (request, reply) => {
+    const actor = await requireAdmin(request, reply);
+    if (!actor || !(await requireRecentReauth(identityService, request, reply))) return;
+    try {
+      const { id } = request.params as { id: string };
+      return reply.send(await identityService.resetLanStudentPassword(id, actor));
+    } catch (err) { return sendIdentityError(reply, err, 'RESET_FAILED'); }
+  });
+
+  app.post('/api/v2/organizer/accounts/:id/revoke-sessions', async (request, reply) => {
+    const actor = await requireAdmin(request, reply);
+    if (!actor || !(await requireRecentReauth(identityService, request, reply))) return;
+    try {
+      const { id } = request.params as { id: string };
+      return reply.send(await identityService.revokeUserSessions(id, actor));
+    } catch (err) { return sendIdentityError(reply, err, 'REVOKE_FAILED'); }
   });
 
   // ---------------------------------------------------------------- ONLINE only

@@ -56,7 +56,11 @@ name = "arena-supervisor"
 version = "0.1.0"
 dependencies = [
  "arena-execution",
+ "arena-runner",
+ "libc",
  "prost",
+ "serde_json",
+ "sha2",
 ]
 
 [[package]]

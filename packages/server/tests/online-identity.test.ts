@@ -334,6 +334,15 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     expect(sessions.rows[0].count).toBe('1');
   });
 
+  it('refuses LAN-issued account provisioning in the ONLINE profile', async () => {
+    // Issued credentials skip the mailbox gate by design, so an ONLINE deployment must never mint
+    // one — the LAN sibling of this route already refuses, and the panel hides it.
+    const admin = await db.query<{ id: string }>("SELECT id FROM users WHERE role = 'ADMIN' LIMIT 1");
+    const actor = { userId: admin.rows[0].id, role: 'ADMIN' as const, scope: 'FULL' as const, teamIds: [] };
+    await expect(online.lanBulkProvision([{ username: 'online_minted', displayName: 'Minted', role: 'STUDENT' }], actor))
+      .rejects.toMatchObject({ code: 'PROFILE_DISABLED', statusCode: 404 });
+  });
+
   it('resets the password from a recovery token and revokes every existing session', async () => {
     const first = await login(app, alice.username, PASSWORD);
     const second = await login(app, alice.username, PASSWORD);

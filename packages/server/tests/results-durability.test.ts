@@ -184,7 +184,7 @@ describe('S07: Result Durability, FS & Replay Objects', () => {
   });
 
   describe('2. TraceVerifier Engine Validation', () => {
-    it('verifies valid trace resulting in throne breach', () => {
+    it('verifies valid trace resulting in throne breach', async () => {
       // White piece 1 is at [0, 1]. In test-duel-3x3, black throne is at [2, 2].
       // Step 1 (White): piece 1 moves [0, 1] -> [1, 2]
       // Step 2 (Black): piece 2 at [2, 1] moves [2, 1] -> [1, 1]
@@ -204,13 +204,13 @@ describe('S07: Result Durability, FS & Replay Objects', () => {
         ],
       };
 
-      const result = traceVerifier.verify(sampleMap, evidence);
+      const result = await traceVerifier.verify(sampleMap, evidence);
       expect(result.isValid).toBe(true);
       expect(result.finalOutcome?.winner).toBe(1); // PlayerSide.WHITE = 1
       expect(result.finalOutcome?.reason).toBe('THRONE_BREACH');
     });
 
-    it('rejects trace with an illegal move', () => {
+    it('rejects trace with an illegal move', async () => {
       const evidence = {
         gameId: testGameId,
         winner: 1,
@@ -225,12 +225,12 @@ describe('S07: Result Durability, FS & Replay Objects', () => {
         ],
       };
 
-      const result = traceVerifier.verify(sampleMap, evidence);
+      const result = await traceVerifier.verify(sampleMap, evidence);
       expect(result.isValid).toBe(false);
-      expect(result.error).toMatch(/ILLEGAL_MOVE/);
+      expect(result.error).toMatch(/IllegalAction/);
     });
 
-    it('rejects trace claiming wrong winner', () => {
+    it('rejects trace claiming wrong winner', async () => {
       // White breaches throne, but evidence fraudulently claims Black (side 2) won!
       const evidence = {
         gameId: testGameId,
@@ -247,16 +247,16 @@ describe('S07: Result Durability, FS & Replay Objects', () => {
         ],
       };
 
-      const result = traceVerifier.verify(sampleMap, evidence);
+      const result = await traceVerifier.verify(sampleMap, evidence);
       expect(result.isValid).toBe(false);
-      expect(result.error).toMatch(/WINNER_MISMATCH/);
+      expect(result.error).toMatch(/ClaimedOutcomeMismatch/);
     });
 
-    it('accepts valid forfeit outcome when bot forfeits early', () => {
+    it('validates a forfeit prefix without certifying the fault', async () => {
       const evidence = {
         gameId: testGameId,
         winner: 1, // White awarded win
-        reason: 'BOT_TIMEOUT',
+        reason: 'TIMEOUT_FORFEIT',
         disposition: 'DECISIVE' as const,
         executionStatus: 'BOT_FORFEIT' as const,
         rulesRevision: 'ArenaGameplay/v2',
@@ -266,12 +266,24 @@ describe('S07: Result Durability, FS & Replay Objects', () => {
         ],
       };
 
-      const result = traceVerifier.verify(sampleMap, evidence);
+      const result = await traceVerifier.verify(sampleMap, evidence);
       expect(result.isValid).toBe(true);
+      expect(result.requiresSupervisorEvidence).toBe(true);
     });
   });
 
   describe('3. ResultService Acceptance & PostgreSQL Durability', () => {
+    it('refuses to accept a legal runtime-forfeit prefix without supervisor evidence', async () => {
+      const gameId = randomUUID();
+      await expect(resultService.recordResult({
+        gameId, attemptId: randomUUID(), manifestDigest: 'forfeit-test', mapDescriptor: sampleMap,
+        evidence: {
+          gameId, winner: 2, reason: 'CRASH_FORFEIT', disposition: 'DECISIVE',
+          executionStatus: 'BOT_FORFEIT', rulesRevision: 'ArenaGameplay/v2', totalPly: 0, trace: [],
+        },
+      })).rejects.toThrow(/SUPERVISOR_EVIDENCE_REQUIRED/);
+    });
+
     it('accepts valid game result, updates game status, and emits outbox event', async () => {
       const evidence = {
         gameId: testGameId,
@@ -450,4 +462,47 @@ describe('S07: Result Durability, FS & Replay Objects', () => {
       expect(unpacked.end.winner).toBe(1);
     });
   });
+  describe('6. Acceptance fence applies to new writes, not to a pinned consumer', () => {
+    async function freshGame(ordinal: number): Promise<string> {
+      const res = await db.query<{ id: string }>(
+        `INSERT INTO games (encounter_id, game_ordinal, white_team_id, black_team_id, map_descriptor, status)
+         VALUES ($1, $2, $3, $4, $5, 'RUNNING') RETURNING id`,
+        [testEncounterId, ordinal, testTeamAId, testTeamBId, JSON.stringify(sampleMap)]
+      );
+      return res.rows[0].id;
+    }
+    const evidenceFor = (gameId: string) => ({
+      gameId, winner: 1, reason: 'THRONE_BREACH', disposition: 'DECISIVE' as const,
+      executionStatus: 'COMPLETED' as const, rulesRevision: 'ArenaGameplay/v2', totalPly: 3,
+      trace: [
+        { ply: 1, side: 1, move: { pieceId: 1, targetPos: { x: 1, y: 2 } } },
+        { ply: 2, side: 2, move: { pieceId: 2, targetPos: { x: 1, y: 1 } } },
+        { ply: 3, side: 1, move: { pieceId: 1, targetPos: { x: 2, y: 2 } } },
+      ],
+    });
+
+    it('skips the freshness fence for a completion that was already pinned, and keeps it for a fresh write', async () => {
+      // A restored generation has no checkpoint yet; a pending completion pinned before the restore
+      // must still drain, or the restored queue stalls forever (the fence was already applied when
+      // the evidence was pinned).
+      resultService.setAcceptanceFence(() => { throw new Error('fence must not run for a pinned completion'); });
+      try {
+        const pinnedGame = await freshGame(91);
+        const receipt = await db.withTransaction((client) => resultService.recordResult({
+          gameId: pinnedGame, attemptId: randomUUID(), evidence: evidenceFor(pinnedGame),
+          manifestDigest: 'manifest_pinned', mapDescriptor: sampleMap, client,
+        }));
+        expect(receipt.data.state).toBe('ACCEPTED');
+
+        const fresh = await freshGame(92);
+        await expect(resultService.recordResult({
+          gameId: fresh, attemptId: randomUUID(), evidence: evidenceFor(fresh),
+          manifestDigest: 'manifest_fresh', mapDescriptor: sampleMap,
+        })).rejects.toThrow('fence must not run for a pinned completion');
+      } finally {
+        resultService.setAcceptanceFence(undefined);
+      }
+    });
+  });
+
 });

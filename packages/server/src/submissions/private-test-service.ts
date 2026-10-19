@@ -90,8 +90,8 @@ export class PrivateTestService {
   async createTest(input: CreatePrivateTestInput, ctx: CommandContext): Promise<TestReceipt> {
     const { tournamentId, teamId, language, entrypoint, opponentType } = input;
 
-    // 1. Authorization: user must be on the team or ADMIN
-    if (ctx.actor.role !== 'ADMIN' && !ctx.actor.teamIds.includes(teamId)) {
+    // Private practice is team-only, including against organizer sessions.
+    if (ctx.actor.role === 'ADMIN' || ctx.actor.scope !== 'FULL' || !ctx.actor.teamIds.includes(teamId)) {
       throw new TestError(403, 'Actor is not authorized to create test matches for this team');
     }
 
@@ -243,8 +243,8 @@ export class PrivateTestService {
 
     const row = res.rows[0];
 
-    // ACL: user must be on the team or ADMIN
-    if (actor.role !== 'ADMIN' && !actor.teamIds.includes(row.team_id)) {
+    // Private practice is team-only, including against organizer sessions.
+    if (actor.role === 'ADMIN' || actor.scope !== 'FULL' || !actor.teamIds.includes(row.team_id)) {
       throw new TestError(403, 'Actor is not authorized to view private test results for this team');
     }
 

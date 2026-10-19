@@ -1,4 +1,6 @@
+import type { BotLanguage, LanBulkUserEntry, LanProvisionedUser, PrivateSourceDto, SubmissionStatus, UserDto } from '@oantuti/protocol';
 import { apiRequest, type ApiResult } from './client';
+import type { GlobalLeaderboardDto, PublicTeamProfileDto, RatingDecisionReceipt, RatingReviewDto, TournamentRatingChangesDto, TournamentTeamRatingsDto } from '@oantuti/protocol';
 
 export type TournamentState =
   | 'DRAFT' | 'PUBLISHED' | 'REGISTRATION_OPEN' | 'VALIDATING_SUBMISSIONS'
@@ -10,6 +12,9 @@ export interface TournamentSummary {
   name: string;
   format: 'SINGLE_ELIMINATION' | 'SWISS_PLAYOFF' | 'ROUND_ROBIN' | 'ELO_ARENA';
   state: TournamentState;
+  version: number;
+  isRated: boolean;
+  globalRatingPolicy: 'ArenaContestRating/v1';
   rulesRevision: string;
   maxTeams: number;
   registrationClosesAt: string | null;
@@ -78,7 +83,7 @@ export interface ServerFetchOptions {
   cookie?: string;
 }
 
-const API = process.env.API_BASE ?? 'http://127.0.0.1:4301';
+const API = typeof window === 'undefined' ? process.env.API_BASE ?? 'http://127.0.0.1:4301' : '';
 
 function value(record: Record<string, unknown>, snake: string, camel: string): unknown {
   return record[camel] ?? record[snake];
@@ -107,6 +112,9 @@ export async function listTournaments(options: ServerFetchOptions = {}): Promise
       name: String(value(row, 'name', 'name')),
       format: String(value(row, 'format', 'format')) as TournamentSummary['format'],
       state: String(value(row, 'state', 'state')) as TournamentState,
+      version: numberValue(value(row, 'version', 'version') ?? 1),
+      isRated: value(row, 'is_rated', 'isRated') === true,
+      globalRatingPolicy: (value(row, 'global_rating_policy', 'globalRatingPolicy') ?? 'ArenaContestRating/v1') as 'ArenaContestRating/v1',
       rulesRevision: String(value(row, 'rules_revision', 'rulesRevision') ?? 'ArenaGameplay/v2'),
       maxTeams: numberValue(value(row, 'max_teams', 'maxTeams') ?? 500),
       registrationClosesAt: (value(row, 'registration_closes_at', 'registrationClosesAt') as string | null) ?? null,
@@ -333,6 +341,9 @@ export function normalizeTournamentRow(row: unknown): TournamentSummary {
     name: String(value(record, 'name', 'name')),
     format: String(value(record, 'format', 'format')) as TournamentSummary['format'],
     state: String(value(record, 'state', 'state')) as TournamentState,
+    version: numberValue(value(record, 'version', 'version') ?? 1),
+    isRated: value(record, 'is_rated', 'isRated') === true,
+    globalRatingPolicy: (value(record, 'global_rating_policy', 'globalRatingPolicy') ?? 'ArenaContestRating/v1') as 'ArenaContestRating/v1',
     rulesRevision: String(value(record, 'rules_revision', 'rulesRevision') ?? 'ArenaGameplay/v2'),
     maxTeams: numberValue(value(record, 'max_teams', 'maxTeams') ?? 500),
     registrationClosesAt: (value(record, 'registration_closes_at', 'registrationClosesAt') as string | null) ?? null,
@@ -746,6 +757,11 @@ export interface CorrectionPreview {
   action: string;
   previewDigest: string;
   description: string;
+  descendantEncounterIds: string[];
+  affectedRounds: { stage: string; roundOrdinal: number }[];
+  requiredRePair: boolean;
+  requiredRebuild: boolean;
+  ratingEventCount: number;
 }
 
 /** `POST …/apply-correction` receipt — `newRevision` is the revision the correction created. */
@@ -830,6 +846,7 @@ export function normalizeDisputeList(payload: unknown): DisputeRecord[] {
 
 /** The correction DTOs come from the service as camelCase; snake_case is accepted as well. */
 function normalizeCorrectionPreview(payload: unknown): CorrectionPreview {
+  const arrayValue = (input: unknown): unknown[] => Array.isArray(input) ? input : [];
   const record = asRecord(payload) ?? {};
   return {
     gameId: String(field([record], 'gameId', 'game_id') ?? ''),
@@ -839,6 +856,14 @@ function normalizeCorrectionPreview(payload: unknown): CorrectionPreview {
     action: String(field([record], 'action') ?? ''),
     previewDigest: String(field([record], 'previewDigest', 'preview_digest') ?? ''),
     description: String(field([record], 'description') ?? ''),
+    descendantEncounterIds: arrayValue(record.descendantEncounterIds ?? record.descendant_encounter_ids).map(String),
+    affectedRounds: arrayValue(record.affectedRounds ?? record.affected_rounds).map((round) => {
+      const item = asRecord(round) ?? {};
+      return { stage: String(field([item], 'stage') ?? ''), roundOrdinal: numberValue(field([item], 'roundOrdinal', 'round_ordinal')) };
+    }),
+    requiredRePair: field([record], 'requiredRePair', 'required_re_pair') === true,
+    requiredRebuild: field([record], 'requiredRebuild', 'required_rebuild') === true,
+    ratingEventCount: arrayValue(asRecord(record.ratingImpact ?? record.rating_impact)?.eventIds ?? asRecord(record.ratingImpact ?? record.rating_impact)?.event_ids).length,
   };
 }
 
@@ -1420,4 +1445,116 @@ export async function reauth(password: string): Promise<ApiResult<ReauthReceipt>
   if (!result.ok) return { ...result, data: null };
   const until = result.data?.reauthenticatedUntil;
   return { ...result, data: { reauthenticatedUntil: typeof until === 'string' ? until : null } };
+}
+
+
+
+export type RatingLoadResult<T> = { readonly kind: 'success'; readonly data: T } | { readonly kind: 'unavailable'; readonly message: string } | { readonly kind: 'notFound' };
+
+async function getRating<T>(path: string, options: ServerFetchOptions): Promise<RatingLoadResult<T>> {
+  try {
+    const response = await fetch(`${API}${path}`, { cache: 'no-store', headers: options.cookie ? { cookie: options.cookie } : undefined });
+    if (response.status === 404) return { kind: 'notFound' };
+    if (!response.ok) return { kind: 'unavailable', message: `Không tải được dữ liệu rating (HTTP ${response.status}).` };
+    return { kind: 'success', data: await response.json() as T };
+  } catch {
+    return { kind: 'unavailable', message: 'Không kết nối được API rating.' };
+  }
+}
+
+export function getGlobalTeamLeaderboard(input: { readonly limit?: number; readonly cursor?: string } = {}, options: ServerFetchOptions = {}): Promise<RatingLoadResult<GlobalLeaderboardDto>> {
+  const query = new URLSearchParams({ limit: String(input.limit ?? 50), ...(input.cursor ? { cursor: input.cursor } : {}) });
+  return getRating<GlobalLeaderboardDto>(`/api/v2/ratings/teams?${query}`, options);
+}
+
+export function getPublicTeamRatingProfile(teamId: string, input: { readonly limit?: number; readonly cursor?: string } = {}, options: ServerFetchOptions = {}): Promise<RatingLoadResult<PublicTeamProfileDto>> {
+  const query = new URLSearchParams({ limit: String(input.limit ?? 25), ...(input.cursor ? { cursor: input.cursor } : {}) });
+  return getRating<PublicTeamProfileDto>(`/api/v2/ratings/teams/${encodeURIComponent(teamId)}?${query}`, options);
+}
+
+export function getTournamentRatingChanges(tournamentId: string, options: ServerFetchOptions = {}): Promise<RatingLoadResult<TournamentRatingChangesDto>> {
+  return getRating<TournamentRatingChangesDto>(`/api/v2/tournaments/${encodeURIComponent(tournamentId)}/rating-changes`, options);
+}
+
+export function getTournamentTeamRatings(tournamentId: string, options: ServerFetchOptions = {}): Promise<RatingLoadResult<TournamentTeamRatingsDto>> {
+  return getRating<TournamentTeamRatingsDto>(`/api/v2/tournaments/${encodeURIComponent(tournamentId)}/team-ratings`, options);
+}
+
+export function getRatingReview(tournamentId: string): Promise<ApiResult<RatingReviewDto>> {
+  return apiRequest<RatingReviewDto>(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/rating-review`);
+}
+
+export function setTournamentRated(tournamentId: string, isRated: boolean, expectedVersion: number): Promise<ApiResult<{ tournamentId: string; isRated: boolean; version: number }>> {
+  return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/rated`, { method: 'POST', body: { isRated, expectedVersion } });
+}
+
+export function approveTournamentRating(tournamentId: string, input: { readonly previewDigest: string; readonly generationId: string | null; readonly expectedVersion: number }, idempotencyKey: string): Promise<ApiResult<RatingDecisionReceipt>> {
+  return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/rating-approve`, { method: 'POST', body: input, headers: { 'idempotency-key': idempotencyKey } });
+}
+
+export function rejectTournamentRating(tournamentId: string, input: { readonly reason: string; readonly expectedVersion: number }, idempotencyKey: string): Promise<ApiResult<RatingDecisionReceipt>> {
+  return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/rating-reject`, { method: 'POST', body: input, headers: { 'idempotency-key': idempotencyKey } });
+}
+
+export type OrganizerAccount = UserDto;
+export type LanCredential = LanProvisionedUser;
+export type OrganizerAuditEvent = {
+  readonly id: string;
+  readonly action: string;
+  readonly resourceType: string;
+  readonly resourceId: string | null;
+  readonly actorUserId: string | null;
+  readonly details: unknown;
+  readonly createdAt: string;
+};
+export type InspectedSubmission = {
+  readonly id: string;
+  readonly receiptOrdinal: number;
+  readonly language: BotLanguage;
+  readonly entrypoint: string;
+  readonly sourceDigest: string;
+  readonly status: SubmissionStatus;
+  readonly createdAt: string;
+};
+export type SubmittedSource = PrivateSourceDto;
+export type SubmissionBuildLog = {
+  readonly submissionId: string;
+  readonly status: string;
+  readonly buildError: string | null;
+  readonly builtAt: string | null;
+};
+
+/** Admin account and audit endpoints; source/build-log reads are separately audited by the API. */
+export const organizerAccounts = {
+  list(): Promise<ApiResult<{ accounts: OrganizerAccount[] }>> {
+    return apiRequest('/api/v2/organizer/accounts');
+  },
+  provision(users: readonly Pick<LanBulkUserEntry, 'username' | 'displayName' | 'role'>[]): Promise<ApiResult<{ created: LanCredential[] }>> {
+    return apiRequest('/api/v2/organizer/accounts/provision-lan', { method: 'POST', body: { users } });
+  },
+  reset(id: string): Promise<ApiResult<LanCredential>> {
+    return apiRequest(`/api/v2/organizer/accounts/${encodeURIComponent(id)}/reset-password`, { method: 'POST' });
+  },
+  revoke(id: string): Promise<ApiResult<{ revoked: number }>> {
+    return apiRequest(`/api/v2/organizer/accounts/${encodeURIComponent(id)}/revoke-sessions`, { method: 'POST' });
+  },
+  audit(resourceId?: string): Promise<ApiResult<{ events: OrganizerAuditEvent[] }>> {
+    const query = resourceId ? `?resourceId=${encodeURIComponent(resourceId)}` : '';
+    return apiRequest(`/api/v2/organizer/audit-events${query}`);
+  },
+  submissions(tournamentId: string, teamId: string): Promise<ApiResult<{ submissions: InspectedSubmission[] }>> {
+    const query = new URLSearchParams({ teamId });
+    return apiRequest(`/api/v2/tournaments/${encodeURIComponent(tournamentId)}/submissions?${query}`);
+  },
+  source(submissionId: string): Promise<ApiResult<SubmittedSource>> {
+    return apiRequest(`/api/v2/submissions/${encodeURIComponent(submissionId)}/source`);
+  },
+  buildLog(submissionId: string): Promise<ApiResult<SubmissionBuildLog>> {
+    return apiRequest(`/api/v2/submissions/${encodeURIComponent(submissionId)}/build-log`);
+  },
+};
+
+export function searchOrganizerTeams(q: string, input: { readonly limit?: number; readonly offset?: number } = {}): Promise<ApiResult<{ readonly teams: readonly { readonly id: string; readonly name: string; readonly courseId: string; readonly courseCode: string }[]; readonly total: number }>> {
+  const query = new URLSearchParams({ q, limit: String(input.limit ?? 50), offset: String(input.offset ?? 0) });
+  return apiRequest(`/api/v2/organizer/teams?${query}`);
 }

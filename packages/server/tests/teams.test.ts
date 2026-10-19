@@ -179,10 +179,14 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
     teamId = teamRes.json().team.id;
     expect(teamRes.json().team.name).toBe('Cyber Warriors');
 
-    // Public / authenticated query GET /api/v2/teams/:id
+    // A team roster names its members, so it is private: the organizer or a member may read it.
+    const anonymous = await app.inject({ method: 'GET', url: `/api/v2/teams/${teamId}` });
+    expect(anonymous.statusCode).toBe(401);
+
     const getTeam = await app.inject({
       method: 'GET',
       url: `/api/v2/teams/${teamId}`,
+      headers: { cookie: adminCookie },
     });
     expect(getTeam.statusCode).toBe(200);
     expect(getTeam.json().members.length).toBe(1);

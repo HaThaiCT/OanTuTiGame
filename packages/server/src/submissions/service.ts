@@ -17,6 +17,7 @@ import type {
   TestSnapshotDto,
   UUID,
 } from '@oantuti/protocol';
+import { auditRequestId } from '../persistence/audit-request-id.js';
 
 export class SubmissionError extends Error {
   constructor(
@@ -119,10 +120,10 @@ export class SubmissionService {
   ) {}
 
   private checkActorTeam(teamId: UUID, actor: Actor): void {
-    if (actor.role === 'ADMIN') return;
     if (actor.scope !== 'FULL') {
       throw new SubmissionError(403, 'Session requires full scope to submit code');
     }
+    if (actor.role === 'ADMIN') return;
     if (!actor.teamIds.includes(teamId)) {
       throw new SubmissionError(403, 'Forbidden: You do not belong to this team');
     }
@@ -230,6 +231,7 @@ export class SubmissionService {
   async recordTestCreateAttempt(tournamentId: UUID, teamId: UUID, actor: Actor): Promise<void> {
     // The ownership check runs first: a member of another team must not be able to burn this window.
     this.checkActorTeam(teamId, actor);
+    if (actor.role === 'ADMIN') throw new SubmissionError(403, 'Private tests belong to the owning team only');
 
     const tournament = await this.db.query<{ id: string }>('SELECT id FROM tournaments WHERE id = $1', [
       tournamentId,
@@ -272,6 +274,12 @@ export class SubmissionService {
     upload: { language: BotLanguage; entrypoint: string; zipBuffer: Buffer },
     actor: Actor
   ): Promise<SubmissionReceipt> {
+    // An official receipt is the team's own act: an organizer reads submitted work, but never
+    // submits, replaces or impersonates a team's candidate (01 §44/§52). The private-test twins
+    // already refuse ADMIN for the same reason.
+    if (actor.role === 'ADMIN') {
+      throw new SubmissionError(403, 'An administrator cannot submit source for a team', 'ADMIN_CANNOT_SUBMIT');
+    }
     this.checkActorTeam(teamId, actor);
     await this.backupFence?.assertFresh();
 
@@ -365,6 +373,7 @@ export class SubmissionService {
     actor: Actor
   ): Promise<TestReceipt> {
     this.checkActorTeam(teamId, actor);
+    if (actor.role === 'ADMIN') throw new SubmissionError(403, 'Private tests belong to the owning team only');
 
     const receipt = await this.db.withTransaction(async (client): Promise<TestReceipt> => {
       // 1. Quotas (private TEST requests, per tournament+team) — see assertTestQuota
@@ -461,7 +470,19 @@ export class SubmissionService {
     }));
   }
 
-  async getSubmissionSource(submissionId: UUID, actor: Actor): Promise<PrivateSourceDto> {
+  async getSubmissionBuildLog(submissionId: UUID, actor: Actor, requestId?: string): Promise<{ submissionId: string; status: string; buildError: string | null; builtAt: string | null }> {
+    const result = await this.db.query<{ team_id: string; status: string; build_error: string | null; built_at: Date | null }>(
+      'SELECT team_id, status, build_error, built_at FROM submissions WHERE id = $1', [submissionId]);
+    const row = result.rows[0];
+    if (!row) throw new SubmissionError(404, 'Submission not found');
+    this.checkActorTeam(row.team_id, actor);
+    await this.db.query(`INSERT INTO audit_events(actor_user_id, action, resource_type, resource_id, request_id, details)
+      VALUES ($1, 'SUBMISSION_BUILD_LOG_READ', 'submission', $2, $3, $4)`,
+      [actor.userId, submissionId, auditRequestId(requestId), JSON.stringify({ teamId: row.team_id, role: actor.role })]);
+    return { submissionId, status: row.status, buildError: row.build_error, builtAt: row.built_at?.toISOString() ?? null };
+  }
+
+  async getSubmissionSource(submissionId: UUID, actor: Actor, requestId?: string): Promise<PrivateSourceDto> {
     const res = await this.db.query<SubmissionRow>(
       'SELECT * FROM submissions WHERE id = $1',
       [submissionId]
@@ -475,16 +496,16 @@ export class SubmissionService {
     this.checkActorTeam(sub.team_id, actor);
     if (actor.role === 'ADMIN') {
       await this.db.query(
-        `INSERT INTO audit_events (actor_user_id, action, resource_type, resource_id, details)
-         VALUES ($1, 'ADMIN_INSPECT_SOURCE', 'submission', $2, $3)`,
-        [actor.userId, submissionId, JSON.stringify({ teamId: sub.team_id, language: sub.language })]
+        `INSERT INTO audit_events (actor_user_id, action, resource_type, resource_id, request_id, details)
+         VALUES ($1, 'ADMIN_INSPECT_SOURCE', 'submission', $2, $3, $4)`,
+        [actor.userId, submissionId, auditRequestId(requestId), JSON.stringify({ teamId: sub.team_id, language: sub.language })]
       );
     }
     // Every read of submitted source is audited, not just the admin inspection trail.
     await this.db.query(
-      `INSERT INTO audit_events (actor_user_id, action, resource_type, resource_id, details)
-       VALUES ($1, 'SUBMISSION_SOURCE_READ', 'submission', $2, $3)`,
-      [actor.userId, submissionId, JSON.stringify({ teamId: sub.team_id, language: sub.language, role: actor.role })]
+      `INSERT INTO audit_events (actor_user_id, action, resource_type, resource_id, request_id, details)
+       VALUES ($1, 'SUBMISSION_SOURCE_READ', 'submission', $2, $3, $4)`,
+      [actor.userId, submissionId, auditRequestId(requestId), JSON.stringify({ teamId: sub.team_id, language: sub.language, role: actor.role })]
     );
 
     const source = await this.artifactStore.getSource(sub.source_digest);

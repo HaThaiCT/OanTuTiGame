@@ -116,6 +116,17 @@ function epoch(value: string | Date | null | undefined): number {
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
+/**
+ * SQL form of {@link RetentionService.isHeld}, over the holds array bound as `$2::jsonb` against a
+ * `test_snapshots ts` alias. Kept next to the class so the destructive diagnostics pass and the
+ * operator-facing count can never disagree about what "held" means.
+ */
+const NOT_HELD_PREDICATE = `NOT EXISTS (
+           SELECT 1 FROM jsonb_array_elements($2::jsonb) AS hold
+            WHERE hold->>'scope' = 'GLOBAL'
+               OR (hold->>'scope' = 'TOURNAMENT' AND hold->>'id' = ts.tournament_id::text)
+               OR (hold->>'scope' = 'TEAM' AND hold->>'id' = ts.team_id::text))`;
+
 export class RetentionService {
   constructor(private readonly db: PostgresDatabase) {}
 
@@ -236,7 +247,7 @@ export class RetentionService {
       `SELECT count(*)::text AS rows,
               coalesce(sum(coalesce(ro.size_bytes, 0)), 0)::text AS bytes,
               min(ts.created_at)::text AS oldest,
-              count(*) FILTER (WHERE $2::jsonb @> jsonb_build_array(jsonb_build_object('scope', 'GLOBAL')))::text AS held
+              count(*) FILTER (WHERE NOT (${NOT_HELD_PREDICATE}))::text AS held
          FROM test_snapshots ts
          JOIN tournaments t ON t.id = ts.tournament_id
          LEFT JOIN replay_objects ro ON ro.digest = ts.replay_digest
@@ -488,6 +499,8 @@ export class RetentionService {
           replaySize = Number(size.rows[0]?.bytes ?? 0);
         }
 
+        // Holds beat TTL for diagnostics too: a tournament or team under a hold keeps the private
+        // logs and traces a late appeal or a security review may need.
         const diag = await client.query(
           `UPDATE test_snapshots ts
               SET build_logs = NULL, execution_logs = NULL, private_trace = NULL
@@ -495,8 +508,9 @@ export class RetentionService {
             WHERE t.id = ts.tournament_id
               AND t.finalized_at IS NOT NULL
               AND t.finalized_at < $1::timestamptz
-              AND (ts.build_logs IS NOT NULL OR ts.execution_logs IS NOT NULL OR ts.private_trace IS NOT NULL)`,
-          [diagnosticsCutoff]
+              AND (ts.build_logs IS NOT NULL OR ts.execution_logs IS NOT NULL OR ts.private_trace IS NOT NULL)
+              AND ${NOT_HELD_PREDICATE}`,
+          [diagnosticsCutoff, JSON.stringify(holds)]
         );
 
         const outboxRes = await client.query(

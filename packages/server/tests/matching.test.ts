@@ -95,6 +95,34 @@ function bruteForceMinimumWeight(n: number, edges: readonly MatchingEdge[]): num
   return Number.isFinite(best) ? best : null;
 }
 
+/** Enumerate in pair-list order; retain the first optimum, including zero-weight ties. */
+function bruteForceCanonicalMatching(
+  n: number,
+  edges: readonly MatchingEdge[],
+): Array<[number, number]> | null {
+  const lookup = weightLookup(n, edges);
+  let best: Array<[number, number]> | null = null;
+  let bestWeight: bigint | null = null;
+  const walk = (left: number[], pairs: Array<[number, number]>, total: bigint): void => {
+    if (left.length === 0) {
+      if (bestWeight === null || total < bestWeight) {
+        bestWeight = total;
+        best = pairs;
+      }
+      return;
+    }
+    const first = left[0];
+    for (let k = 1; k < left.length; k++) {
+      const second = left[k];
+      const weight = lookup(first, second);
+      if (weight === undefined) continue;
+      walk(left.slice(1, k).concat(left.slice(k + 1)), [...pairs, [first, second]], total + BigInt(weight));
+    }
+  };
+  walk(Array.from({ length: n }, (_, vertex) => vertex), [], 0n);
+  return best;
+}
+
 /** Number of perfect matchings of the graph (used to sanity-check the oracle itself). */
 function countPerfectMatchings(n: number, edges: readonly MatchingEdge[]): number {
   const lookup = weightLookup(n, edges);
@@ -298,6 +326,72 @@ describe('minimumWeightPerfectMatching: brute-force oracle', () => {
   });
 });
 
+describe('minimumWeightPerfectMatching: canonical equal-weight optima', () => {
+  it('chooses the smallest pair list rather than the smallest sum of edge ranks', () => {
+    const edges = completeGraph(6, () => 0, 0);
+    expect(minimumWeightPerfectMatching(6, edges)).toEqual([[0, 1], [2, 3], [4, 5]]);
+  });
+
+  it('matches the canonical oracle for every four-vertex graph with absent, zero or unit edges', () => {
+    const possible = completeGraph(4, () => 0, 0);
+    for (let encoding = 0; encoding < 3 ** possible.length; encoding++) {
+      let digits = encoding;
+      const edges: MatchingEdge[] = [];
+      for (const edge of possible) {
+        const state = digits % 3;
+        digits = Math.floor(digits / 3);
+        if (state > 0) edges.push({ ...edge, weight: state - 1 });
+      }
+      const expected = bruteForceCanonicalMatching(4, edges);
+      if (expected === null) expectBlockedPairing(() => minimumWeightPerfectMatching(4, edges));
+      else expect(minimumWeightPerfectMatching(4, edges)).toEqual(expected);
+    }
+  });
+
+  for (const n of [6, 8]) {
+    it(`matches the tie-heavy oracle under edge and vertex permutations at n=${n}`, () => {
+      for (let seed = 0; seed < 30; seed++) {
+        const rng = makeRng(0xcafe + n * 100 + seed);
+        const edges = completeGraph(n, rng, 2).filter(() => rng() > 0.2);
+        const vertices = Array.from({ length: n }, (_, vertex) => vertex);
+        for (let i = vertices.length - 1; i > 0; i--) {
+          const j = randInt(rng, i + 1);
+          [vertices[i], vertices[j]] = [vertices[j], vertices[i]];
+        }
+        const relabeled = edges.map(({ a, b, weight }) => ({ a: vertices[a], b: vertices[b], weight }));
+        for (const graph of [edges, relabeled]) {
+          const expected = bruteForceCanonicalMatching(n, graph);
+          // Reverse input order and endpoint orientation without changing vertex identities.
+          const reordered = [...graph].reverse().map(({ a, b, weight }) => ({ a: b, b: a, weight }));
+          for (const input of [graph, reordered]) {
+            if (expected === null) expectBlockedPairing(() => minimumWeightPerfectMatching(n, input));
+            else expect(minimumWeightPerfectMatching(n, input)).toEqual(expected);
+          }
+        }
+      }
+    });
+  }
+
+  it('refines a sparse six-cycle whose tied optima differ by more than a four-cycle', () => {
+    const edges: MatchingEdge[] = [
+      { a: 0, b: 1, weight: 0 }, { a: 1, b: 2, weight: 0 },
+      { a: 2, b: 3, weight: 0 }, { a: 3, b: 4, weight: 0 },
+      { a: 4, b: 5, weight: 0 }, { a: 5, b: 0, weight: 0 },
+    ];
+    expect(minimumWeightPerfectMatching(6, edges)).toEqual([[0, 1], [2, 3], [4, 5]]);
+    expect(minimumWeightPerfectMatching(6, [...edges].reverse())).toEqual([[0, 1], [2, 3], [4, 5]]);
+  });
+
+  it('keeps a lexicographically earlier but more expensive matching out of the result', () => {
+    const edges = [
+      { a: 0, b: 1, weight: 1 }, { a: 2, b: 3, weight: 0 },
+      { a: 0, b: 2, weight: 0 }, { a: 1, b: 3, weight: 0 },
+      { a: 0, b: 3, weight: 0 }, { a: 1, b: 2, weight: 0 },
+    ];
+    expect(minimumWeightPerfectMatching(4, edges)).toEqual([[0, 2], [1, 3]]);
+  });
+});
+
 describe('minimumWeightPerfectMatching: golden vectors from networkx', () => {
   for (const golden of GOLDEN_CASES) {
     it(`reproduces the networkx optimum for ${golden.name}`, () => {
@@ -375,6 +469,40 @@ describe('minimumWeightPerfectMatching: budget', () => {
     );
     expect(error.message).toContain('budget');
     expect(clockCalls).toBeGreaterThan(1);
+  });
+
+  it('blocks rather than returning a primary optimum when the shared refinement budget expires', () => {
+    const edges = completeGraph(6, () => 0, 0);
+    let checkpoints = 0;
+    expect(minimumWeightPerfectMatching(6, edges, { now: () => { checkpoints++; return 0; } }))
+      .toEqual(bruteForceCanonicalMatching(6, edges));
+    // Expire at every observed checkpoint, including the last refinement/return
+    // checkpoint. A fresh per-solve deadline would incorrectly succeed here.
+    for (let expireAt = 2; expireAt <= checkpoints; expireAt++) {
+      let calls = 0;
+      const error = expectBlockedPairing(() => minimumWeightPerfectMatching(6, edges, {
+        budgetMs: 10,
+        now: () => ++calls >= expireAt ? 10 : 0,
+      }));
+      expect(error.message).toContain('budget');
+    }
+  });
+
+  it('shares its deadline with constrained residual solves rather than resetting it', () => {
+    const edges: MatchingEdge[] = [
+      { a: 0, b: 1, weight: 0 }, { a: 1, b: 2, weight: 0 },
+      { a: 2, b: 3, weight: 0 }, { a: 3, b: 4, weight: 0 },
+      { a: 4, b: 5, weight: 0 }, { a: 5, b: 0, weight: 0 },
+    ];
+    let checkpoints = 0;
+    minimumWeightPerfectMatching(6, edges, { now: () => { checkpoints++; return 0; } });
+    for (let expireAt = 2; expireAt <= checkpoints; expireAt++) {
+      let calls = 0;
+      expectBlockedPairing(() => minimumWeightPerfectMatching(6, edges, {
+        budgetMs: 10,
+        now: () => ++calls >= expireAt ? 10 : 0,
+      }));
+    }
   });
 
   it('completes when a supplied clock never advances past the deadline', () => {

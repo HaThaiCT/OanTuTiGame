@@ -15,6 +15,9 @@ describe('S14: bulk enrollment preview and commit', () => {
   const ids = {
     courseId: randomUUID(),
     userId: randomUUID(),
+    captain1: randomUUID(),
+    captain2: randomUUID(),
+    captain3: randomUUID(),
     team1: randomUUID(),
     team2: randomUUID(),
     team3: randomUUID(),
@@ -43,19 +46,31 @@ describe('S14: bulk enrollment preview and commit', () => {
       ids.courseId,
       `BULK_${ids.courseId.slice(0, 8)}`,
     ]);
-    for (const [teamId, name] of [
-      [ids.team1, 'Bulk Team 1'],
-      [ids.team2, 'Bulk Team 2'],
-      [ids.team3, 'Bulk Team 3'],
+    // One student per team: a student may belong to only one team per tournament (01 §59/§66).
+    for (const [userId, suffix] of [
+      [ids.captain1, 'cap1'],
+      [ids.captain2, 'cap2'],
+      [ids.captain3, 'cap3'],
+    ] as const) {
+      await db.query(
+        `INSERT INTO users (id, username, display_name, password_hash, role, activation_method)
+         VALUES ($1, $2, $2, 'hash', 'STUDENT', 'ADMIN_ISSUED')`,
+        [userId, `bulk_${suffix}_${userId.slice(0, 8)}`]
+      );
+    }
+    for (const [teamId, name, captain] of [
+      [ids.team1, 'Bulk Team 1', ids.captain1],
+      [ids.team2, 'Bulk Team 2', ids.captain2],
+      [ids.team3, 'Bulk Team 3', ids.captain3],
     ] as const) {
       await db.query(`INSERT INTO teams (id, course_id, name, captain_user_id) VALUES ($1, $2, $3, $4)`, [
         teamId,
         ids.courseId,
         name,
-        ids.userId,
+        captain,
       ]);
-      // Enrollment enforces the tournament's team-size window; one captain satisfies 1–3.
-      await db.query('INSERT INTO team_memberships (team_id, user_id) VALUES ($1, $2)', [teamId, ids.userId]);
+      // Enrollment enforces the tournament's team-size window; one member satisfies 1–3.
+      await db.query('INSERT INTO team_memberships (team_id, user_id) VALUES ($1, $2)', [teamId, captain]);
     }
     // Capacity 2 for three known teams: the third one can never fit.
     await db.query(
@@ -74,7 +89,9 @@ describe('S14: bulk enrollment preview and commit', () => {
     await db.query(`DELETE FROM team_memberships WHERE team_id = ANY($1::uuid[])`, [[ids.team1, ids.team2, ids.team3]]);
     await db.query(`DELETE FROM teams WHERE id = ANY($1::uuid[])`, [[ids.team1, ids.team2, ids.team3]]);
     await db.query(`DELETE FROM courses WHERE id = $1`, [ids.courseId]);
-    await db.query(`DELETE FROM users WHERE id = $1`, [ids.userId]);
+    await db.query(`DELETE FROM users WHERE id = ANY($1::uuid[])`, [
+      [ids.userId, ids.captain1, ids.captain2, ids.captain3],
+    ]);
     await db.close();
   });
 

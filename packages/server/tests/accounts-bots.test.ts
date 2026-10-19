@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -156,7 +156,9 @@ for line in sys.stdin:
     await context.matchService.waitForMatch(matchId);
     const completed = await context.app.inject({ url: `/api/matches/${matchId}` });
     expect(completed.json().isLive).toBe(false);
-    const replay = await context.app.inject({ url: `/api/matches/${matchId}/replay` });
+    const replayToken = randomBytes(32).toString('hex');
+    context.db.createSession(createHash('sha256').update(replayToken).digest('hex'), 'usr_admin_default', Date.now() + 60_000);
+    const replay = await context.app.inject({ url: `/api/matches/${matchId}/replay`, headers: { cookie: `oantuti_session=${replayToken}` } });
     expect(replay.statusCode).toBe(200);
     expect(unpackReplay(replay.rawPayload).deltas[0].action?.targetPos).toEqual({ x: 0, y: 2 });
     expect(context.db.listBots()).toEqual(bots); expect(context.db.getLeaderboard()).toEqual(ladder);

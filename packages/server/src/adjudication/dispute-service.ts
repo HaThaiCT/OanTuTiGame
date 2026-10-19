@@ -148,10 +148,24 @@ export class DisputeService {
     return dispute;
   }
 
-  async listDisputes(tournamentId: string, actor?: Actor): Promise<readonly DisputeRow[]> {
+  /**
+   * Lists the disputes an actor may read. An administrator sees the whole ledger of the
+   * tournament; a participant sees only the appeals filed by their own teams. The appeal text, the
+   * adjudicator's note and the open/under-review map are private, so there is deliberately no
+   * anonymous or cross-team read and the actor parameter is required.
+   */
+  async listDisputes(tournamentId: string, actor: Actor): Promise<readonly DisputeRow[]> {
+    if (actor.role === 'ADMIN' && actor.scope === 'FULL') {
+      const res = await this.db.query<DisputeRow>(
+        `SELECT * FROM disputes WHERE tournament_id = $1 ORDER BY created_at DESC`,
+        [tournamentId]
+      );
+      return res.rows;
+    }
+    if (actor.scope !== 'FULL' || actor.teamIds.length === 0) return [];
     const res = await this.db.query<DisputeRow>(
-      `SELECT * FROM disputes WHERE tournament_id = $1 ORDER BY created_at DESC`,
-      [tournamentId]
+      `SELECT * FROM disputes WHERE tournament_id = $1 AND team_id = ANY($2::uuid[]) ORDER BY created_at DESC`,
+      [tournamentId, actor.teamIds]
     );
     return res.rows;
   }

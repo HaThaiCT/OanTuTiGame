@@ -197,27 +197,32 @@ export class MapService {
     }
 
     const map = res.rows[0];
-    if (map.visibility === 'HIDDEN' && !map.revealed_at && actor?.role !== 'ADMIN') {
-      throw new MapError(403, 'HIDDEN_MAP_DENIED: Map is private until tournament lock');
-    }
-
     const targetVersion = version ?? map.currentVersion;
     const versionRes = await this.db.query<{
       descriptor: MapDescriptor;
       validation_warnings: readonly MapValidationWarning[];
+      revealed_at: string | null;
     }>(
-      `SELECT descriptor, validation_warnings FROM map_versions WHERE map_id = $1 AND version = $2`,
+      `SELECT descriptor, validation_warnings, revealed_at
+         FROM map_versions WHERE map_id = $1 AND version = $2`,
       [map.id, targetVersion]
     );
 
-    if (versionRes.rows.length === 0) {
+    const resolved = versionRes.rows[0];
+    if (!resolved) {
       throw new MapError(404, `Map version not found: ${slug} v${targetVersion}`);
+    }
+
+    // Hidden content is gated per version, not per map: a map a tournament revealed at version N
+    // keeps version N+1 secret until the tournament that pins it locks.
+    if (actor?.role !== 'ADMIN' && map.visibility === 'HIDDEN' && resolved.revealed_at === null) {
+      throw new MapError(403, 'HIDDEN_MAP_DENIED: Map is private until tournament lock');
     }
 
     return {
       ...map,
-      descriptor: versionRes.rows[0].descriptor,
-      validation_warnings: versionRes.rows[0].validation_warnings,
+      descriptor: resolved.descriptor,
+      validation_warnings: resolved.validation_warnings,
       version: targetVersion,
     };
   }
@@ -232,12 +237,22 @@ export class MapService {
       return res.rows;
     }
 
+    // Public maps list at their current version. A hidden map is public only through what a
+    // tournament actually revealed, so it lists at its newest *revealed* version and is omitted
+    // while no version has been revealed.
     const res = await this.db.query<MapRow>(
-      `SELECT id, slug, display_name, descriptor, visibility, validation_warnings, revealed_at, created_at,
-              current_version AS "currentVersion"
-       FROM maps
-       WHERE visibility = 'PUBLIC' OR revealed_at IS NOT NULL
-       ORDER BY created_at DESC`
+      `SELECT m.id, m.slug, m.display_name, v.descriptor, m.visibility, v.validation_warnings,
+              m.revealed_at, m.created_at, m.current_version AS "currentVersion"
+         FROM maps m
+         JOIN LATERAL (
+           SELECT descriptor, validation_warnings
+             FROM map_versions mv
+            WHERE mv.map_id = m.id AND mv.revealed_at IS NOT NULL
+            ORDER BY mv.version DESC
+            LIMIT 1
+         ) v ON true
+        WHERE m.visibility = 'PUBLIC' OR m.revealed_at IS NOT NULL
+        ORDER BY m.created_at DESC`
     );
     return res.rows;
   }
@@ -317,18 +332,41 @@ export class MapService {
   }
 
   async getTournamentMapPool(tournamentId: string, actor?: Actor): Promise<readonly MapRow[]> {
-    const res = await this.db.query<MapRow>(
-      `SELECT m.id, m.slug, m.display_name, m.descriptor, m.visibility, m.validation_warnings, m.revealed_at, m.created_at,
-              m.current_version AS "currentVersion"
-       FROM tournament_map_pool tmp
-       JOIN maps m ON tmp.map_id = m.id
-       WHERE tmp.tournament_id = $1
-       ORDER BY m.created_at ASC`,
+    // The pool is read at the version the tournament pinned, never at whatever the map shows now: a
+    // later publish must not change a frozen choice, and it must not become visible through it.
+    const res = await this.db.query<MapRow & { version_revealed_at: string | null }>(
+      `SELECT m.id, m.slug, m.display_name, m.visibility, m.revealed_at, m.created_at,
+              m.current_version AS "currentVersion",
+              coalesce(v.descriptor, m.descriptor) AS descriptor,
+              coalesce(v.validation_warnings, m.validation_warnings) AS validation_warnings,
+              v.revealed_at AS version_revealed_at
+         FROM tournament_map_pool p
+         JOIN maps m ON p.map_id = m.id
+         LEFT JOIN map_versions v ON v.map_id = p.map_id AND v.version = p.map_version
+        WHERE p.tournament_id = $1
+        ORDER BY m.created_at ASC`,
       [tournamentId]
     );
 
-    if (actor?.role === 'ADMIN') return res.rows;
-    return res.rows.filter((m) => m.visibility === 'PUBLIC' || m.revealed_at !== null);
+    const entries = res.rows.map((row) => ({
+      versionRevealed: row.version_revealed_at !== null,
+      row: {
+        id: row.id,
+        slug: row.slug,
+        display_name: row.display_name,
+        descriptor: row.descriptor,
+        visibility: row.visibility,
+        validation_warnings: row.validation_warnings,
+        revealed_at: row.revealed_at,
+        created_at: row.created_at,
+        currentVersion: row.currentVersion,
+      } satisfies MapRow,
+    }));
+
+    if (actor?.role === 'ADMIN') return entries.map((entry) => entry.row);
+    return entries
+      .filter((entry) => entry.row.visibility === 'PUBLIC' || entry.versionRevealed)
+      .map((entry) => entry.row);
   }
 
   /**

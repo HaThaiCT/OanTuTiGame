@@ -79,6 +79,11 @@ export class AuthService {
   }
   registerRoutes(app: FastifyInstance): void {
     app.post('/api/auth/register', async (request, reply) => {
+      // LAN_OFFLINE provisions every account (01 §4.1), so the compatibility surface must not offer
+      // self-registration unless an operator opts in explicitly. Accounts are issued by the organizer.
+      if (process.env.OANTUTI_LEGACY_API !== '1') {
+        return reply.code(403).send({ error: 'LEGACY_SELF_REGISTRATION_DISABLED' });
+      }
       const payload = objectPayload(request.body, ['username', 'email', 'password']);
       const username = textField(payload.username, 'username', 40).trim();
       const email = textField(payload.email, 'email', 254).trim().toLowerCase();

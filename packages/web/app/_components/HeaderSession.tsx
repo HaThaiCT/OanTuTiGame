@@ -14,14 +14,14 @@ import { fetchAuthMe, logout } from '../../lib/api';
 export default function HeaderSession() {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<{ displayName: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ displayName: string; role: string; scope: string } | null>(null);
   const [known, setKnown] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function refresh() {
     const result = await fetchAuthMe();
     if (result.ok && result.data) {
-      setUser({ displayName: result.data.user.displayName || result.data.user.username, role: result.data.user.role });
+      setUser({ displayName: result.data.user.displayName || result.data.user.username, role: result.data.user.role, scope: result.data.scope });
     } else {
       setUser(null);
     }
@@ -67,7 +67,7 @@ export default function HeaderSession() {
   return (
     <div className="flex items-center gap-2">
       <Link
-        href={user.role === 'ADMIN' ? '/organizer' : '/workspace'}
+        href={user.scope === 'FULL' && user.role === 'ADMIN' ? '/organizer' : '/workspace'}
         className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-medium hover:border-[var(--action)]"
         title={user.role === 'ADMIN' ? 'Ban tổ chức' : 'Không gian đội'}
       >

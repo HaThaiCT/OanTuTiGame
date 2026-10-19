@@ -27,16 +27,23 @@
 //! `actions[].side` is optional: when omitted the ply's side is derived from the
 //! alternating turn order the engine enforces (ply 1 = WHITE).
 //!
-//! On success it prints `{"ok":true,"appliedPly":N,"winner":…,"reason":…}` and exits 0.
+//! On success prints `{"ok":true,"appliedPly":N,"isGameOver":…,"winner":…,"reason":…}` and exits 0.
 //! Every rejection and every malformed input prints `{"ok":false,"error":"…"}` and exits 2.
+//! The server adapter enforces a wall-clock deadline and output limits. This CLI also
+//! bounds stdin to 4 MiB; `prefix_only` validates moves but never proves a runtime fault.
 
 use std::io::Read;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let mut raw = Vec::new();
-    if let Err(error) = std::io::stdin().read_to_end(&mut raw) {
-        println!("{{\"ok\":false,\"error\":\"STDIN_READ_FAILED: {error}\"}}");
+    const MAX_INPUT_BYTES: u64 = 4 * 1024 * 1024;
+    if std::io::stdin().take(MAX_INPUT_BYTES + 1).read_to_end(&mut raw).is_err() {
+        println!("{{\"ok\":false,\"error\":\"STDIN_READ_FAILED\"}}");
+        return ExitCode::from(arena_verifier::REJECTED_CODE);
+    }
+    if raw.len() as u64 > MAX_INPUT_BYTES {
+        println!("{{\"ok\":false,\"error\":\"INPUT_TOO_LARGE\"}}");
         return ExitCode::from(arena_verifier::REJECTED_CODE);
     }
     let (line, code) = arena_verifier::verify_line(&raw);

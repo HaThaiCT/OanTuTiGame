@@ -131,6 +131,32 @@ describe('S17: recent re-authentication for destructive organizer actions', () =
     await db.close();
   });
 
+  it('requires FULL ADMIN and recent confirmation for LAN reset and session revocation', async () => {
+    const limitedCookie = `oantuti_session=${await insertSession(adminUserId, 'PASSWORD_CHANGE_ONLY')}`;
+    for (const action of ['reset-password', 'revoke-sessions']) {
+      const url = `/api/v2/organizer/accounts/${studentUserId}/${action}`;
+      expect((await post(url, undefined)).statusCode).toBe(401);
+      expect((await post(url, studentCookie)).statusCode).toBe(403);
+      expect((await post(url, limitedCookie)).statusCode).toBe(403);
+      const denied = await post(url, peerAdminCookie);
+      expect(denied.statusCode).toBe(403);
+      expect(denied.json().code).toBe('REAUTH_REQUIRED');
+    }
+    const isolated = `oantuti_session=${await insertSession(adminUserId, 'FULL')}`;
+    expect((await reauth(isolated, adminPassword)).statusCode).toBe(200);
+    const reset = await post(`/api/v2/organizer/accounts/${studentUserId}/reset-password`, isolated);
+    expect(reset.statusCode).toBe(200);
+    expect(reset.headers['cache-control']).toBe('private, no-store');
+    expect(reset.json().temporaryPassword).toBeTypeOf('string');
+    const revoked = await post(`/api/v2/organizer/accounts/${studentUserId}/revoke-sessions`, isolated);
+    expect(revoked.statusCode).toBe(200);
+    const history = await app.inject({ url: `/api/v2/organizer/audit-events?resourceId=${studentUserId}`, headers: { cookie: isolated } });
+    expect(history.statusCode).toBe(200);
+    expect(history.headers['cache-control']).toBe('private, no-store');
+    expect(history.body).not.toContain(reset.json().temporaryPassword);
+    studentCookie = `oantuti_session=${await insertSession(studentUserId, 'FULL')}`;
+  });
+
   it('refuses every guarded organizer route with 403 REAUTH_REQUIRED before any service runs', async () => {
     const guarded: { url: string; payload?: Record<string, unknown> }[] = [
       { url: `/api/v2/organizer/tournaments/${graceTournamentId}/start`, payload: { mapSlug: 'any-map' } },

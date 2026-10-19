@@ -68,10 +68,30 @@ export function registerTeamRoutes(
     }
   });
 
+  app.get('/api/v2/organizer/teams', async (request, reply) => {
+    try {
+      const actor = await requireActor(request);
+      const query = request.query as { q?: unknown; limit?: unknown; offset?: unknown };
+      const q = typeof query.q === 'string' ? query.q : '';
+      const limit = typeof query.limit === 'string' && /^\d+$/.test(query.limit) ? Number(query.limit) : 50;
+      const offset = typeof query.offset === 'string' && /^\d+$/.test(query.offset) ? Number(query.offset) : 0;
+      return reply.send(await teamService.listTeamsForOrganizer({ q, limit, offset }, actor));
+    } catch (err: unknown) {
+      const status = err && typeof err === 'object' && 'statusCode' in err && typeof err.statusCode === 'number' ? err.statusCode : 500;
+      return reply.status(status).send({ code: 'TEAM_SEARCH_FAILED', message: err instanceof Error ? err.message : 'Team search failed' });
+    }
+  });
+
   // GET /api/v2/teams/:id
+  // The team row carries member identities (user ids, usernames), which are private: only an
+  // organizer or a member of that same team may read it.
   app.get('/api/v2/teams/:id', async (request, reply) => {
     try {
+      const actor = await requireActor(request);
       const params = request.params as { id: string };
+      if (!(actor.role === 'ADMIN' && actor.scope === 'FULL') && !actor.teamIds.includes(params.id)) {
+        return reply.status(403).send({ code: 'FORBIDDEN', message: 'Team members are private' });
+      }
       const team = await teamService.getTeam(params.id);
       return reply.send(team);
     } catch (err: unknown) {

@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   // Workspace packages ship TypeScript sources; `bot-templates` is a value import (not a type).
   transpilePackages: ['@oantuti/protocol'],
   async rewrites() {

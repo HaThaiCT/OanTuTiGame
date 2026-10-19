@@ -66,7 +66,7 @@ export interface SealSweepResult {
  * disputes they carried, then makes `roundOrdinal` seal-eligible again so the schedule can be
  * rebuilt from the reduced field. Shared by result corrections and team disqualification.
  */
-async function invalidateDownstream(
+export async function invalidateDownstream(
   client: pg.PoolClient,
   params: {
     readonly tournamentId: string;
@@ -76,6 +76,23 @@ async function invalidateDownstream(
     readonly extraEncounterIds: readonly string[];
   }
 ): Promise<{ cancelledEncounters: number; cancelledRounds: readonly number[]; invalidatedDisputes: number }> {
+    // A finalized (or archived) ledger is immutable until an explicit reopen: this rebuild deletes
+    // rounds and re-opens the tournament, so reaching it directly must refuse rather than resurrect
+    // a settled competition. Callers already guard this; the invariant lives here too.
+    const stateRes = await client.query<{ state: string }>(
+      'SELECT state FROM tournaments WHERE id = $1 FOR UPDATE',
+      [params.tournamentId]
+    );
+    const state = stateRes.rows[0]?.state;
+    if (!state) {
+      throw new Error(`TOURNAMENT_NOT_FOUND: ${params.tournamentId}`);
+    }
+    if (state === 'FINALIZED' || state === 'ARCHIVED') {
+      throw new Error(
+        `TOURNAMENT_REOPEN_REQUIRED: cannot invalidate rounds of a ${state.toLowerCase()} tournament`
+      );
+    }
+
     // Unplayed encounters of the rounds this rebuild deletes are replaced outright: keeping them
     // cancelled would leave two rows for the same regenerated slot (a bracket slot must have exactly
     // one). Only rows with no evidence at all — no completed game, no rating, no dispute — qualify.
@@ -177,7 +194,7 @@ async function invalidateDownstream(
     await client.query(
       `UPDATE tournaments
           SET state = 'RUNNING', provisional_at = NULL, updated_at = clock_timestamp()
-        WHERE id = $1 AND state IN ('PROVISIONAL', 'FINALIZED')`,
+        WHERE id = $1 AND state = 'PROVISIONAL'`,
       [params.tournamentId]
     );
     await client.query(`INSERT INTO outbox_events (topic, payload) VALUES ($1, $2)`, [
@@ -270,8 +287,8 @@ export class TournamentSchedulerService {
    * This call schedules nothing, but it keeps the `CompletionOutcome` shape: a retried or
    * replayed completion must not enqueue duplicate work.
    */
-  async handleGameCompletion(gameId: string): Promise<void> {
-    const outcome = await this.db.withTransaction(async (client): Promise<CompletionOutcome> => {
+  async handleGameCompletion(gameId: string, existingClient?: pg.PoolClient): Promise<void> {
+    const advance = async (client: pg.PoolClient): Promise<CompletionOutcome> => {
       // Find encounter for this game
       const gameRes = await client.query<{
         encounter_id: string;
@@ -410,9 +427,10 @@ export class TournamentSchedulerService {
         await this.markRoundSealEligible(client, tournament_id, stage, round_ordinal);
       }
       return { tournamentId: tournament_id, createdGames: [] };
-    });
+    };
+    const outcome = existingClient ? await advance(existingClient) : await this.db.withTransaction(advance);
 
-    if (outcome.tournamentId) {
+    if (outcome.tournamentId && !existingClient) {
       await this.enqueueGameJobs(outcome.tournamentId, outcome.createdGames);
     }
   }
@@ -425,42 +443,7 @@ export class TournamentSchedulerService {
    * again and the tournament is put back into RUNNING so the worker re-dispatches from here.
    * The correction service calls this before rescoring the corrected encounter.
    */
-  async invalidateAfterGame(gameId: string): Promise<{
-    tournamentId: string;
-    stage: string;
-    roundOrdinal: number;
-    cancelledEncounters: number;
-  } | null> {
-    return this.db.withTransaction(async (client) => {
-      const gameRes = await client.query<{
-        tournament_id: string;
-        stage: string;
-        round_ordinal: number;
-        encounter_id: string;
-      }>(
-        `SELECT e.tournament_id, e.stage, e.round_ordinal, e.id AS encounter_id
-           FROM games g
-           JOIN encounters e ON e.id = g.encounter_id
-          WHERE g.id = $1`,
-        [gameId]
-      );
-      const game = gameRes.rows[0];
-      if (!game) return null;
 
-      const invalidated = await invalidateDownstream(client, {
-        tournamentId: game.tournament_id,
-        stage: game.stage,
-        roundOrdinal: game.round_ordinal,
-        extraEncounterIds: [game.encounter_id],
-      });
-      return {
-        tournamentId: game.tournament_id,
-        stage: game.stage,
-        roundOrdinal: game.round_ordinal,
-        cancelledEncounters: invalidated.cancelledEncounters,
-      };
-    });
-  }
 
   /**
    * Seals every round whose grace window has elapsed and dispatches its next round.
@@ -483,7 +466,8 @@ export class TournamentSchedulerService {
   /**
    * Cancels everything scheduled after `roundOrdinal` in `stage` and re-opens that round, so the
    * schedule is rebuilt from the reduced field. Disqualification uses this; the corrected-round
-   * path (`invalidateAfterGame`) keeps its own dispute/evidence semantics.
+   * path (`invalidateDownstream`, called by the correction service inside its transaction)
+   * keeps its own dispute/evidence semantics.
    */
   async invalidateAfterRound(
     tournamentId: string,

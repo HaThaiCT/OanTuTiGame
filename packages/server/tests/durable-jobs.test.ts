@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { Database } from '../src/persistence/db.js';
 import { JobBroker, JobBrokerError, LEASE_TTL_SECONDS } from '../src/jobs/broker.js';
+import type { ResultReceipt } from '@oantuti/protocol';
 import { JobReconciler } from '../src/jobs/reconciler.js';
 import type { ReconcilerIdentity, ResultEvidence, SlotOffer, WorkerIdentity } from '@oantuti/protocol';
 
@@ -31,6 +32,33 @@ describe('S06 Durable Job Broker, Leases & Reconciler (T4)', () => {
     await db.close();
   });
 
+  it('returns the identical terminal receipt after a lost completion acknowledgement', async () => {
+    const target = randomUUID();
+    await broker.enqueue('BUILD', target);
+    const claim = await broker.claim(worker1, { buildSlots: 1, gameSlots: 0 }, { targetIds: [target] });
+    expect(claim).not.toBeNull();
+    const prepared = await broker.prepareCompletion(claim!.identity, { kind: 'BUILD', build: {
+      outcome: 'SOURCE_REJECTED', stage: 'COMPILE', manifestDigest: 'c'.repeat(64),
+      toolchain: { language: 'CPP', imageDigest: 'd'.repeat(64), version: '1', flags: [] }, diagnostic: 'invalid source',
+    } });
+    const pinned = { completionId: prepared.data.completionId, evidenceDigest: prepared.data.evidenceDigest, deploymentGeneration: 1 };
+    const receipt = await broker.complete(pinned, reconcilerId);
+    expect(receipt.data.resultVersionId).toBeUndefined();
+    expect(await broker.complete(pinned, reconcilerId)).toEqual(receipt);
+  });
+
+  it('refuses corrupted durable payloads without marking jobs successful', async () => {
+    const target = randomUUID();
+    await broker.enqueue('GAME', target);
+    const claim = await broker.claim(worker1, { buildSlots: 0, gameSlots: 1 }, { targetIds: [target] });
+    const prepared = await broker.prepareCompletion(claim!.identity, { kind: 'GAME', game: {
+      verdict: 'DRAW', reason: 'draw', actionTraceDigest: 'a'.repeat(64), replayDigest: 'b'.repeat(64), manifestDigest: 'c'.repeat(64), cpuUsec: '0', wallUsec: '0',
+    } });
+    await db.query(`UPDATE job_completions SET evidence_payload = jsonb_set(evidence_payload, '{game,reason}', '"tampered"') WHERE id = $1`, [prepared.data.completionId]);
+    await expect(broker.complete({ completionId: prepared.data.completionId, evidenceDigest: prepared.data.evidenceDigest, deploymentGeneration: 1 }, reconcilerId)).rejects.toThrow();
+    const state = await db.query<{ state: string }>('SELECT state FROM jobs WHERE id=$1', [claim!.identity.jobId]);
+    expect(state.rows[0].state).toBe('COMPLETION_PENDING');
+  });
   it('enqueues jobs and enforces priority and FIFO ordering via SKIP LOCKED claim', async () => {
     const target1 = randomUUID();
     const target2 = randomUUID();
@@ -112,7 +140,7 @@ describe('S06 Durable Job Broker, Leases & Reconciler (T4)', () => {
     };
 
     // Phase 1: prepareCompletion
-    const compReceipt = await broker.prepareCompletion(lease.identity, evidence);
+    const compReceipt = await broker.prepareCompletion(lease.identity, { kind: 'GAME', game: evidence });
     expect(compReceipt.data.state).toBe('COMPLETION_PENDING');
     expect(compReceipt.data.evidenceDigest).toBeDefined();
 
@@ -221,7 +249,7 @@ describe('S06 Durable Job Broker, Leases & Reconciler (T4)', () => {
     };
 
     // Worker pinned completion, then simulated crash / network loss
-    await broker.prepareCompletion(lease.identity, evidence);
+    await broker.prepareCompletion(lease.identity, { kind: 'GAME', game: evidence });
 
     // Reconciler runs independently: detects orphaned COMPLETION_PENDING and promotes to ACCEPTED
     const report = await reconciler.reconcile(reconcilerId);
@@ -291,5 +319,139 @@ describe('S06 Durable Job Broker, Leases & Reconciler (T4)', () => {
     const queued = randomUUID();
     await broker.enqueue('GAME', queued, 100);
     expect(await broker.enqueueIfNoActive('GAME', queued, 100)).toBe(false);
+  });
+
+  it('lets exactly one supervisor win a claim race and accepts a pinned completion once', async () => {
+    const target = randomUUID();
+    const jobId = await broker.enqueue('GAME', target, 100);
+
+    // Eight supervisors claim simultaneously; only this target is runnable, so one lease exists
+    // (the suite shares a database, so unclaimed jobs from earlier cases must stay excluded).
+    const racers: WorkerIdentity[] = Array.from({ length: 8 }, (_, index) => ({
+      workerId: `racer-${index}`,
+      pid: 2000 + index,
+      uid: 1000,
+    }));
+    const claims = await Promise.all(
+      racers.map((racer) => broker.claim(racer, { buildSlots: 0, gameSlots: 1 }, { targetIds: [target] }))
+    );
+    const leases = claims.filter((claim) => claim !== null);
+    expect(leases).toHaveLength(1);
+    const lease = leases[0]!;
+    expect(lease.identity.jobId).toBe(jobId);
+
+    const attempts = await db.query<{ state: string }>(
+      `SELECT state FROM job_attempts WHERE job_id = $1`,
+      [jobId]
+    );
+    expect(attempts.rows).toEqual([{ state: 'ACTIVE' }]);
+
+    const pinned = await broker.prepareCompletion(lease.identity, {
+      kind: 'GAME',
+      game: {
+        verdict: 'DECISIVE',
+        winner: 1,
+        reason: 'THRONE_BREACH',
+        actionTraceDigest: '0'.repeat(64),
+        replayDigest: '1'.repeat(64),
+        manifestDigest: '2'.repeat(64),
+        cpuUsec: '15000',
+        wallUsec: '250000',
+      },
+    });
+    const completion = {
+      completionId: pinned.data.completionId,
+      evidenceDigest: pinned.data.evidenceDigest,
+      deploymentGeneration: lease.identity.deploymentGeneration,
+    };
+
+    // Two reconcilers confirm the same pinned completion: a lost acknowledgement must return the
+    // same canonical receipt to both, and the ledger must be scored exactly once.
+    const outcomes = await Promise.allSettled([
+      broker.complete(completion, reconcilerId),
+      broker.complete(completion, { reconcilerId: 'reconciler-2', pid: 9998, uid: 1000 }),
+    ]);
+    const fulfilled = outcomes.filter((outcome) => outcome.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(2);
+    const receipts = fulfilled.map((outcome) => (outcome as PromiseFulfilledResult<ResultReceipt>).value);
+    expect(receipts[0].data).toEqual(receipts[1].data);
+
+    const job = await db.query<{ state: string }>('SELECT state FROM jobs WHERE id = $1', [jobId]);
+    expect(job.rows[0].state).toBe('SUCCEEDED');
+    const accepted = await db.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM job_completions WHERE job_id = $1 AND state = 'ACCEPTED'`,
+      [jobId]
+    );
+    expect(accepted.rows[0].n).toBe(1);
+  });
+
+  it('keeps another deployment generation out of this generation leases and completions', async () => {
+    const otherGeneration = 4242;
+    const otherBroker = new JobBroker(db, otherGeneration);
+    const otherReconciler = new JobReconciler(db, otherGeneration);
+    const pinned = async (target: string) => otherBroker.claim(worker1, { buildSlots: 0, gameSlots: 1 }, { targetIds: [target] });
+
+    // An expired lease of the other generation stays untouched for this generation's reconciler…
+    const expiredTarget = randomUUID();
+    const expiredJob = await otherBroker.enqueue('GAME', expiredTarget, 100);
+    const expiredLease = await pinned(expiredTarget);
+    expect(expiredLease?.identity.jobId).toBe(expiredJob);
+    if (!expiredLease) return;
+    await db.query(
+      `UPDATE job_attempts SET lease_expires_at = clock_timestamp() - interval '1 second' WHERE id = $1`,
+      [expiredLease.identity.attemptId]
+    );
+
+    // …and neither is a completion pinned by that generation.
+    const completedTarget = randomUUID();
+    const completedJob = await otherBroker.enqueue('GAME', completedTarget, 100);
+    const completedLease = await pinned(completedTarget);
+    expect(completedLease?.identity.jobId).toBe(completedJob);
+    if (!completedLease) return;
+    await otherBroker.prepareCompletion(completedLease.identity, {
+      kind: 'GAME',
+      game: {
+        verdict: 'DECISIVE',
+        winner: 1,
+        reason: 'THRONE_BREACH',
+        actionTraceDigest: '0'.repeat(64),
+        replayDigest: '1'.repeat(64),
+        manifestDigest: '2'.repeat(64),
+        cpuUsec: '15000',
+        wallUsec: '250000',
+      },
+    });
+
+    await reconciler.reconcile(reconcilerId);
+    const untouched = await db.query<{ state: string }>(
+      `SELECT state FROM jobs WHERE id = ANY($1::uuid[]) ORDER BY id`,
+      [[expiredJob, completedJob]]
+    );
+    expect(untouched.rows.map((row) => row.state).sort()).toEqual(['COMPLETION_PENDING', 'LEASED']);
+    expect(
+      (await db.query(`SELECT id FROM job_completions WHERE job_id = $1 AND state = 'ACCEPTED'`, [completedJob])).rows
+    ).toHaveLength(0);
+
+    // Its own generation reclaims the expired lease and promotes the pinned completion once.
+    const own = await otherReconciler.reconcile(reconcilerId);
+    expect(own.expiredLeasesReclaimed).toBe(1);
+    expect(own.orphanedCompletionsAccepted).toBe(1);
+    const settled = await db.query<{ id: string; state: string }>(
+      `SELECT id, state FROM jobs WHERE id = ANY($1::uuid[])`,
+      [[expiredJob, completedJob]]
+    );
+    const byId = Object.fromEntries(settled.rows.map((row) => [row.id, row.state]));
+    expect(byId[expiredJob]).toBe('RETRY_WAIT');
+    expect(byId[completedJob]).toBe('SUCCEEDED');
+    expect(
+      (await db.query(`SELECT id FROM job_completions WHERE job_id = $1 AND state = 'ACCEPTED'`, [completedJob])).rows
+    ).toHaveLength(1);
+
+    for (const id of [expiredJob, completedJob]) {
+      await db.query('DELETE FROM job_completions WHERE job_id = $1', [id]);
+      await db.query('UPDATE jobs SET active_lease_id = NULL WHERE id = $1', [id]);
+      await db.query('DELETE FROM job_attempts WHERE job_id = $1', [id]);
+      await db.query('DELETE FROM jobs WHERE id = $1', [id]);
+    }
   });
 });
