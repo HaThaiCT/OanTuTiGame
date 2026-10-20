@@ -75,17 +75,15 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 
 ## 4. Cách 1: Khởi chạy bằng Docker Compose (Khuyến nghị)
 
-Đây là cách nhanh nhất và tiện lợi nhất để dựng toàn bộ hệ thống gồm: **PostgreSQL 16** + **Fastify Server API** + **Next.js Web Portal** + **Nginx Gateway**.
+Repository đã được đóng gói sẵn **toàn bộ dữ liệu demo thực tế** (`deploy/demo-data/` gồm 46 giải đấu, 72 đội, bảng xếp hạng Global Rating và 616 tệp replay ván đấu). Khi khởi chạy lần đầu, Docker sẽ **tự động nạp toàn bộ dữ liệu này** vào PostgreSQL và kho lưu trữ tệp.
 
 ### Bước 4.1: Clone repository và chuẩn bị secrets
-Mở terminal và di chuyển vào thư mục dự án:
 ```bash
 git clone https://github.com/HaThaiCT/OanTuTiGame.git
 cd OanTuTiGame
-git checkout rebuild/v2  # Hoặc nhánh làm việc mới nhất
 ```
 
-Tạo thư mục chứa mật khẩu bảo mật ngoài git:
+Tạo thư mục chứa mật khẩu bảo mật (ngoài git):
 ```bash
 mkdir -p secrets
 openssl rand -hex 24 > secrets/postgres-owner
@@ -97,115 +95,84 @@ openssl rand -hex 24 > secrets/postgres-app
 export PG_OWNER_PASSWORD_FILE=$(pwd)/secrets/postgres-owner
 export PG_APP_PASSWORD_FILE=$(pwd)/secrets/postgres-app
 export PUBLIC_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-export OANTUTI_BACKUP_FENCE=off  # Đặt là 'off' cho môi trường thử nghiệm/demo
-
-# Kiểm tra cú pháp Compose
-docker compose config --quiet
+export OANTUTI_BACKUP_FENCE=off  # Đặt là 'off' cho môi trường demo / thử nghiệm
 
 # Khởi chạy toàn bộ hệ thống ở chế độ nền
 docker compose up --build -d
 ```
+*Hệ thống sẽ tự động khởi tạo cơ sở dữ liệu, nạp 46 giải đấu cùng 616 ván replay trong vòng vài giây.*
 
-### Bước 4.3: Áp dụng migration cơ sở dữ liệu và cấp tài khoản Admin đầu tiên
-Khi hệ thống chạy lần đầu, container cơ sở dữ liệu sẽ trống. Chạy service `ops` được cấu hình sẵn để áp dụng schema và tạo tài khoản Admin:
+### Bước 4.3: Truy cập ứng dụng & Tài khoản đăng nhập
+Mở trình duyệt tại **[http://localhost:3000](http://localhost:3000)**.
 
-```bash
-# 1. Áp dụng toàn bộ migration schema cho cơ sở dữ liệu
-docker compose --profile ops run --rm ops deploy/linux/apply-migrations.mts --apply --grant-to arena_app
+Hệ thống đã có sẵn các tài khoản đăng nhập để bạn trải nghiệm ngay lập tức:
 
-# 2. Tạo tài khoản Admin đầu tiên (ví dụ tên đăng nhập là 'superadmin')
-OANTUTI_BOOTSTRAP_CONFIRM=arena OANTUTI_ACCOUNT_CAPACITY=500 \
-  docker compose --profile ops run --rm -it ops deploy/linux/bootstrap-admin.mts superadmin
-```
-*Lưu ý: Mật khẩu khởi tạo ngẫu nhiên của Admin sẽ được in trực tiếp ra màn hình terminal. Hãy lưu lại mật khẩu này để đăng nhập.*
+| Vai trò | Tên đăng nhập | Mật khẩu | Quyền hạn |
+|---|---|---|---|
+| **👑 Ban tổ chức (Admin)** | `system_admin` | `DemoAdmin@2026` | Quản trị giải, phê duyệt đội, Map Editor, duyệt Rating |
+| **🎮 Thí sinh (Captain)** | `demo_cap1` | `DemoStudent@2026` | Không gian đội, Monaco IDE, nộp bài `.zip`, chạy test nội bộ |
+| **🎮 Thí sinh (Member)** | `student_alice` | `DemoStudent@2026` | Xem giải đấu, theo dõi kết quả của đội |
 
-### Bước 4.4: Truy cập ứng dụng
-- **Giao diện Web Portal**: Mở trình duyệt tại [http://localhost:3000](http://localhost:3000).
-- **Kiểm tra API Server**:
-  ```bash
-  curl -sS http://localhost:3000/api/v2/tournaments
-  ```
-
-### Bước 4.5: Các lệnh quản lý Docker thường dùng
+### Bước 4.4: Các lệnh quản lý Docker thường dùng
 ```bash
 docker compose ps                         # Xem trạng thái các container
 docker compose logs -f server web gateway # Xem log theo thời gian thực
-docker compose restart server web         # Khởi động lại ứng dụng
+docker compose restart server web         # Khởi động lại dịch vụ web và api
 docker compose down                       # Dừng hệ thống (VẪN GIỮ NGUYÊN DỮ LIỆU volume)
 ```
-*(Tuyệt đối không dùng `docker compose down -v` nếu bạn muốn giữ lại dữ liệu giải đấu và bot).*
+*(Lưu ý: Không dùng `docker compose down -v` nếu bạn muốn giữ lại dữ liệu giải đấu).*
 
 ---
 
 ## 5. Cách 2: Cài đặt và Chạy cục bộ (Local Development)
 
-Dành cho lập trình viên muốn chỉnh sửa trực tiếp mã nguồn Frontend/Backend với hot-reload.
+Dành cho nhà phát triển muốn chạy trực tiếp trên máy host và chỉnh sửa mã nguồn.
 
 ### Bước 5.1: Cài đặt dependencies
-Tại thư mục gốc dự án:
 ```bash
 npm ci
 ```
 
-### Bước 5.2: Khởi tạo cơ sở dữ liệu PostgreSQL 16
-Đảm bảo bạn đã có một dịch vụ PostgreSQL 16 đang hoạt động. Tạo database và các role ứng dụng:
-```sql
-CREATE DATABASE arena;
-CREATE ROLE arena_owner WITH LOGIN PASSWORD 'owner_secret';
-CREATE ROLE arena_app WITH LOGIN PASSWORD 'app_secret';
-GRANT ALL PRIVILEGES ON DATABASE arena TO arena_owner;
-```
+### Bước 5.2: Phục hồi bộ dữ liệu Demo vào PostgreSQL cục bộ
+Đảm bảo bạn đã có một cơ sở dữ liệu PostgreSQL 16 (ví dụ: `arena`). Bạn có thể phục hồi ngay bộ dữ liệu 46 giải đấu và 616 replay chỉ với **một lệnh duy nhất**:
 
-Áp dụng migrations vào database:
 ```bash
-PGHOST=localhost PGPORT=5432 PGDATABASE=arena PGUSER=arena_owner PGPASSWORD=owner_secret \
-  npx tsx deploy/linux/apply-migrations.mts --apply --grant-to arena_app
+PGHOST=localhost PGPORT=5432 PGDATABASE=arena PGUSER=postgres PGPASSWORD=your_password \
+  npm run demo:restore
 ```
+*Lệnh này sẽ tự động nạp dump database và giải nén toàn bộ 616 tệp replay `.oantuti` cùng mã nguồn bot vào thư mục `storage/`.*
 
-### Bước 5.3: (Tùy chọn) Nạp dữ liệu giải đấu và bot mẫu
-Dự án cung cấp sẵn script demo giúp bạn có ngay dữ liệu các đội, bản đồ, giải đấu và bot thi đấu:
-```bash
-# Nạp 1 giải đấu mẫu 4 đội thể thức Round-Robin:
-PGHOST=localhost PGPORT=5432 PGDATABASE=arena PGUSER=arena_app PGPASSWORD=app_secret \
-  npm run demo:seed -- --format ROUND_ROBIN --teams 4
-
-# Hoặc nạp showcase hoàn chỉnh (48 đội, 30 giải đấu với đầy đủ dữ liệu Rating):
-PGHOST=localhost PGPORT=5432 PGDATABASE=arena PGUSER=arena_app PGPASSWORD=app_secret \
-  npm run demo:showcase
-```
-
-### Bước 5.4: Khởi động Backend API (`packages/server`)
-Mở một cửa sổ terminal mới:
+### Bước 5.3: Khởi động Backend API (`packages/server`)
+Mở cửa sổ terminal thứ nhất:
 ```bash
 export PORT=4301
 export HOST=127.0.0.1
 export PGHOST=localhost
 export PGPORT=5432
 export PGDATABASE=arena
-export PGUSER=arena_app
-export PGPASSWORD=app_secret
+export PGUSER=postgres
+export PGPASSWORD=your_password
 export OANTUTI_AUTH_PROFILE=LAN_OFFLINE
-export OANTUTI_DEV_EXECUTION=1   # Kích hoạt bộ tự động chạy trận đấu cho giải
+export OANTUTI_DEV_EXECUTION=1   # Bật bộ tự động đấu trận (auto-runner)
 export OANTUTI_BACKUP_FENCE=off
 
 node --import tsx packages/server/src/index.ts
 ```
-API server sẽ lắng nghe tại `http://127.0.0.1:4301`.
+API server sẽ sẵn sàng tại `http://127.0.0.1:4301`.
 
-### Bước 5.5: Khởi động Frontend Web Portal (`packages/web`)
-Mở một cửa sổ terminal khác:
+### Bước 5.4: Khởi động Frontend Web Portal (`packages/web`)
+Mở cửa sổ terminal thứ hai:
 ```bash
 cd packages/web
 
-# Cách A: Chạy chế độ Development (Hot-Reload)
+# Chạy chế độ Development (Hot-Reload):
 npm run dev
 
-# Cách B: Build bản Production tối ưu và chạy
+# Hoặc build bản Production tối ưu và chạy:
 npm run build
 npm run start -- -H 127.0.0.1 -p 4300
 ```
-Truy cập giao diện tại **[http://127.0.0.1:4300](http://127.0.0.1:4300)** (hoặc `http://localhost:3000` tùy chế độ dev).
-
+Mở trình duyệt tại **[http://127.0.0.1:4300](http://127.0.0.1:4300)** (hoặc `http://localhost:3000` tùy chế độ chạy).
 ---
 
 ## 6. Hướng dẫn Lập trình Bot (SDK Guide)

@@ -29,6 +29,12 @@ for migration in /opt/arena-migrations/*.sql; do
     printf "\nRESET ROLE; INSERT INTO migration_checksums(version, checksum) VALUES (%s, '%s');\nCOMMIT;\n" "$version" "$checksum"
   } | psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB"
 done
+
+if [ -f /opt/demo-data/arena_demo.sql.gz ]; then
+  echo "Restoring demo dataset from /opt/demo-data/arena_demo.sql.gz..."
+  gzip -dc /opt/demo-data/arena_demo.sql.gz | psql -v ON_ERROR_STOP=0 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" > /dev/null 2>&1 || true
+fi
+
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
 BEGIN;
 GRANT USAGE ON SCHEMA public TO arena_app;

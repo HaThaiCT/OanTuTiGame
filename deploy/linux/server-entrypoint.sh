@@ -10,4 +10,11 @@ if [ -z "$PGPASSWORD" ]; then
   exit 1
 fi
 export PGPASSWORD
+
+if [ -f "/app/deploy/demo-data/arena_objects.tar.gz" ] && [ -z "$(ls -A /app/storage/replays 2>/dev/null)" ]; then
+  echo "Unpacking demo replays and bot submissions into /app/storage..."
+  tar -xzf /app/deploy/demo-data/arena_objects.tar.gz -C /app/
+  chmod -R 700 /app/storage/replays /app/storage/submissions 2>/dev/null || true
+fi
+
 exec node --import tsx packages/server/src/index.ts
