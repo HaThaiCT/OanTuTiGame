@@ -716,7 +716,7 @@ export class MatchExecutionService {
       }
       const applied = applyMoveV2(state, moveAction);
       state = applied.nextState;
-      if (applied.outcome.isGameOver) break;
+      if (applied.outcome.isGameOver) return applied.outcome;
     }
 
     return evaluateVictoryV2(state);
