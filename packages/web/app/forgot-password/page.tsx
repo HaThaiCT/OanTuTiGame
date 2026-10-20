@@ -55,9 +55,11 @@ export default function ForgotPasswordPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 py-4 sm:py-8">
       <div className="border-b border-[var(--border-subtle)] pb-4">
-        <h1 className="text-xl font-semibold">Quên mật khẩu</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Nhập email của tài khoản ONLINE. Phản hồi luôn giống nhau để không tiết lộ email nào đã đăng ký.
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+          Quên mật khẩu
+        </h1>
+        <p className="mt-2 text-xs text-[var(--text-secondary)]">
+          Nhập email tài khoản để nhận liên kết khôi phục mật khẩu.
         </p>
       </div>
 
@@ -71,7 +73,7 @@ export default function ForgotPasswordPage() {
       ) : null}
 
       {profile === 'ONLINE' && !profileRefusal ? (
-        <form onSubmit={submit} className="flex flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+        <form onSubmit={submit} className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
           <label className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Email</span>
             <input
@@ -81,7 +83,7 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="h-10 rounded-sm border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+              className="h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
             />
             <span className="text-xs text-[var(--text-secondary)]">Đúng địa chỉ đã dùng khi đăng ký.</span>
           </label>
@@ -93,13 +95,16 @@ export default function ForgotPasswordPage() {
             </p>
           ) : null}
 
-          <button disabled={busy} className="h-10 rounded-sm bg-[var(--action)] text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)] disabled:opacity-60">
-            {busy ? 'Đang gửi…' : 'Gửi hướng dẫn đặt lại'}
+          <button
+            type="submit"
+            disabled={busy}
+            className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
+          >
+            {busy ? 'Đang gửi yêu cầu...' : 'Gửi liên kết khôi phục'}
           </button>
           <p className="text-xs text-[var(--text-secondary)]">
-            Đã có mật khẩu?{' '}
-            <Link href="/workspace" className="underline hover:text-[var(--text-primary)]">
-              Đăng nhập
+            <Link href="/workspace" className="text-[var(--action)] font-medium hover:underline">
+              ← Quay lại đăng nhập
             </Link>
           </p>
         </form>

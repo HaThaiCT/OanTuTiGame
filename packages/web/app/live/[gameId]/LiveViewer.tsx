@@ -247,73 +247,111 @@ export default function LiveViewer({ gameId, canViewReplay = false }: { readonly
 
   return (
     <div className="flex min-w-0 flex-col gap-4"><TournamentRatingProvider tournamentId={snapshot?.tournamentId ?? ''}>
-      <section className="flex flex-wrap items-start justify-between gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--live-accent)]">Trực tiếp</p>
-          <h1 className="mt-1 break-all text-lg font-semibold">{gameId}</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Bàn {snapshot?.map?.mapName ?? '—'} · ván {snapshot ? LIVE_STATUS_LABEL[snapshot.status] : 'chưa có dữ liệu'}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <span className="flex items-center gap-2">
-              <span className="inline-block h-3 w-3 rounded-full border border-[#94A3B8] bg-[#F8FAFC]" />
-              <span className="text-[var(--text-secondary)]">Quân Trắng</span>
-              <span className="font-semibold">{snapshot?.whiteTeam ? <TeamRatingName teamId={snapshot.whiteTeam.id} name={whiteName} rating={null}/> : whiteName}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="inline-block h-3 w-3 rounded-full bg-[#1F2937] ring-1 ring-[var(--border-control)]" />
-              <span className="text-[var(--text-secondary)]">Quân Đen</span>
-              <span className="font-semibold">{snapshot?.blackTeam ? <TeamRatingName teamId={snapshot.blackTeam.id} name={blackName} rating={null}/> : blackName}</span>
+      <section className="border border-[var(--border-subtle)] bg-[var(--surface)] p-6 rounded-2xl shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-4 mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-xs text-[var(--text-secondary)]">
+                Bàn đấu: <strong className="text-[var(--text-primary)]">{snapshot?.map?.mapName ?? '—'}</strong>
+              </span>
+            </div>
+            <h1 className="font-mono text-xs text-[var(--text-faint)] break-all">
+              Mã trận: {gameId}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className={`inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-wider px-3 py-1 border rounded-full ${CONNECTION_CLASS[connection]}`}
+            >
+              <span className={`inline-block w-2 h-2 rounded-full ${connection === 'live' ? 'bg-[var(--action)] shadow-[0_0_8px_var(--action)] animate-pulse' : 'bg-current'}`} />
+              {CONNECTION_LABEL[connection]}
             </span>
           </div>
         </div>
-        <div className="grid min-w-0 grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-          <div>
-            <p className="text-xs text-[var(--text-secondary)]">Kết nối</p>
-            <p className="mt-1">
-              <span
-                className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-xs font-semibold ${CONNECTION_CLASS[connection]}`}
-              >
-                {CONNECTION_LABEL[connection]}
-              </span>
-            </p>
+
+        {/* Esports Head-to-Head Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4 py-2">
+          <div className="flex items-center gap-3 bg-[var(--surface-subtle)] border border-[var(--border-subtle)] p-4 rounded-xl shadow-xs">
+            <span className="inline-block h-4 w-4 border border-white bg-[#ece8e1] rounded-full shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-[var(--text-secondary)] font-medium">Phe Trắng (White)</p>
+              <p className="font-heading text-lg font-bold truncate text-[var(--text-primary)]">
+                {snapshot?.whiteTeam ? <TeamRatingName teamId={snapshot.whiteTeam.id} name={whiteName} rating={null} /> : whiteName}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-[var(--text-secondary)]">Số nước đã đi</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">{plies.length}</p>
+
+          <div className="text-center px-2">
+            <span className="font-heading font-black text-2xl text-[var(--action)] tracking-widest">
+              VS
+            </span>
           </div>
-          <div className="col-span-2 sm:col-span-1">
-            <p className="text-xs text-[var(--text-secondary)]">Nước gần nhất</p>
-            <p className="mt-1 text-sm font-semibold">
-              {lastPly ? `Lượt ${lastPly.turnNumber} — ${describePly(lastPly)}` : 'Chưa có nước nào'}
+
+          <div className="flex items-center justify-end gap-3 bg-[var(--surface-subtle)] border border-[var(--border-subtle)] p-4 rounded-xl shadow-xs text-right">
+            <div className="min-w-0">
+              <p className="text-xs text-[var(--text-secondary)] font-medium">Phe Đen (Black)</p>
+              <p className="font-heading text-lg font-bold truncate text-[var(--text-primary)]">
+                {snapshot?.blackTeam ? <TeamRatingName teamId={snapshot.blackTeam.id} name={blackName} rating={null} /> : blackName}
+              </p>
+            </div>
+            <span className="inline-block h-4 w-4 border border-[#00f5d4] bg-[#101720] rounded-full shrink-0" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-[var(--border-subtle)] font-mono text-xs">
+          <div>
+            <p className="text-[var(--text-secondary)] text-xs font-medium">Số nước đã đi</p>
+            <p className="mt-1 font-heading text-2xl font-bold text-[var(--text-primary)] tabular-nums">{plies.length}</p>
+          </div>
+          <div className="col-span-2 md:col-span-2">
+            <p className="text-[var(--text-secondary)] text-xs font-medium">Nước gần nhất</p>
+            <p className="mt-1 text-sm text-[var(--accent-secondary)] truncate">
+              {lastPly ? `Nước ${lastPly.turnNumber}: ${describePly(lastPly)}` : 'Chưa có nước đi'}
             </p>
           </div>
         </div>
       </section>
 
       {notice ? (
-        <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--warning-tint)] px-4 py-3 text-sm text-[var(--warning-text)]">
+        <div className="border border-[var(--warning-text)] bg-[var(--warning-tint)] px-4 py-3 rounded-xl text-xs text-[var(--warning-text)] shadow-xs">
           {notice}
-        </p>
+        </div>
       ) : null}
 
       {outcome ? (
-        <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Kết quả</p>
-          <p className="mt-1 text-xl font-semibold">{outcome.winner === 1 && snapshot?.whiteTeam ? <><TeamRatingName teamId={snapshot.whiteTeam.id} name={whiteName} rating={null}/> (Quân Trắng) thắng</> : outcome.winner === 2 && snapshot?.blackTeam ? <><TeamRatingName teamId={snapshot.blackTeam.id} name={blackName} rating={null}/> (Quân Đen) thắng</> : winnerText}</p>
-          <p className="mt-1 text-sm text-[var(--text-primary)]">
-            <span className="font-semibold">{winReasonLabel[outcome.reason] ?? (outcome.reason || 'Không rõ lý do')}</span>
-            {outcome.reason ? <span className="ml-2 font-mono text-[11px] text-[var(--text-secondary)]">{outcome.reason}</span> : null}
+        <section className="border border-[var(--action)] bg-[rgba(255,70,85,0.08)] p-6 rounded-2xl shadow-sm">
+          <p className="text-xs font-bold text-[var(--action)]">Kết quả trận đấu</p>
+          <h2 className="mt-1 font-heading text-xl font-bold text-[var(--text-primary)]">
+            {outcome.winner === 1 && snapshot?.whiteTeam ? (
+              <>
+                <TeamRatingName teamId={snapshot.whiteTeam.id} name={whiteName} rating={null} />{' '}
+                <span className="text-[var(--action)]">(Quân Trắng) thắng</span>
+              </>
+            ) : outcome.winner === 2 && snapshot?.blackTeam ? (
+              <>
+                <TeamRatingName teamId={snapshot.blackTeam.id} name={blackName} rating={null} />{' '}
+                <span className="text-[var(--action)]">(Quân Đen) thắng</span>
+              </>
+            ) : (
+              winnerText
+            )}
+          </h2>
+          <p className="mt-2 font-mono text-xs text-[var(--text-secondary)]">
+            LÝ DO:{' '}
+            <strong className="text-[var(--text-primary)] uppercase">
+              {winReasonLabel[outcome.reason] ?? (outcome.reason || 'KHÔNG RÕ')}
+            </strong>
+            {outcome.reason ? <span className="ml-2 font-mono text-[10px] text-[var(--text-faint)]">[{outcome.reason}]</span> : null}
           </p>
         </section>
       ) : null}
 
       {connection === 'finished' && canViewReplay ? (
         <Link
-          className="self-start rounded-sm bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)]"
+          className="vct-btn-primary self-start !py-2 !px-4 !text-xs !rounded-full"
           href={`/replays?game=${encodeURIComponent(gameId)}`}
         >
-          Xem lại toàn bộ ván (replay)
+          Xem lại toàn bộ ván đấu (Replay) →
         </Link>
       ) : null}
 

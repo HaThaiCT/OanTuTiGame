@@ -13,7 +13,7 @@ const MAX_USERNAME_LENGTH = 50;
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 const FIELD_CLASS =
-  'h-10 rounded-sm border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)]';
+  'h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors';
 
 interface FormValues {
   username: string;
@@ -87,11 +87,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-5 py-4 sm:py-8">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6 py-4 sm:py-8">
       <div className="border-b border-[var(--border-subtle)] pb-4">
-        <h1 className="text-xl font-semibold">Đăng ký tài khoản</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Tự đăng ký chỉ có trên cấu hình ONLINE. Tài khoản tạo ra có vai trò STUDENT và phải xác minh email.
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+          Đăng ký tài khoản
+        </h1>
+        <p className="mt-2 text-xs text-[var(--text-secondary)]">
+          Tài khoản sinh viên mới cần xác minh qua email trước khi đăng nhập.
         </p>
       </div>
 
@@ -120,7 +122,7 @@ export default function RegisterPage() {
       ) : null}
 
       {profile === 'ONLINE' && !receipt && !profileRefusal ? (
-        <form onSubmit={submit} className="flex flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+        <form onSubmit={submit} className="flex flex-col gap-4 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
           <label className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Tên đăng nhập</span>
             <input
@@ -197,13 +199,17 @@ export default function RegisterPage() {
             </p>
           ) : null}
 
-          <button disabled={busy} className="h-10 rounded-sm bg-[var(--action)] text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)] disabled:opacity-60">
-            {busy ? 'Đang đăng ký…' : 'Đăng ký'}
+          <button
+            type="submit"
+            disabled={busy}
+            className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
+          >
+            {busy ? 'Đang đăng ký...' : 'Đăng ký tài khoản'}
           </button>
           <p className="text-xs text-[var(--text-secondary)]">
             Đã có tài khoản?{' '}
-            <Link href="/workspace" className="underline hover:text-[var(--text-primary)]">
-              Đăng nhập
+            <Link href="/workspace" className="text-[var(--action)] font-medium hover:underline ml-1">
+              Đăng nhập →
             </Link>
           </p>
         </form>

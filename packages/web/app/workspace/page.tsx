@@ -172,25 +172,79 @@ export default function WorkspacePage() {
 
   if (user) {
     if (user.role === 'ADMIN') {
-      return <section className="flex flex-col gap-4"><h1 className="text-2xl font-semibold">Ban tổ chức</h1><p>Quản lý giải và tài nguyên trong trang điều hành.</p><Link href="/organizer" className="text-[var(--action)] underline">Vào Ban tổ chức →</Link></section>;
+      return (
+        <section className="flex flex-col gap-4 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 rounded-2xl shadow-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            Ban tổ chức
+          </h1>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Quản lý giải đấu, tài khoản và bản đồ thi đấu.
+          </p>
+          <Link href="/organizer" className="vct-btn-primary self-start !py-2 !px-4 !text-xs !rounded-full mt-2">
+            Vào trang quản trị →
+          </Link>
+        </section>
+      );
     }
     return (
-      <section className="flex flex-col gap-5">
-        <h1 className="text-2xl font-semibold tracking-tight">Không gian đội</h1>
-        {authProfile === 'ONLINE' && user.role === 'STUDENT' && scope === 'FULL' ? <Link href="/workspace/join" className="text-sm text-[var(--action)] underline">Tham gia giải bằng mã →</Link> : null}
-        {error ? <p role="alert" className="text-[var(--danger-text)]">{error}</p> : null}
-        {loading ? <p role="status">Đang tải giải của đội…</p> : !error && boarded.length === 0 ? (
-          <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">Chưa có giải nào ghi danh đội của bạn. Liên hệ ban tổ chức để tham gia.</p>
+      <section className="flex flex-col gap-6">
+        <div className="border-b border-[var(--border-subtle)] pb-4">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            Không gian đội
+          </h1>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Quản lý bài nộp bot và theo dõi các giải đấu đang tham gia
+          </p>
+        </div>
+
+        {authProfile === 'ONLINE' && user.role === 'STUDENT' && scope === 'FULL' ? (
+          <Link href="/workspace/join" className="vct-btn-secondary self-start !py-1.5 !px-3.5 !text-xs !rounded-full">
+            Tham gia giải bằng mã →
+          </Link>
+        ) : null}
+
+        {error ? (
+          <div role="alert" className="p-3 bg-[var(--danger-tint)] rounded-xl border border-[var(--danger-text)] text-xs text-[var(--danger-text)]">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <p role="status" className="font-mono text-xs text-[var(--text-secondary)]">// ĐANG TẢI DỮ LIỆU ĐỘI...</p>
+        ) : !error && boarded.length === 0 ? (
+          <div className="border border-[var(--border-subtle)] bg-[var(--surface)] p-6 text-center font-mono text-xs text-[var(--text-secondary)]">
+            // CHƯA CÓ GIẢI ĐẤU NÀO GHI DANH ĐỘI CỦA BẠN. LIÊN HỆ BAN TỔ CHỨC ĐỂ THAM GIA.
+          </div>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {boarded.flatMap((tournament) => tournament.myEntries.map((entry) => (
-              <li key={`${tournament.id}:${entry.teamId}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
-                <TournamentRatingProvider tournamentId={tournament.id}>
-                <div><h2 className="font-semibold">{tournament.name}</h2><p className="mt-1 text-xs text-[var(--text-secondary)]"><TeamRatingName teamId={entry.teamId} name={entry.teamName} rating={null}/> · {stateLabel[tournament.state] ?? tournament.state}</p></div>
-                <Link prefetch={false} href={`/workspace/tournaments/${encodeURIComponent(tournament.id)}/teams/${encodeURIComponent(entry.teamId)}`} className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-medium hover:border-[var(--action)]">Xem giải →</Link>
-                </TournamentRatingProvider>
-              </li>
-            )))}
+          <ul className="flex flex-col gap-4">
+            {boarded.flatMap((tournament) =>
+              tournament.myEntries.map((entry) => (
+                <li
+                  key={`${tournament.id}:${entry.teamId}`}
+                  className="flex flex-wrap items-center justify-between gap-4 border border-[var(--border-subtle)] bg-[var(--surface)] p-5 rounded-2xl shadow-sm hover:border-[var(--border-control)] transition-all"
+                >
+                  <TournamentRatingProvider tournamentId={tournament.id}>
+                    <div>
+                      <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                        {tournament.name}
+                      </h2>
+                      <div className="mt-1 flex items-center gap-3 font-mono text-xs text-[var(--text-secondary)] uppercase">
+                        <TeamRatingName teamId={entry.teamId} name={entry.teamName} rating={null} />
+                        <span>//</span>
+                        <span className="text-[var(--live-accent)]">● {stateLabel[tournament.state] ?? tournament.state}</span>
+                      </div>
+                    </div>
+                    <Link
+                      prefetch={false}
+                      href={`/workspace/tournaments/${encodeURIComponent(tournament.id)}/teams/${encodeURIComponent(entry.teamId)}`}
+                      className="vct-btn-primary !py-2 !px-4 !text-xs !rounded-full"
+                    >
+                      Vào trang đội →
+                    </Link>
+                  </TournamentRatingProvider>
+                </li>
+              ))
+            )}
           </ul>
         )}
       </section>
@@ -198,44 +252,63 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Đăng nhập</h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6">
+      <div className="border-b border-[var(--border-subtle)] pb-4">
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+          Đăng nhập
+        </h1>
+        <p className="mt-2 text-xs text-[var(--text-secondary)]">
           {authProfile === 'LAN_OFFLINE'
-            ? 'Server này chạy cấu hình xác thực LAN_OFFLINE: tài khoản do ban tổ chức cấp, không có đăng ký tự phục vụ.'
-            : 'Dùng tài khoản do ban tổ chức cấp hoặc tài khoản ONLINE đã xác minh email.'}
+            ? 'Hệ thống LAN: Sử dụng tài khoản do ban tổ chức cấp.'
+            : 'Đăng nhập bằng tài khoản được cấp hoặc tài khoản đã xác minh email.'}
         </p>
       </div>
-      <form onSubmit={submit} className="flex flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium">Tên đăng nhập</span>
-          <input name="username" required autoComplete="username" className="h-11 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]" />
+
+      <form onSubmit={submit} className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
+        <label className="flex flex-col gap-2 text-xs font-medium text-[var(--text-secondary)]">
+          <span>Tên đăng nhập</span>
+          <input
+            name="username"
+            required
+            autoComplete="username"
+            className="h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm font-sans text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
+          />
         </label>
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium">Mật khẩu</span>
-          <input name="password" type="password" required autoComplete="current-password" className="h-11 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]" />
+        <label className="flex flex-col gap-2 text-xs font-medium text-[var(--text-secondary)]">
+          <span>Mật khẩu</span>
+          <input
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            className="h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm font-sans text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
+          />
         </label>
-        {error ? <p className="rounded-md border border-[var(--danger-text)] px-3 py-2 text-sm text-[var(--danger-text)]">{error}</p> : null}
-        <button disabled={busy} className="h-11 rounded-md bg-[var(--action)] font-semibold text-[#0B0D17] disabled:opacity-60">
-          {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
+        {error ? (
+          <div className="border border-[var(--danger-text)] bg-[var(--danger-tint)] px-3.5 py-2.5 rounded-xl text-xs text-[var(--danger-text)]">
+            {error}
+          </div>
+        ) : null}
+        <button
+          type="submit"
+          disabled={busy}
+          className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
+        >
+          {busy ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
       </form>
+
       {authProfile === 'ONLINE' ? (
-        <nav className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]">
+        <nav className="flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--text-secondary)]">
           <span>Chưa có tài khoản?</span>
-          <Link
-            href="/register"
-            className="rounded-md border border-[var(--border-control)] px-3 py-2 font-medium hover:border-[var(--action)]"
-          >
-            Đăng ký
-          </Link>
-          <Link
-            href="/forgot-password"
-            className="rounded-md border border-[var(--border-control)] px-3 py-2 font-medium hover:border-[var(--action)]"
-          >
-            Quên mật khẩu
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/register" className="vct-btn-secondary !py-1.5 !px-3.5 !text-xs !rounded-full">
+              Đăng ký
+            </Link>
+            <Link href="/forgot-password" className="vct-btn-secondary !py-1.5 !px-3.5 !text-xs !rounded-full">
+              Quên mật khẩu
+            </Link>
+          </div>
         </nav>
       ) : null}
     </div>

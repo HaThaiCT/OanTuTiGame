@@ -50,14 +50,14 @@ export default function HeaderSession() {
 
   if (!known) {
     // Reserve the space so the header does not jump once the session is known.
-    return <span className="h-9 w-28 rounded-md border border-[var(--border-control)] opacity-40" aria-hidden />;
+    return <span className="h-8 w-24 rounded-full border border-[var(--border-control)] opacity-30" aria-hidden />;
   }
 
   if (user === null) {
     return (
       <Link
         href="/workspace"
-        className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-medium hover:border-[var(--action)]"
+        className="vct-btn-primary !py-1.5 !px-4 !text-xs !rounded-full"
       >
         Đăng nhập
       </Link>
@@ -68,18 +68,19 @@ export default function HeaderSession() {
     <div className="flex items-center gap-2">
       <Link
         href={user.scope === 'FULL' && user.role === 'ADMIN' ? '/organizer' : '/workspace'}
-        className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-medium hover:border-[var(--action)]"
+        className="inline-flex items-center gap-2 border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:border-[var(--action)] transition-all shadow-sm"
         title={user.role === 'ADMIN' ? 'Ban tổ chức' : 'Không gian đội'}
       >
+        <span className="text-[var(--action)] text-xs">●</span>
         {user.displayName}
       </Link>
       <button
         type="button"
         disabled={pending}
         onClick={() => void signOut()}
-        className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:border-[var(--danger-text)] hover:text-[var(--danger-text)] disabled:opacity-60"
+        className="border border-[var(--border-control)] bg-transparent px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] rounded-full hover:border-[var(--danger-text)] hover:text-[var(--danger-text)] disabled:opacity-60 cursor-pointer transition-colors"
       >
-        {pending ? 'Đang thoát…' : 'Đăng xuất'}
+        {pending ? '...' : 'Đăng xuất'}
       </button>
     </div>
   );

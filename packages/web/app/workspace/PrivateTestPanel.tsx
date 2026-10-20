@@ -336,9 +336,9 @@ export default function PrivateTestPanel({
           <button
             type="submit"
             disabled={sending || !file || entrypoint.trim() === ''}
-            className="h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[#0B0D17] disabled:opacity-60"
+            className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-xl disabled:opacity-60 cursor-pointer"
           >
-            {sending ? 'Đang gửi…' : 'Chạy test riêng tư'}
+            {sending ? 'Đang gửi test...' : 'Chạy test riêng tư'}
           </button>
         </div>
       </form>

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import WasmVerifierPanel from './WasmVerifierPanel';
 import Link from 'next/link';
 import { dispositionLabel, sideLabel, winReasonLabel } from '../../lib/labels';
 import {
@@ -208,8 +207,6 @@ export default function ReplayViewer({
         </p>
       )}
 
-      <WasmVerifierPanel payload={payload} />
-
       <section className="flex flex-wrap items-start justify-between gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Replay</p>
@@ -265,7 +262,7 @@ export default function ReplayViewer({
       ) : null}
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="flex min-w-0 flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-3 sm:p-4">
+        <section className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5 shadow-sm">
           {built && frame ? (
             <ReplayBoard descriptor={built.descriptor} frame={frame} />
           ) : (
@@ -281,7 +278,7 @@ export default function ReplayViewer({
           ) : null}
 
           {built ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-sm border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-3 py-3">
+            <div className="flex flex-wrap items-center gap-2 border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-4 py-3 rounded-2xl shadow-sm">
               <button
                 type="button"
                 onClick={() => {
@@ -289,9 +286,9 @@ export default function ReplayViewer({
                   setIndex(0);
                 }}
                 disabled={playing || index === 0}
-                className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="vct-btn-secondary !py-1.5 !px-3 !text-xs font-mono disabled:opacity-40"
               >
-                ⏮ Về đầu
+                ⏮ ĐẦU
               </button>
               <button
                 type="button"
@@ -300,17 +297,17 @@ export default function ReplayViewer({
                   setIndex((current) => Math.max(current - 1, 0));
                 }}
                 disabled={playing || index === 0}
-                className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="vct-btn-secondary !py-1.5 !px-3 !text-xs font-mono disabled:opacity-40"
               >
-                ◀ Lùi
+                ◀ LÙI
               </button>
               <button
                 type="button"
                 onClick={togglePlay}
                 disabled={lastIndex === 0}
-                className="rounded-sm bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)] disabled:opacity-40"
+                className="vct-btn-primary !py-1.5 !px-4 !text-xs disabled:opacity-40"
               >
-                {playing ? '⏸ Tạm dừng' : '▶ Phát'}
+                {playing ? '⏸ TẠM DỪNG' : '▶ PHÁT REPLAY'}
               </button>
               <button
                 type="button"
@@ -319,9 +316,9 @@ export default function ReplayViewer({
                   setIndex((current) => Math.min(current + 1, lastIndex));
                 }}
                 disabled={playing || index >= lastIndex}
-                className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="vct-btn-secondary !py-1.5 !px-3 !text-xs font-mono disabled:opacity-40"
               >
-                Tiến ▶
+                TIẾN ▶
               </button>
               <button
                 type="button"
@@ -330,17 +327,17 @@ export default function ReplayViewer({
                   setIndex(lastIndex);
                 }}
                 disabled={playing || index >= lastIndex}
-                className="rounded-md border border-[var(--border-control)] px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="vct-btn-secondary !py-1.5 !px-3 !text-xs font-mono disabled:opacity-40"
               >
-                Tới cuối ⏭
+                CUỐI ⏭
               </button>
 
-              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                Tốc độ
+              <label className="flex items-center gap-2 font-mono text-xs text-[var(--text-secondary)] uppercase">
+                TỐC ĐỘ:
                 <select
                   value={speed}
                   onChange={(event) => setSpeed(Number(event.target.value))}
-                  className="rounded-md border border-[var(--border-control)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--text-primary)]"
+                  className="border border-[var(--border-control)] bg-[var(--surface)] px-2 py-1 font-mono text-xs text-[var(--text-primary)]"
                 >
                   {SPEEDS.map((option) => (
                     <option key={option} value={option}>
@@ -350,9 +347,10 @@ export default function ReplayViewer({
                 </select>
               </label>
 
-              <span className="ml-auto text-sm font-semibold tabular-nums">
-                Nước {frame?.ply ?? 0} / {plyCount}
+              <span className="ml-auto font-mono text-xs text-[var(--text-secondary)] uppercase tabular-nums">
+                NƯỚC: <strong className="text-[var(--text-primary)]">{frame?.ply ?? 0}</strong> / {plyCount}
               </span>
+
 
               <input
                 type="range"
@@ -376,7 +374,7 @@ export default function ReplayViewer({
           </p>
         </section>
 
-        <aside className="flex min-w-0 max-h-[760px] flex-col overflow-hidden rounded-md border border-[var(--border-subtle)] bg-[var(--surface)]">
+        <aside className="flex min-w-0 max-h-[760px] flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-sm">
           <div className="border-b border-[var(--border-subtle)] px-4 py-3">
             <h2 className="text-sm font-semibold">Danh sách nước đi</h2>
             <p className="text-xs text-[var(--text-secondary)]">

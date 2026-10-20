@@ -32,15 +32,25 @@ export default function BracketGraphic({ encounters, rounds, format }: {
     // removing the frame disposes all of them on prop change or unmount.
     const frame = document.createElement('iframe');
     frame.title = 'Sơ đồ nhánh đấu — danh sách chi tiết và trạng thái bên dưới';
-    frame.className = 'h-[540px] w-full border-0';
+    frame.className = 'h-[540px] w-full border-0 bg-[#0f1923] rounded-xl';
     container.append(frame);
     const doc = frame.contentDocument!;
     const style = doc.createElement('link');
     style.rel = 'stylesheet';
     style.href = '/brackets/brackets-viewer.min.css';
     doc.head.append(style);
+    const customStyle = doc.createElement('style');
+    customStyle.textContent = `
+      body { margin: 0; background: #0f1923; color: #ece8e1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .brackets-viewer { --canvas: #0f1923; --surface: #17202a; }
+      .match { background: #17202a !important; border: 1px solid rgba(236,232,225,0.12) !important; border-radius: 10px !important; overflow: hidden !important; }
+      .match:hover { border-color: #ff4655 !important; box-shadow: 0 4px 16px rgba(255,70,85,0.25) !important; }
+      .participant.win { color: #ff4655 !important; font-weight: bold !important; }
+      .round-name { font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; color: #ece8e1 !important; }
+    `;
+    doc.head.append(customStyle);
     doc.documentElement.style.colorScheme = 'dark';
-    doc.body.style.cssText = 'margin:0;background:#15192b;color:#f8fafc;font-family:system-ui';
+    doc.body.style.cssText = 'margin:0;background:#0f1923;color:#ece8e1;';
     const target = doc.createElement('div');
     target.className = 'brackets-viewer';
     doc.body.append(target);

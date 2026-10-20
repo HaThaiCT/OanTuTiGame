@@ -681,12 +681,13 @@ export default function SourceIde({
                   inherit: true,
                   rules: [],
                   colors: {
-                    'editor.background': '#151618',
-                    'editor.foreground': '#e8e8e6',
-                    'editorLineNumber.foreground': '#737578',
-                    'editor.lineHighlightBackground': '#202123',
-                    'editor.selectionBackground': '#3b3d40',
-                    'editorWidget.background': '#202123',
+                    'editor.background': '#0f1923',
+                    'editor.foreground': '#ece8e1',
+                    'editorLineNumber.foreground': '#6c7780',
+                    'editor.lineHighlightBackground': '#17202a',
+                    'editor.selectionBackground': '#2a3744',
+                    'editorWidget.background': '#17202a',
+                    'editorCursor.foreground': '#ff4655',
                   },
                 });
               }}
@@ -755,9 +756,9 @@ export default function SourceIde({
         <button
           type="submit"
           disabled={sending || blockingReason !== null}
-          className="h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[#0B0D17] disabled:opacity-60"
+          className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-xl disabled:opacity-60 cursor-pointer"
         >
-          {sending ? 'Đang nộp…' : 'Nộp mã nguồn từ trình soạn thảo'}
+          {sending ? 'Đang nộp bài...' : 'Nộp bài từ trình soạn thảo'}
         </button>
       </div>
     </form>

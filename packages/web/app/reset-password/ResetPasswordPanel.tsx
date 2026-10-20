@@ -18,8 +18,7 @@ const RESET_FAILURE: Record<string, string> = {
 };
 
 const FIELD_CLASS =
-  'h-10 rounded-sm border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)]';
-
+  'h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors';
 export default function ResetPasswordPanel({ token }: { token: string | null }) {
   const profile = useAuthProfile();
   const [password, setPassword] = useState('');
@@ -100,7 +99,7 @@ export default function ResetPasswordPanel({ token }: { token: string | null }) 
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+    <form onSubmit={submit} className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
       <p className="text-sm leading-6 text-[var(--text-secondary)]">
         Token trong đường dẫn đã được đọc và sẽ được gửi cùng mật khẩu mới (token không hiển thị lại ở đây).
       </p>
@@ -137,13 +136,16 @@ export default function ResetPasswordPanel({ token }: { token: string | null }) 
         </p>
       ) : null}
 
-      <button disabled={busy} className="h-10 rounded-sm bg-[var(--action)] text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)] disabled:opacity-60">
-        {busy ? 'Đang đặt lại…' : 'Đặt lại mật khẩu'}
+      <button
+        type="submit"
+        disabled={busy}
+        className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
+      >
+        {busy ? 'Đang đặt lại...' : 'Xác nhận mật khẩu mới'}
       </button>
       <p className="text-xs text-[var(--text-secondary)]">
-        Quay lại{' '}
-        <Link href="/workspace" className="underline hover:text-[var(--text-primary)]">
-          trang đăng nhập
+        <Link href="/workspace" className="text-[var(--action)] font-medium hover:underline">
+          ← Quay lại đăng nhập
         </Link>
       </p>
     </form>

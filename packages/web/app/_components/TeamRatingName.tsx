@@ -12,7 +12,14 @@ const RANK_LABEL: Record<TeamRatingSummary['rank'], string> = {
 };
 
 export function RatingBadge({ rating }: { readonly rating: TeamRatingSummary }) {
-  return <span className={`rating-badge rating-${rating.rank.toLowerCase()}`} title={RANK_LABEL[rating.rank]}>{rating.rank === 'UNRATED' ? 'Unrated' : `${RANK_LABEL[rating.rank]} · ${rating.rating}`}</span>;
+  return (
+    <span
+      className={`rating-badge rating-${rating.rank.toLowerCase()} font-heading font-bold uppercase tracking-wider text-[10px] px-2.5 py-0.5 rounded-full border border-current shadow-xs`}
+      title={RANK_LABEL[rating.rank]}
+    >
+      {rating.rank === 'UNRATED' ? 'Unrated' : `${RANK_LABEL[rating.rank]} · ${rating.rating}`}
+    </span>
+  );
 }
 
 export function TeamRatingName({ teamId, name, rating, compact = false }: { readonly teamId: string; readonly name: string; readonly rating: TeamRatingSummary | null; readonly compact?: boolean }) {

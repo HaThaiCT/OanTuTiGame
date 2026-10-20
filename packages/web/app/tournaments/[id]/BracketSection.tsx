@@ -63,16 +63,18 @@ export default function BracketSection({ encounters, rounds = [], canViewReplay 
   );
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-md border border-[var(--border-subtle)] bg-[var(--surface)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-3">
+    <section className="min-w-0 overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface)] rounded-2xl shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-4">
         <div>
-          <h2 className="text-base font-semibold">Nhánh đấu</h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Cặp đấu, tỉ số và trạng thái do server xếp lịch trả về.
+          <h2 className="font-heading text-lg font-bold text-[var(--text-primary)]">
+            Sơ đồ nhánh đấu
+          </h2>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Lịch thi đấu và kết quả các cặp đấu
           </p>
         </div>
-        <span className="rounded-sm border border-[var(--border-subtle)] px-2 py-1 text-xs text-[var(--text-secondary)]">
-          {encounters === null ? 'Không đọc được dữ liệu' : `${encounters.length} trận`}
+        <span className="font-mono text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)] px-2.5 py-1 rounded-full">
+          {encounters === null ? 'Lỗi dữ liệu' : `${encounters.length} trận`}
         </span>
       </div>
       {encounters ? <BracketGraphic encounters={encounters} rounds={rounds} format={format} /> : null}

@@ -51,38 +51,298 @@ export function useRatingRefresh(load: () => Promise<unknown>, updating: boolean
 }
 
 function Publication({ publication }: { publication: GlobalLeaderboardDto['publication'] }) {
-  return <p className="text-xs text-[var(--text-secondary)]" aria-live="polite">Bản công bố: {publication.generationId ?? 'chưa có'} · Phiên bản {publication.activeRevision}{publication.updating && <span className="text-[var(--warning-text)]"> · Đang cập nhật; đang hiển thị bản công bố trước.</span>}</p>;
+  return (
+    <div className="flex items-center gap-2 font-mono text-[11px] text-[var(--text-secondary)]" aria-live="polite">
+      <span>
+        Bản công bố: {publication.generationId ?? 'mới nhất'} · Phiên bản {publication.activeRevision}
+      </span>
+      {publication.updating && (
+        <span className="text-[var(--warning-text)]">
+          ● Đang cập nhật
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function LiveLeaderboard({ initial, featured = false }: { initial: GlobalLeaderboardDto | null; featured?: boolean }) {
   const [cursor, setCursor] = useState<string | undefined>();
-  const [state, load] = useRatingData<GlobalLeaderboardDto>(`/ratings/teams?limit=${featured ? 8 : 50}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, initial);
+  const [state, load] = useRatingData<GlobalLeaderboardDto>(
+    `/ratings/teams?limit=${featured ? 8 : 50}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+    initial,
+  );
   const refresh = useCallback(async () => {
     const result = await load();
-    if (result === 'stale') { setCursor(undefined); }
+    if (result === 'stale') {
+      setCursor(undefined);
+    }
     return result;
   }, [load]);
+
   // Cursor changes must fetch immediately, not wait for the next polling interval.
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
   useRatingRefresh(refresh, Boolean(state.data?.publication.updating));
   const board = state.data;
-  return <section className="flex flex-col gap-3"><p role="status" className="text-sm text-[var(--danger-text)]">{state.error}</p>{state.error && <button onClick={() => void refresh()}>Thử lại</button>}{board && <Publication publication={board.publication}/>}<div className="overflow-x-auto"><table className="w-full border-collapse text-left"><caption className="sr-only">Xếp hạng Rating global các đội</caption><thead><tr><th scope="col">Hạng</th><th scope="col">Đội</th><th scope="col">Rating global</th><th scope="col">Số giải</th></tr></thead><tbody>{board?.rows.map(row => <tr key={row.teamId}><td>{row.rank}</td><td><TeamRatingName teamId={row.teamId} name={row.name} rating={row.rating}/></td><td>{row.rating.rating}</td><td>{row.rating.ratedContests}</td></tr>)}</tbody></table></div>{board && board.rows.length === 0 && <p>Chưa có đội nào được xếp hạng.</p>}{!featured && <div className="flex gap-3">{cursor && <button onClick={() => setCursor(undefined)}>Trang đầu</button>}{board?.nextCursor && <button onClick={() => setCursor(board.nextCursor!)}>Trang tiếp</button>}</div>}</section>;
+
+  return (
+    <section className="flex flex-col gap-3">
+      {state.error && (
+        <div className="flex items-center justify-between p-2.5 bg-[var(--danger-tint)] border-l-2 border-[var(--danger-text)]">
+          <p role="status" className="text-xs font-mono text-[var(--danger-text)]">
+            {state.error}
+          </p>
+          <button
+            type="button"
+            className="vct-btn-secondary !py-1 !px-2.5 !text-[11px]"
+            onClick={() => void refresh()}
+          >
+            THỬ LẠI
+          </button>
+        </div>
+      )}
+      {board && <Publication publication={board.publication} />}
+      <div className="overflow-x-auto border border-[var(--border-subtle)] bg-[var(--surface)] rounded-xl overflow-hidden shadow-xs">
+        <table className="w-full border-collapse text-left">
+          <caption className="sr-only">Xếp hạng Rating global các đội</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] w-16">
+                HẠNG
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)]">
+                CHIẾN ĐỘI
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] text-right">
+                RATING VCT
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] text-right w-20">
+                SỐ GIẢI
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {board?.rows.map(row => {
+              const rankText = String(row.rank).padStart(2, '0');
+              return (
+                <tr key={row.teamId} className="hover:bg-[var(--surface-subtle)] transition-colors">
+                  <td className="p-2.5 border-b border-[var(--border-subtle)]">
+                    {row.rank === 1 ? (
+                      <span className="font-mono font-black text-[var(--action)]">#{rankText}</span>
+                    ) : row.rank === 2 ? (
+                      <span className="font-mono font-black text-[#f5a524]">#{rankText}</span>
+                    ) : row.rank === 3 ? (
+                      <span className="font-mono font-black text-[var(--accent-secondary)]">#{rankText}</span>
+                    ) : (
+                      <span className="font-mono text-[var(--text-secondary)]">#{rankText}</span>
+                    )}
+                  </td>
+                  <td className="p-2.5 border-b border-[var(--border-subtle)] font-medium">
+                    <TeamRatingName teamId={row.teamId} name={row.name} rating={row.rating} />
+                  </td>
+                  <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono font-bold text-right text-[var(--text-primary)]">
+                    {row.rating.rating}
+                  </td>
+                  <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono text-right text-[var(--text-secondary)]">
+                    {row.rating.ratedContests}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {board && board.rows.length === 0 && (
+        <p className="p-4 text-center text-xs text-[var(--text-secondary)]">
+          Chưa có đội nào được xếp hạng.
+        </p>
+      )}
+      {!featured && (
+        <div className="flex items-center gap-3 pt-2">
+          {cursor && (
+            <button
+              type="button"
+              className="vct-btn-secondary !py-1 !px-3.5 !text-xs !rounded-full"
+              onClick={() => setCursor(undefined)}
+            >
+              Trang đầu
+            </button>
+          )}
+          {board?.nextCursor && (
+            <button
+              type="button"
+              className="vct-btn-secondary !py-1 !px-3.5 !text-xs !rounded-full"
+              onClick={() => setCursor(board.nextCursor!)}
+            >
+              Trang tiếp
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export function LiveTeamProfile({ teamId, initial }: { teamId: string; initial: PublicTeamProfileDto | null }) {
   const [cursor, setCursor] = useState<string | undefined>();
-  const [state, load] = useRatingData<PublicTeamProfileDto>(`/ratings/teams/${encodeURIComponent(teamId)}?limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, initial);
+  const [state, load] = useRatingData<PublicTeamProfileDto>(
+    `/ratings/teams/${encodeURIComponent(teamId)}?limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+    initial,
+  );
   const profile = state.data;
   const refresh = useCallback(async () => {
     const result = await load();
     if (result === 'stale') setCursor(undefined);
-    // A generation change returns RATING_PAGE_STALE for every non-first page.
-    // Restart instead of merging pages from different immutable generations.
     return result;
   }, [load]);
-  useEffect(() => { void refresh(); }, [refresh]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
   useRatingRefresh(refresh, Boolean(profile?.publication.updating));
-  if (!profile) return <section><p role="alert">{state.error ?? 'Đang tải hồ sơ rating…'}</p><button onClick={() => void refresh()}>Thử lại</button></section>;
-  return <section className="flex flex-col gap-4"><h2 className="font-semibold"><TeamRatingName teamId={teamId} name={profile.name} rating={profile.rating}/></h2><p role="status" className="text-[var(--danger-text)]">{state.error}</p>{state.error && <button onClick={() => void refresh()}>Thử lại</button>}<Publication publication={profile.publication}/><p>Rating global: {profile.rating.rating ?? 'Unrated'} · Cao nhất: {profile.rating.maxRating ?? '—'} · {profile.rating.ratedContests} giải <RatingBadge rating={profile.rating}/></p><RatingHistoryChart points={profile.ratingPoints.map(point => ({ ...point, newRating: point.rating }))}/><div className="overflow-x-auto"><table className="w-full text-left"><caption>Lịch sử công bố (25 giải mỗi trang)</caption><thead><tr><th scope="col">Giải</th><th scope="col">Hạng</th><th scope="col">Cũ</th><th scope="col">Δ</th><th scope="col">Mới</th></tr></thead><tbody>{profile.history.map(row => <tr key={`${row.tournamentId}:${row.publicationOrder}`}><td><Link href={`/tournaments/${row.tournamentId}`}>{row.tournamentName}</Link></td><td>{row.rank}{row.rankEnd > row.rank ? `–${row.rankEnd}` : ''}</td><td>{row.oldPublicRating === null ? 'Unrated (1500 hiệu dụng)' : row.oldRating}</td><td>{row.delta > 0 ? '+' : ''}{row.delta}</td><td>{row.newRating}</td></tr>)}</tbody></table></div>{profile.rating.ratedContests === 0 && <p>Đội chưa có giải tính Rating global được công bố.</p>}<div className="flex gap-3">{cursor && <button onClick={() => setCursor(undefined)}>Trang đầu</button>}{profile.nextCursor && <button onClick={() => setCursor(profile.nextCursor!)}>Trang tiếp</button>}</div></section>;
+
+  if (!profile) {
+    return (
+      <section className="p-4 border border-[var(--border-subtle)] bg-[var(--surface)]">
+        <p role="alert" className="text-xs text-[var(--text-secondary)]">
+          {state.error ?? 'Đang tải hồ sơ đội...'}
+        </p>
+        {state.error && (
+          <button
+            type="button"
+            className="vct-btn-secondary !py-1 !px-3 !text-xs mt-3"
+            onClick={() => void refresh()}
+          >
+            THỬ LẠI
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="p-5 border border-[var(--border-subtle)] bg-[var(--surface)] rounded-2xl shadow-sm">
+        <h2 className="font-heading text-xl font-bold uppercase tracking-wider flex items-center gap-2">
+          <TeamRatingName teamId={teamId} name={profile.name} rating={profile.rating} />
+        </h2>
+        {state.error && (
+          <div className="mt-2 text-xs font-mono text-[var(--danger-text)]">
+            {state.error}
+          </div>
+        )}
+        <div className="mt-3">
+          <Publication publication={profile.publication} />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-xs text-[var(--text-secondary)]">
+          <span>
+            RATING GLOBAL:{' '}
+            <strong className="text-[var(--text-primary)] font-bold">
+              {profile.rating.rating ?? 'UNRATED'}
+            </strong>
+          </span>
+          <span>·</span>
+          <span>
+            CAO NHẤT:{' '}
+            <strong className="text-[var(--text-primary)] font-bold">
+              {profile.rating.maxRating ?? '—'}
+            </strong>
+          </span>
+          <span>·</span>
+          <span>{profile.rating.ratedContests} GIẢI ĐẤU</span>
+          <RatingBadge rating={profile.rating} />
+        </div>
+      </div>
+
+      <RatingHistoryChart
+        points={profile.ratingPoints.map(point => ({ ...point, newRating: point.rating }))}
+      />
+
+      <div className="overflow-x-auto border border-[var(--border-subtle)] bg-[var(--surface)] rounded-xl overflow-hidden shadow-xs">
+        <table className="w-full text-left border-collapse">
+          <caption className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] text-left">
+            LỊCH SỬ CÔNG BỐ (25 GIẢI MỖI TRANG)
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)]">
+                GIẢI ĐẤU
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)]">
+                HẠNG
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] font-mono">
+                CŨ
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] font-mono">
+                Δ
+              </th>
+              <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] font-mono">
+                MỚI
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {profile.history.map(row => (
+              <tr key={`${row.tournamentId}:${row.publicationOrder}`} className="hover:bg-[var(--surface-subtle)] transition-colors">
+                <td className="p-2.5 border-b border-[var(--border-subtle)] font-medium">
+                  <Link href={`/tournaments/${row.tournamentId}`} className="hover:text-[var(--action)] underline decoration-[var(--border-control)]">
+                    {row.tournamentName}
+                  </Link>
+                </td>
+                <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono">
+                  #{row.rank}
+                  {row.rankEnd > row.rank ? `–#${row.rankEnd}` : ''}
+                </td>
+                <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono text-[var(--text-secondary)]">
+                  {row.oldPublicRating === null ? 'UNRATED' : row.oldRating}
+                </td>
+                <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono font-bold">
+                  {row.delta > 0 ? (
+                    <span className="text-[var(--success-text)]">+{row.delta}</span>
+                  ) : row.delta < 0 ? (
+                    <span className="text-[var(--danger-text)]">{row.delta}</span>
+                  ) : (
+                    <span className="text-[var(--text-secondary)]">0</span>
+                  )}
+                </td>
+                <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono font-bold text-[var(--text-primary)]">
+                  {row.newRating}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {profile.rating.ratedContests === 0 && (
+        <p className="p-4 text-center text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)] rounded-xl">
+          Đội chưa có giải đấu tính rating được công bố.
+        </p>
+      )}
+
+      <div className="flex items-center gap-3 pt-2">
+        {cursor && (
+          <button
+            type="button"
+            className="vct-btn-secondary !py-1 !px-3 !text-xs"
+            onClick={() => setCursor(undefined)}
+          >
+            ◄ TRANG ĐẦU
+          </button>
+        )}
+        {profile.nextCursor && (
+          <button
+            type="button"
+            className="vct-btn-secondary !py-1 !px-3 !text-xs"
+            onClick={() => setCursor(profile.nextCursor!)}
+          >
+            TRANG TIẾP ►
+          </button>
+        )}
+      </div>
+    </section>
+  );
 }
 

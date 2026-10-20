@@ -303,25 +303,17 @@ export default function SubmissionPanel({
           type="button"
           onClick={() => setMode('zip')}
           aria-pressed={mode === 'zip'}
-          className={`h-9 rounded-md px-3 text-xs font-semibold ${
-            mode === 'zip'
-              ? 'bg-[var(--action)] text-[#0B0D17]'
-              : 'border border-[var(--border-control)] text-[var(--text-secondary)]'
-          }`}
+          className={mode === 'zip' ? 'vct-btn-primary !py-1.5 !px-3.5 !text-xs !rounded-full' : 'vct-btn-secondary !py-1.5 !px-3.5 !text-xs !rounded-full'}
         >
-          Tải .zip
+          Tải tệp .zip
         </button>
         <button
           type="button"
           onClick={() => setMode('ide')}
           aria-pressed={mode === 'ide'}
-          className={`h-9 rounded-md px-3 text-xs font-semibold ${
-            mode === 'ide'
-              ? 'bg-[var(--action)] text-[#0B0D17]'
-              : 'border border-[var(--border-control)] text-[var(--text-secondary)]'
-          }`}
+          className={mode === 'ide' ? 'vct-btn-primary !py-1.5 !px-3.5 !text-xs !rounded-full' : 'vct-btn-secondary !py-1.5 !px-3.5 !text-xs !rounded-full'}
         >
-          Soạn trực tiếp
+          Soạn trực tiếp (IDE)
         </button>
       </div>
       {mode === 'zip' ? (
@@ -374,9 +366,9 @@ export default function SubmissionPanel({
             <button
               type="submit"
               disabled={sending || !file || entrypoint.trim() === ''}
-              className="h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[#0B0D17] disabled:opacity-60"
+              className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-xl disabled:opacity-60 cursor-pointer"
             >
-              {sending ? 'Đang nộp…' : 'Nộp mã nguồn'}
+              {sending ? 'Đang nộp mã nguồn...' : 'Nộp tệp .zip'}
             </button>
           </div>
         </form>

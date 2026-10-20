@@ -94,24 +94,24 @@ export default function VerifyEmailPanel({ token }: { token: string | null }) {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
-      <p className="text-sm leading-6 text-[var(--text-secondary)]">
-        Token trong đường dẫn đã được đọc và được gửi thẳng tới server (không hiển thị lại ở đây).
+    <section className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
+      <p className="text-xs text-[var(--text-secondary)]">
+        Token trong liên kết đã được ghi nhận và gửi tới hệ thống để xác thực.
       </p>
-      {busy ? <p className="text-sm text-[var(--text-secondary)]">Đang xác minh…</p> : null}
+      {busy ? <p className="text-xs text-[var(--text-secondary)]">Đang xác minh token...</p> : null}
       {error ? (
-        <p className="rounded-md border border-[var(--danger-text)] px-3 py-2 text-sm text-[var(--danger-text)]">
+        <div className="border-l-2 border-[var(--danger-text)] bg-[var(--danger-tint)] px-3 py-2 font-mono text-xs text-[var(--danger-text)]">
           {error}
-          {code ? <span className="ml-2 font-mono text-xs break-all text-[var(--text-secondary)]">{code}</span> : null}
-        </p>
+          {code ? <span className="ml-2 font-mono text-xs break-all text-[var(--text-secondary)]">[{code}]</span> : null}
+        </div>
       ) : null}
       <button
         type="button"
         onClick={() => void run()}
         disabled={busy}
-        className="h-10 rounded-sm bg-[var(--action)] text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)] disabled:opacity-60"
+        className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
       >
-        {busy ? 'Đang xác minh…' : 'Xác minh email'}
+        {busy ? 'Đang xác minh...' : 'Xác minh email'}
       </button>
     </section>
   );

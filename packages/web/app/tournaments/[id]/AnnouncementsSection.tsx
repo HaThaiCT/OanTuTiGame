@@ -119,50 +119,52 @@ export function summarizeAnnouncement(topic: string, payload: Record<string, unk
 
 export default function AnnouncementsSection({ announcements }: AnnouncementsSectionProps) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-md border border-[var(--border-subtle)] bg-[var(--surface)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-3">
+    <section className="min-w-0 overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface)] rounded-2xl shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-4">
         <div>
-          <h2 className="text-base font-semibold">Thông báo</h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Dòng thời gian sự kiện do server phát ra: lịch đấu, khóa danh sách và thời điểm chốt kết quả.
+          <h2 className="font-heading text-base font-bold text-[var(--text-primary)]">
+            Thông báo giải đấu
+          </h2>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Dòng thời gian sự kiện: lịch đấu, chốt danh sách và kết quả
           </p>
         </div>
-        <span className="rounded-sm border border-[var(--border-subtle)] px-2 py-1 text-xs text-[var(--text-secondary)]">
-          {announcements === null ? 'Không đọc được dữ liệu' : `${announcements.length} thông báo`}
+        <span className="font-mono text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)] px-2.5 py-1 rounded-full">
+          {announcements === null ? 'Lỗi dữ liệu' : `${announcements.length} thông báo`}
         </span>
       </div>
 
       {announcements === null ? (
-        <p className="px-6 py-10 text-center text-sm text-[var(--text-secondary)]">
-          Không đọc được thông báo từ server — giải có thể đang ở bản nháp, hoặc hãy tải lại trang.
+        <p className="px-6 py-10 text-center text-xs text-[var(--text-secondary)]">
+          Không thể đọc thông báo từ máy chủ. Vui lòng tải lại trang.
         </p>
       ) : announcements.length === 0 ? (
-        <p className="px-6 py-10 text-center text-sm text-[var(--text-secondary)]">
-          Chưa có thông báo nào cho giải này.
+        <p className="px-6 py-10 text-center text-xs text-[var(--text-secondary)]">
+          Chưa có thông báo nào cho giải đấu này.
         </p>
       ) : (
         <ol className="flex flex-col">
           {announcements.map((announcement) => (
             <li
               key={announcement.id}
-              className="flex flex-col gap-1 border-b border-[var(--border-subtle)] px-4 py-3 last:border-b-0 sm:flex-row sm:items-start sm:gap-4"
+              className="flex flex-col gap-1 border-b border-[var(--border-subtle)] border-l-2 border-l-[var(--action)] px-4 py-3.5 last:border-b-0 hover:bg-[var(--surface-subtle)] transition-colors sm:flex-row sm:items-start sm:gap-4"
             >
               <time
-                className="w-full shrink-0 text-xs tabular-nums text-[var(--text-secondary)] sm:w-40"
+                className="w-full shrink-0 font-mono text-xs tabular-nums text-[var(--text-secondary)] sm:w-44"
                 dateTime={announcement.createdAt ?? undefined}
               >
-                {instant(announcement.createdAt)}
+                [{instant(announcement.createdAt)}]
               </time>
               <div className="min-w-0">
-                <p className="text-sm font-semibold">
+                <p className="font-heading text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">
                   {announcementTopicLabel[announcement.topic] ?? announcement.topic}
                   {KNOWN_TOPICS[announcement.topic] === true ? null : (
-                    <span className="ml-2 rounded border border-[var(--border-subtle)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-secondary)]">
+                    <span className="ml-2 border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-secondary)]">
                       {announcement.topic}
                     </span>
                   )}
                 </p>
-                <p className="mt-1 break-words text-sm text-[var(--text-secondary)]">
+                <p className="mt-1 break-words font-body text-xs text-[var(--text-secondary)]">
                   {summarizeAnnouncement(announcement.topic, announcement.payload)}
                 </p>
               </div>
