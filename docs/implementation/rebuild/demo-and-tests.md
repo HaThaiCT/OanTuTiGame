@@ -133,3 +133,36 @@ và một đội trưởng cho mỗi đội demo (`demo_cap1…N`). Sau khi ch�
   và bài bị `REJECTED`.
 - Nguồn sự thật về luật/thể thức: `docs/specs/v2/02-GAMEPLAY-TOURNAMENT-RULES.md`; cổng bản đồ là
   `packages/server/src/tournaments/lifecycle-service.ts` (`MAP_POOL_TOO_SMALL`).
+
+## 6. Showcase Rating LAN dài hạn
+
+`demo:showcase` tạo thêm đúng 48 đội giả lập (3 course × 16 đội; 2 sinh viên/đội), 12 map, 30 tournament Rated theo phân phối `8/8/7/7`, một ví dụ PENDING, một ví dụ REJECTED và một so sánh Unrated. Tất cả tài khoản, đội, map, tournament, submission, kết quả, finalize và quyết định Rating đều đi qua API sản phẩm; PostgreSQL chỉ dùng cho truy vấn trạng thái/tiếp tục. Không sửa/xóa demo cũ và không ghi trực tiếp kết quả hoặc rating.
+
+Chỉ chạy trên rebuild LAN_OFFLINE đang bật `OANTUTI_DEV_EXECUTION=1`; executor này **không sandbox** và chỉ được dùng cho bot fixture do dự án kiểm soát. Không dùng để nhận mã tùy ý. Cần PostgreSQL 55434, API 4301, ADMIN cookie hiện hữu và mật khẩu ADMIN để gọi `/auth/reauth`. Cookie/mật khẩu phải được cấp qua secret manager hoặc shell an toàn; không đưa vào Git, manifest, log hay chat.
+
+```bash
+export OANTUTI_API=http://127.0.0.1:4301
+export OANTUTI_DEV_EXECUTION=1
+export PGHOST=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket
+export PGPORT=55434 PGUSER=arena_rebuild_app PGDATABASE=arena_rebuild_c72cd5a74f33
+export OANTUTI_DEMO_RUNTIME_ROOT=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d
+export SHOWCASE_TAG=RATING2026
+export OANTUTI_SHOWCASE_CONFIRM="$SHOWCASE_TAG"
+read -rsp 'Existing ADMIN session cookie: ' OANTUTI_SHOWCASE_ADMIN_COOKIE; export OANTUTI_SHOWCASE_ADMIN_COOKIE; echo
+read -rsp 'ADMIN password (used only for real re-auth): ' OANTUTI_SHOWCASE_ADMIN_PASSWORD; export OANTUTI_SHOWCASE_ADMIN_PASSWORD; echo
+npm run demo:showcase -- --tag "$SHOWCASE_TAG" --seed stable-2026 --run
+```
+
+Dry-run plans perform no network, database or filesystem work:
+
+```bash
+npm run demo:showcase -- --tag RATING2026 --seed stable-2026 --count 4
+```
+
+The `--run` path requires the full 30-contest deterministic plan. A private external manifest and mode-0600 credential file live under `$OANTUTI_DEMO_RUNTIME_ROOT/showcases/$SHOWCASE_TAG/`; passwords never enter the manifest. If interrupted, use exactly the same tag and seed with `--run --resume`. The runner rereads actual product/database state and will not invent progress; a RUNNING tournament without a scheduled first round is a hard stop. A stale `.run.lock` is fail-closed: verify no seeder process remains before removing only that lock file. Never delete the showcase directory or reuse the tag with a changed plan.
+
+Every approved contest waits for all four official builds, completed and sealed games with accepted evidence, manual finalization, an ADMIN rating approval with a deterministic idempotency key, and publication completion. The PENDING/REJECTED/Unrated examples are checked against the public generation so none changes ratings. All variants launch through the product runner, with Python, TypeScript and C++20 SDK sources. `OANTUTI_DEV_EXECUTION=1` is not a sandbox.
+
+Public review routes after a successful seed: `/rankings`, `/teams/<teamId>`, `/tournaments/<tournamentId>`. ADMIN review remains under `/organizer/tournaments/<tournamentId>?tab=adjudication`; the two deliberately unapproved cases remain visibly PENDING and REJECTED.
+
+Live seed duration and public/UI verification are not yet recorded for this workspace; do not treat this runbook as runtime certification.

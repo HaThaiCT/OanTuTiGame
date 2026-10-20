@@ -23,7 +23,8 @@
     "demo:seed": "tsx deploy/linux/dev-demo.ts seed",
     "demo:status": "tsx deploy/linux/dev-demo.ts status",
     "demo:login": "tsx deploy/linux/dev-demo.ts login",
-    "demo:accounts": "tsx deploy/linux/dev-demo.ts accounts"
+    "demo:accounts": "tsx deploy/linux/dev-demo.ts accounts",
+    "demo:showcase": "tsx deploy/linux/demo-showcase.ts"
   },
   "dependencies": {
     "tsx": "^4.19.2"
