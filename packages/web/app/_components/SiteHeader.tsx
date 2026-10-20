@@ -23,7 +23,8 @@ export default function SiteHeader() {
     return () => { active = false; window.removeEventListener('oantuti:session-changed', refresh); };
   }, [pathname]);
   const links = [
-    { href: '/', label: 'Giải đấu' },
+    { href: '/', label: 'Trang chủ' },
+    { href: '/tournaments', label: 'Giải đấu' },
     { href: '/rankings', label: 'Bảng xếp hạng' },
     ...(role === 'ADMIN'
       ? [{ href: '/organizer', label: 'Ban tổ chức' }, { href: '/replays', label: 'Replay' }]
@@ -40,15 +41,20 @@ export default function SiteHeader() {
           <span className="text-[var(--text-secondary)] font-medium text-sm ml-0.5">Arena</span>
         </Link>
         <nav className="arena-desktop-nav" aria-label="Điều hướng chính">
-          {links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={pathname === link.href ? 'page' : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {links.map(link => {
+            const isCurrent = link.href === '/'
+              ? pathname === '/'
+              : pathname === link.href || pathname.startsWith(link.href + '/');
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isCurrent ? 'page' : undefined}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="arena-header-controls">
           <ThemeToggle />
@@ -68,16 +74,21 @@ export default function SiteHeader() {
       {expanded ? (
         <div id="arena-mobile-nav" className="arena-mobile-nav">
           <nav aria-label="Điều hướng thu gọn">
-            {links.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={pathname === link.href ? 'page' : undefined}
-                onClick={() => setExpanded(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {links.map(link => {
+              const isCurrent = link.href === '/'
+                ? pathname === '/'
+                : pathname === link.href || pathname.startsWith(link.href + '/');
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  onClick={() => setExpanded(false)}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
           <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--border-subtle)]">
             <ThemeToggle />

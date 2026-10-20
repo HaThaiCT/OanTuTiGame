@@ -26,6 +26,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "try{var t=localStorage.getItem('oantuti-theme');document.documentElement.dataset.theme=t==='light'||(t==='system'&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}catch(e){document.documentElement.dataset.theme='dark';}",
           }}
         />
+        <div className="arena-bg" aria-hidden="true">
+          <div className="arena-bg-glow-1" />
+          <div className="arena-bg-glow-2" />
+          <div className="arena-bg-glow-3" />
+          <div className="arena-bg-grid" />
+        </div>
         <SiteHeader />
         <main className="arena-main">{children}</main>
         <footer className="arena-footer">
