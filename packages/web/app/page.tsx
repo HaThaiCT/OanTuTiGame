@@ -1,41 +1,21 @@
 import Link from 'next/link';
 import FeaturedRanking from './_components/FeaturedRanking';
-import { getGlobalTeamLeaderboard, listTournaments } from '../lib/api';
+import { getBracket, getGlobalTeamLeaderboard, listTournaments, type TournamentSummary } from '../lib/api';
 import { formatLabel, stateLabel } from '../lib/labels';
-import TrinityBattleWheel from './_components/TrinityBattleWheel';
 
 export const dynamic = 'force-dynamic';
 
-const MODES = [
-  {
-    id: 'SINGLE_ELIMINATION',
-    name: 'Loại trực tiếp',
-    desc: 'Thi đấu knock-out một mất một còn. Đội chiến thắng đi tiếp vào trận Chung kết.',
-    icon: '⚡',
-    badge: 'Knock-out',
-  },
-  {
-    id: 'SWISS_PLAYOFF',
-    name: 'Swiss → Playoff',
-    desc: 'Phân tầng ghép cặp theo điểm số qua từng vòng, chọn các đội hạt giống vào Playoff.',
-    icon: '⚔️',
-    badge: 'Cân bằng',
-  },
-  {
-    id: 'ROUND_ROBIN',
-    name: 'Vòng tròn tính điểm',
-    desc: 'Thử thách thuật toán bền bỉ, thi đấu xoay vòng tính điểm toàn diện với mọi đối thủ.',
-    icon: '🔄',
-    badge: 'Toàn diện',
-  },
-  {
-    id: 'ELO_ARENA',
-    name: 'Đấu trường Elo',
-    desc: 'Sàn đấu ghép cặp liên tục dựa trên điểm kỹ năng và bậc xếp hạng toàn cầu.',
-    icon: '🏆',
-    badge: 'Xếp hạng',
-  },
-];
+interface RecentMatchItem {
+  tournamentId: string;
+  tournamentName: string;
+  encounterId: string;
+  teamAName: string;
+  teamBName: string;
+  pointsA: string | number;
+  pointsB: string | number;
+  status: string;
+  gameId?: string;
+}
 
 export default async function HomePage() {
   const [tournaments, ratings] = await Promise.all([
@@ -43,227 +23,261 @@ export default async function HomePage() {
     getGlobalTeamLeaderboard({ limit: 8 }),
   ]);
 
-  const runningTournament = tournaments.find(t => t.state === 'RUNNING') ?? tournaments[0] ?? null;
+  // Extract recent matches with games for the match strip
+  const recentMatches: RecentMatchItem[] = [];
+  for (const t of tournaments) {
+    if (recentMatches.length >= 6) break;
+    const b = await getBracket(t.id);
+    if (!b?.encounters) continue;
+    for (const m of b.encounters) {
+      if (m.games && m.games.length > 0 && m.teamAName && m.teamBName) {
+        recentMatches.push({
+          tournamentId: t.id,
+          tournamentName: t.name,
+          encounterId: m.encounterId,
+          teamAName: m.teamAName,
+          teamBName: m.teamBName,
+          pointsA: m.pointsA ?? 0,
+          pointsB: m.pointsB ?? 0,
+          status: m.status,
+          gameId: m.games[0]?.gameId,
+        });
+        if (recentMatches.length >= 6) break;
+      }
+    }
+  }
+
+  const runningTournaments = tournaments.filter(t => t.state === 'RUNNING');
+  const spotlight = runningTournaments[0] ?? tournaments[0] ?? null;
+  const otherFeatured = tournaments.filter(t => t.id !== spotlight?.id).slice(0, 4);
 
   return (
-    <div className="space-y-12">
-      {/* 1. Live Ticker / Active Spotlight Banner */}
-      {runningTournament ? (
-        <section
-          aria-label="Giải đấu tiêu điểm"
-          className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5 sm:p-6 shadow-sm hover:border-[var(--action)]/40 transition-colors"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2.5 mb-2">
-                <span
-                  className={
-                    runningTournament.state === 'RUNNING'
-                      ? 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider bg-[rgba(255,70,85,0.12)] text-[var(--action)] border border-[rgba(255,70,85,0.3)]'
-                      : 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider bg-[var(--surface-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'
-                  }
-                >
-                  <span
-                    className={
-                      runningTournament.state === 'RUNNING'
-                        ? 'beacon-pulse'
-                        : 'inline-block w-1.5 h-1.5 rounded-full bg-current'
-                    }
-                  />
-                  {stateLabel[runningTournament.state] ?? runningTournament.state}
-                </span>
+    <div className="space-y-6">
+      {/* 1. Live & Recent Match Strip (Ticker) */}
+      {recentMatches.length > 0 ? (
+        <section aria-label="Trận đấu gần đây" className="relative">
+          <div className="flex items-center justify-between text-xs font-mono text-[var(--text-secondary)] mb-2 px-1">
+            <span className="flex items-center gap-2 font-bold uppercase tracking-wider text-[var(--text-primary)]">
+              <span className="w-2 h-2 rounded-full bg-[var(--action)] animate-pulse" />
+              Trận đấu gần đây
+            </span>
+            <Link href="/tournaments" className="hover:text-[var(--text-primary)] transition-colors">
+              Xem tất cả giải đấu ({tournaments.length}) →
+            </Link>
+          </div>
 
-                <span className="text-xs font-mono text-[var(--text-faint)]">
-                  {runningTournament.rulesRevision}
-                </span>
-                <span className="text-xs text-[var(--text-faint)]">·</span>
-                <span className="text-xs text-[var(--text-secondary)] font-medium">
-                  {formatLabel[runningTournament.format] ?? runningTournament.format}
-                </span>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] truncate">
-                {runningTournament.name}
-              </h2>
-
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
-                <span>Tối đa {runningTournament.maxTeams} đội</span>
-                <span>·</span>
-                <span>{runningTournament.isRated ? 'Tính điểm Rating Global' : 'Không tính rating'}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
-              <Link
-                href={`/tournaments/${runningTournament.id}`}
-                className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-full shadow-sm"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {recentMatches.slice(0, 3).map((match, idx) => (
+              <div
+                key={`${match.encounterId}-${idx}`}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3 text-xs shadow-xs hover:border-[var(--border-control)] transition-all"
               >
-                Vào xem giải đấu →
-              </Link>
-            </div>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="font-mono text-[10px] text-[var(--text-faint)] truncate">
+                    {match.tournamentName}
+                  </p>
+                  <div className="flex items-center justify-between font-medium pr-3">
+                    <span className="truncate max-w-[90px] text-[var(--text-primary)] font-semibold">
+                      {match.teamAName}
+                    </span>
+                    <span className="font-mono font-bold text-[var(--text-primary)] bg-[var(--surface-subtle)] px-2 py-0.5 rounded-md">
+                      {match.pointsA} : {match.pointsB}
+                    </span>
+                    <span className="truncate max-w-[90px] text-[var(--text-secondary)]">
+                      {match.teamBName}
+                    </span>
+                  </div>
+                </div>
+
+                {match.gameId ? (
+                  <Link
+                    href={`/replays?game=${encodeURIComponent(match.gameId)}`}
+                    className="shrink-0 font-mono text-[11px] font-bold text-[var(--action)] hover:underline border-l border-[var(--border-subtle)] pl-3 ml-1"
+                    title="Xem replay ván đấu"
+                  >
+                    Replay →
+                  </Link>
+                ) : null}
+              </div>
+            ))}
           </div>
         </section>
       ) : null}
 
-      {/* 2. Main Hero Stage */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-2 pb-4">
-        {/* Left Column: Heading & Value Prop */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-xs text-[var(--text-secondary)] shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-[var(--action)]" />
-            <span className="font-semibold text-[var(--text-primary)]">Đấu trường trí tuệ nhân tạo</span>
-            <span>·</span>
-            <span>Mùa giải 2026</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--text-primary)] leading-[1.12]">
-            Đấu trường Bot thuật toán Búa · Kéo · Bao
-          </h1>
-
-          <p className="text-base text-[var(--text-secondary)] leading-relaxed max-w-xl">
-            Nền tảng thi đấu thuật toán đối kháng thời gian thực trên bàn cờ lưới. Lập trình bot bằng Python, TypeScript hoặc C++20, chinh phục bàn đấu và khẳng định thứ hạng đội tuyển.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3.5 pt-2">
-            <Link href="/tournaments" className="vct-btn-primary !py-3 !px-6 !text-sm !rounded-full">
-              Khám phá các giải đấu →
-            </Link>
-            <Link href="/workspace" className="vct-btn-secondary !py-3 !px-6 !text-sm !rounded-full">
-              Không gian đội
-            </Link>
-          </div>
-
-          <div className="pt-6 border-t border-[var(--border-subtle)] grid grid-cols-3 gap-6 max-w-lg">
-            <div>
-              <div className="font-heading text-2xl font-bold text-[var(--text-primary)]">
-                {tournaments.length}
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Giải đấu công bố
-              </div>
-            </div>
-            <div>
-              <div className="font-heading text-2xl font-bold text-[var(--live-accent)]">
-                {tournaments.filter(t => t.state === 'RUNNING').length}
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Đang trực tiếp
-              </div>
-            </div>
-            <div>
-              <div className="font-heading text-2xl font-bold text-[var(--text-primary)]">
-                3
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Ngôn ngữ (Py, TS, C++)
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Interactive Trinity Battle Wheel */}
-        <div className="lg:col-span-5 flex justify-center">
-          <TrinityBattleWheel />
-        </div>
-      </section>
-
-      {/* 3. Competitive Formats Grid */}
-      <section className="space-y-6 pt-4">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              Thể thức thi đấu
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Bốn mô hình thi đấu đối kháng chuẩn mực đáp ứng mọi quy mô giải đấu.
-            </p>
-          </div>
-          <Link
-            href="/tournaments"
-            className="text-xs font-semibold text-[var(--action)] hover:underline inline-flex items-center gap-1"
-          >
-            Xem tất cả giải đấu theo thể thức →
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {MODES.map(mode => (
-            <Link
-              key={mode.id}
-              href="/tournaments"
-              className="group relative flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5 shadow-sm hover:border-[var(--action)]/50 hover:shadow-md transition-all hover:-translate-y-1"
+      {/* 2. Main Competitive Hub Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_380px] gap-6 items-start">
+        {/* Left Column: Spotlight Tournament + Tournament Feed + Recent Match Log */}
+        <div className="space-y-6 min-w-0">
+          {/* Spotlight Stage Banner */}
+          {spotlight ? (
+            <section
+              aria-label="Giải đấu tiêu điểm"
+              className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-6 shadow-sm hover:border-[var(--action)]/40 transition-colors"
             >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl">{mode.icon}</span>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-[var(--text-secondary)]">
-                    {mode.badge}
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-[var(--text-primary)] group-hover:text-[var(--action)] transition-colors">
-                  {mode.name}
-                </h3>
-                <p className="mt-2 text-xs text-[var(--text-secondary)] leading-relaxed">
-                  {mode.desc}
-                </p>
-              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={
+                        spotlight.state === 'RUNNING'
+                          ? 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider bg-[rgba(255,70,85,0.12)] text-[var(--action)] border border-[rgba(255,70,85,0.3)]'
+                          : 'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase tracking-wider bg-[var(--surface-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'
+                      }
+                    >
+                      <span
+                        className={
+                          spotlight.state === 'RUNNING'
+                            ? 'beacon-pulse'
+                            : 'inline-block w-1.5 h-1.5 rounded-full bg-current'
+                        }
+                      />
+                      {stateLabel[spotlight.state] ?? spotlight.state}
+                    </span>
 
-              <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] text-right">
-                <span className="text-xs font-semibold text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
-                  Khám phá →
+                    <span className="text-xs font-mono text-[var(--text-faint)]">
+                      {spotlight.rulesRevision}
+                    </span>
+                    <span className="text-xs text-[var(--text-faint)]">·</span>
+                    <span className="text-xs text-[var(--text-secondary)] font-medium">
+                      {formatLabel[spotlight.format] ?? spotlight.format}
+                    </span>
+                  </div>
+
+                  <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                    {spotlight.name}
+                  </h2>
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
+                    <span>Tối đa {spotlight.maxTeams} đội</span>
+                    <span>·</span>
+                    <span>{spotlight.isRated ? 'Tính điểm Rating Global' : 'Không tính rating'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link
+                    href={`/tournaments/${spotlight.id}`}
+                    className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-full shadow-sm"
+                  >
+                    Vào xem giải đấu →
+                  </Link>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {/* Featured Tournaments Grid */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                Giải đấu đang diễn ra & sắp tới
+              </h2>
+              <Link href="/tournaments" className="text-xs font-semibold text-[var(--action)] hover:underline">
+                Xem toàn bộ {tournaments.length} giải đấu →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {otherFeatured.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/tournaments/${t.id}`}
+                  className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 shadow-xs hover:border-[var(--border-control)] transition-all hover:-translate-y-0.5"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono text-[10px] text-[var(--text-secondary)]">
+                        {stateLabel[t.state] ?? t.state}
+                      </span>
+                      <span className="font-mono text-[10px] px-2 py-0.2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-[var(--text-faint)]">
+                        {t.isRated ? 'RATED' : 'UNRATED'}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-sm text-[var(--text-primary)] truncate">
+                      {t.name}
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      {formatLabel[t.format] ?? t.format} · Tối đa {t.maxTeams} đội
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs">
+                    <span className="text-[var(--text-faint)] font-mono text-[11px]">
+                      {t.rulesRevision}
+                    </span>
+                    <span className="font-semibold text-[var(--action)]">
+                      Xem chi tiết →
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* Recent Match Encounters List */}
+          {recentMatches.length > 0 ? (
+            <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  Kết quả các trận đối đầu mới nhất
+                </h2>
+                <span className="text-xs font-mono text-[var(--text-secondary)]">
+                  Cập nhật theo thời gian thực
                 </span>
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
 
-      {/* 4. Leaderboard & Quick Action Hub */}
-      <section className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 items-start pt-4">
-        {/* Left: Featured Rankings */}
-        <div className="space-y-4">
+              <div className="divide-y divide-[var(--border-subtle)]">
+                {recentMatches.slice(0, 5).map((m, idx) => (
+                  <div
+                    key={`${m.encounterId}-row-${idx}`}
+                    className="py-3 flex items-center justify-between gap-4 text-xs"
+                  >
+                    <div className="min-w-0 flex-1 flex items-center gap-3">
+                      <span className="font-mono text-[10px] text-[var(--text-faint)] w-28 truncate hidden sm:inline">
+                        {m.tournamentName}
+                      </span>
+                      <span className="font-semibold text-[var(--text-primary)] truncate max-w-[120px]">
+                        {m.teamAName}
+                      </span>
+                      <span className="font-mono font-bold px-2 py-0.5 rounded bg-[var(--surface-subtle)] text-[var(--text-primary)]">
+                        {m.pointsA} – {m.pointsB}
+                      </span>
+                      <span className="text-[var(--text-secondary)] truncate max-w-[120px]">
+                        {m.teamBName}
+                      </span>
+                    </div>
+
+                    {m.gameId ? (
+                      <Link
+                        href={`/replays?game=${encodeURIComponent(m.gameId)}`}
+                        className="vct-btn-secondary !py-1 !px-3 !text-[11px] !rounded-full shrink-0"
+                      >
+                        Xem Replay
+                      </Link>
+                    ) : (
+                      <span className="text-[var(--text-faint)] font-mono text-[11px]">
+                        {m.status}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+
+        {/* Right Column: Global Standings + Team Quick Actions */}
+        <aside className="space-y-6 lg:sticky lg:top-24">
           <FeaturedRanking leaderboard={ratings.kind === 'success' ? ratings.data : null} />
-        </div>
 
-        {/* Right: Quick Action Hub & Workflow */}
-        <div className="space-y-6">
-          {/* Quick Hub Card */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-6 shadow-sm space-y-4">
-            <h3 className="text-lg font-bold text-[var(--text-primary)]">
-              Quy trình thi đấu
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5 shadow-sm space-y-3.5">
+            <h3 className="font-bold text-sm text-[var(--text-primary)]">
+              Không gian thí sinh & Đội tuyển
             </h3>
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-              Mỗi đội gồm 2 thành viên cùng phát triển thuật toán. Bạn có thể tự do thử nghiệm mã nguồn trước khi chính thức nộp vào giải đấu.
+              Lập trình bot bằng Python, TypeScript hoặc C++20. Tích hợp Monaco Editor trực tiếp, nộp mã nguồn và chạy thử nghiệm an toàn.
             </p>
-
-            <ol className="space-y-3.5 text-xs text-[var(--text-secondary)] pt-2">
-              <li className="flex items-start gap-3">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-bold text-[10px] shrink-0 mt-0.5">
-                  1
-                </span>
-                <div>
-                  <strong className="text-[var(--text-primary)]">Viết mã nguồn Bot:</strong> Sử dụng SDK mẫu trong thư mục <code className="font-mono text-[var(--accent-secondary)]">sdk/</code> bằng Python, TypeScript hoặc C++.
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-bold text-[10px] shrink-0 mt-0.5">
-                  2
-                </span>
-                <div>
-                  <strong className="text-[var(--text-primary)]">Chạy thử nghiệm (Private Test):</strong> Soạn thảo trên Monaco IDE hoặc tải file <code className="font-mono text-[var(--accent-secondary)]">.zip</code> để test nội bộ không ảnh hưởng điểm số.
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-bold text-[10px] shrink-0 mt-0.5">
-                  3
-                </span>
-                <div>
-                  <strong className="text-[var(--text-primary)]">Tham gia thi đấu:</strong> Đăng ký vào giải đấu đang mở, theo dõi trực tiếp lượt đi trên Live HUD và xem lại Replay bàn cờ.
-                </div>
-              </li>
-            </ol>
-
-            <div className="pt-2">
+            <div className="pt-1">
               <Link
                 href="/workspace"
                 className="vct-btn-primary !w-full !py-2.5 !text-xs !rounded-full block text-center"
@@ -272,8 +286,8 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </aside>
+      </div>
     </div>
   );
 }
