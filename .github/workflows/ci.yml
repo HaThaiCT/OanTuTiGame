@@ -3,7 +3,7 @@ name: CI and container release
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, rebuild/v2]
     tags: ['v*']
   workflow_dispatch:
 
@@ -79,6 +79,10 @@ jobs:
           printf '%s' 'ci' > "$PGPASSWORD_FILE"
           chmod 600 "$PGPASSWORD_FILE"
           node --import tsx deploy/linux/apply-migrations.mts --apply --grant-to postgres
+      - name: Prepare private storage directories
+        run: |
+          mkdir -p -m 700 storage/replays storage/replay-staging storage/submissions storage/execution storage/spool
+          mkdir -p -m 700 ~/.local/share/oantuti/development/objects/replays ~/.local/share/oantuti/development/objects/staging ~/.local/share/oantuti/development/objects/sources
       - name: Run workspace tests
         run: npm test
       - name: Typecheck and build Web

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, openSync, renameSync, unlinkSync, writeFileSync, fsyncSync, closeSync, readFileSync, existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import type { Digest } from '@oantuti/protocol';
 import { assertPrivateObjectRoot } from '../persistence/private-root.js';
@@ -28,15 +29,17 @@ export interface StoredReplay {
   readonly absolutePath: string;
 }
 
-const DEFAULT_REPLAY_ROOT = '/home/ha-thai/.local/share/oantuti/development/objects/replays';
-const DEFAULT_REPLAY_STAGING = '/home/ha-thai/.local/share/oantuti/development/objects/staging';
+const DEFAULT_OBJECTS_ROOT = process.env.OANTUTI_OBJECTS_DIR ?? join(homedir(), '.local/share/oantuti/development/objects');
+const DEFAULT_REPLAY_ROOT = process.env.OANTUTI_REPLAYS_DIR ?? join(DEFAULT_OBJECTS_ROOT, 'replays');
+const DEFAULT_REPLAY_STAGING = process.env.OANTUTI_REPLAY_STAGING_DIR ?? join(DEFAULT_OBJECTS_ROOT, 'staging');
 
 export class ReplayStore {
   constructor(
     readonly storageRoot: string = DEFAULT_REPLAY_ROOT,
-    private readonly stagingRoot: string = DEFAULT_REPLAY_STAGING
+    private readonly stagingRoot: string = DEFAULT_REPLAY_STAGING,
+    options: { readonly ownedByConvention?: boolean } = {}
   ) {
-    const byConvention = this.storageRoot === DEFAULT_REPLAY_ROOT && this.stagingRoot === DEFAULT_REPLAY_STAGING;
+    const byConvention = options.ownedByConvention ?? (this.storageRoot === DEFAULT_REPLAY_ROOT && this.stagingRoot === DEFAULT_REPLAY_STAGING);
     assertPrivateObjectRoot(this.storageRoot, 'Replay object root', { ownedByConvention: byConvention });
     assertPrivateObjectRoot(this.stagingRoot, 'Replay staging root', { ownedByConvention: byConvention });
   }

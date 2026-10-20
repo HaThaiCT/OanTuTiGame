@@ -4,6 +4,7 @@ import { chmodSync, cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pg from 'pg';
+import { EXPECTED_SCHEMA_VERSION } from '../packages/server/src/persistence/schema-version.js';
 
 const connectionString = process.env.OANTUTI_MIGRATION_TEST_URL;
 const suite = connectionString ? describe : describe.skip;
@@ -120,8 +121,8 @@ suite('migration hardening against isolated PostgreSQL', () => {
     expect(result.code, result.output).toBe(0);
     const check = new pg.Client({ connectionString: databaseConnection(database) }); await check.connect();
     try {
-      expect(Number((await check.query('SELECT max(version) AS version FROM schema_migrations')).rows[0].version)).toBe(26);
-      expect(Number((await check.query('SELECT count(*) AS count FROM migration_checksums')).rows[0].count)).toBe(26);
+      expect(Number((await check.query('SELECT max(version) AS version FROM schema_migrations')).rows[0].version)).toBe(EXPECTED_SCHEMA_VERSION);
+      expect(Number((await check.query('SELECT count(*) AS count FROM migration_checksums')).rows[0].count)).toBe(EXPECTED_SCHEMA_VERSION);
     } finally { await check.end(); }
   });
   it('refuses changed applied bytes before migration DDL', async () => {

@@ -19,7 +19,6 @@ export * from './submissions/artifact-store.js';
 export * from './submissions/source-materializer.js';
 export * from './submissions/service.js';
 export * from './submissions/routes.js';
-export * from './submissions/private-test-service.js';
 export * from './builds/build-pipeline.js';
 export * from './jobs/broker.js';
 export * from './jobs/reconciler.js';

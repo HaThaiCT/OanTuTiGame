@@ -175,7 +175,11 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   await app.register(fastifyWebsocket);
   if (options?.pgDb && identityService) {
     const teamService = new TeamService(options.pgDb);
-    const artifactStore = new ArtifactStore(options.pgDb, options.botsDir ?? path.resolve(process.cwd(), 'storage/submissions'));
+    const artifactStore = new ArtifactStore(
+      options.pgDb,
+      options.botsDir ?? path.resolve(process.cwd(), 'storage/submissions'),
+      { ownedByConvention: !options.botsDir }
+    );
     // Durable queue: intake/scheduler enqueue BUILD/GAME work, the worker claims/executes/
     // completes it, and the reconciler requeues expired leases. It is built before the
     // submission service, which enqueues the BUILD job for every accepted receipt.
@@ -205,7 +209,8 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const submissionService = new SubmissionService(options.pgDb, artifactStore, jobBroker, backupFence);
     // Replays must live under this workspace's storage, never a neighbouring install's default.
     const replayObjectsDir = options.replaysDir ?? path.resolve(process.cwd(), 'storage/replays');
-    const replayStore = new ReplayStore(replayObjectsDir, path.resolve(process.cwd(), 'storage/replay-staging'));
+    const replayStagingDir = path.resolve(process.cwd(), 'storage/replay-staging');
+    const replayStore = new ReplayStore(replayObjectsDir, replayStagingDir, { ownedByConvention: !options.replaysDir });
     // Scratch root for the dev-only executors (the match executor and the private-test runner).
     const executionSpoolDir = options.executionSpoolDir ?? path.resolve(process.cwd(), 'storage/execution');
     // Private practice runs: real matches that touch no official table (migration 011).

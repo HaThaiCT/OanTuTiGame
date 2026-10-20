@@ -374,7 +374,10 @@ describe('Private TEST execution leaves no official trace', () => {
         [courseId]
       );
       await client.query('DELETE FROM teams WHERE course_id = $1', [courseId]);
-      await client.query('DELETE FROM submission_sources WHERE digest = ANY($1::text[])', [trackedDigests]);
+      await client.query(
+        'DELETE FROM submission_sources WHERE digest = ANY($1::text[]) AND digest NOT IN (SELECT source_digest FROM submissions) AND digest NOT IN (SELECT source_digest FROM test_snapshots)',
+        [trackedDigests]
+      );
       await client.query('DELETE FROM courses WHERE id = $1', [courseId]);
       await client.query('DELETE FROM users WHERE username LIKE $1', [`pt\\_%\\_${runId}`]);
     });

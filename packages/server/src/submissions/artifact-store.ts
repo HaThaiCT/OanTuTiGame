@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { open, mkdir, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { Database } from '../persistence/db.js';
 import type { PoolClient } from 'pg';
@@ -230,14 +231,17 @@ export function computeCanonicalManifest(
 }
 
 /** Application-owned default; see `assertPrivateObjectRoot` for why the module may tighten it. */
-const DEFAULT_SOURCE_ROOT = '/home/ha-thai/.local/share/oantuti/development/objects/sources';
+const DEFAULT_OBJECTS_ROOT = process.env.OANTUTI_OBJECTS_DIR ?? path.join(os.homedir(), '.local/share/oantuti/development/objects');
+const DEFAULT_SOURCE_ROOT = process.env.OANTUTI_SUBMISSION_DIR ?? path.join(DEFAULT_OBJECTS_ROOT, 'sources');
 
 export class ArtifactStore {
   constructor(
     private readonly db: Database,
-    readonly storageRoot: string = DEFAULT_SOURCE_ROOT
+    readonly storageRoot: string = DEFAULT_SOURCE_ROOT,
+    options: { readonly ownedByConvention?: boolean } = {}
   ) {
-    assertPrivateObjectRoot(this.storageRoot, 'Submission source root', { ownedByConvention: this.storageRoot === DEFAULT_SOURCE_ROOT });
+    const byConvention = options.ownedByConvention ?? (this.storageRoot === DEFAULT_SOURCE_ROOT);
+    assertPrivateObjectRoot(this.storageRoot, 'Submission source root', { ownedByConvention: byConvention });
   }
 
   async storeSource(

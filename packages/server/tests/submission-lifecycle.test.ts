@@ -8,7 +8,6 @@ import { Database } from '../src/persistence/db.js';
 import { IdentityService } from '../src/identity/service.js';
 import { TeamService } from '../src/teams/service.js';
 import { ArtifactStore } from '../src/submissions/artifact-store.js';
-import { PrivateTestService } from '../src/submissions/private-test-service.js';
 import { SubmissionService } from '../src/submissions/service.js';
 import { BuildPipeline } from '../src/builds/build-pipeline.js';
 import { PrivateTestRunner } from '../src/builds/private-test-runner.js';
@@ -109,6 +108,23 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
   });
 
   afterAll(async () => {
+    await db.withTransaction(async (client) => {
+      await client.query('DELETE FROM job_completions');
+      await client.query('DELETE FROM job_attempts');
+      await client.query('DELETE FROM jobs');
+      await client.query('DELETE FROM tournament_entries');
+      await client.query('DELETE FROM test_snapshots');
+      await client.query('DELETE FROM submissions');
+      await client.query('DELETE FROM submission_sources');
+      await client.query('DELETE FROM tournament_admissions');
+      await client.query('DELETE FROM tournaments');
+      await client.query('DELETE FROM team_memberships');
+      await client.query('DELETE FROM teams');
+      await client.query('DELETE FROM courses');
+      await client.query('DELETE FROM sessions');
+      await client.query('DELETE FROM users');
+      await client.query('DELETE FROM audit_events');
+    });
     await app.close();
     await db.close();
   });
@@ -560,9 +576,104 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
     expect(events.rows.length).toBeGreaterThan(0);
     const actor = { userId: admin.rows[0].id, username: 's05_admin', role: 'ADMIN' as const, scope: 'FULL' as const, teamIds: [] };
     await expect(submissions.createPrivateTest(tournamentId, team1Id, { language: 'PYTHON', entrypoint: 'main.py', zipBuffer: createZip({ 'main.py': SMOKE_BOT_SOURCE }) }, actor)).rejects.toMatchObject({ statusCode: 403 });
-    await expect(new PrivateTestService(db, artifactStore).createTest({ tournamentId, teamId: team1Id, language: 'PYTHON', entrypoint: 'main.py', opponentType: 'BASELINE_RANDOM' }, { actor, requestId: 'private-admin-denied' })).rejects.toMatchObject({ statusCode: 403 });
+    // (Admin denied via live createPrivateTest path asserted on the line above.)
     // An organizer reads submitted work but never files an official receipt for a team.
     await expect(submissions.submit(tournamentId, team1Id, { language: 'PYTHON', entrypoint: 'main.py', zipBuffer: createZip({ 'main.py': SMOKE_BOT_SOURCE }) }, actor))
       .rejects.toMatchObject({ statusCode: 403, code: 'ADMIN_CANNOT_SUBMIT' });
+  });
+
+  it('rejects official submission once the tournament is locked (state gate)', async () => {
+    // tournamentId is READY_TO_START after the lock test; any official submission must be refused.
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/v2/tournaments/${tournamentId}/submissions`,
+      headers: { cookie: team1Cookie },
+      payload: {
+        teamId: team1Id,
+        language: 'PYTHON',
+        entrypoint: 'main.py',
+        zipBase64: createZip({ 'main.py': SMOKE_BOT_SOURCE }).toString('base64'),
+      },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().message).toMatch(/Submissions closed/);
+  });
+
+  it('rejects submission past registration deadline and retains previous READY candidate when a newer receipt fails compilation', async () => {
+    // Self-contained second tournament — does not interfere with the locked main tournament.
+    const t2Res = await app.inject({
+      method: 'POST',
+      url: '/api/v2/organizer/tournaments',
+      headers: { cookie: adminCookie },
+      payload: { courseCode: 'CS500', name: 'Retention Test Cup', format: 'SINGLE_ELIMINATION' },
+    });
+    expect(t2Res.statusCode).toBe(201);
+    const t2Id: string = t2Res.json().tournament.id;
+    await app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${t2Id}/publish`, headers: { cookie: adminCookie } });
+    await app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${t2Id}/open-registration`, headers: { cookie: adminCookie }, payload: {} });
+    await app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${t2Id}/enroll`, headers: { cookie: adminCookie }, payload: { teamId: team2Id } });
+
+    // Deadline gate: move deadline into the past.
+    await db.query(`UPDATE tournaments SET registration_closes_at = clock_timestamp() - interval '1 minute' WHERE id = $1`, [t2Id]);
+    const deadlineRes = await app.inject({
+      method: 'POST',
+      url: `/api/v2/tournaments/${t2Id}/submissions`,
+      headers: { cookie: team2Cookie },
+      payload: {
+        teamId: team2Id,
+        language: 'PYTHON',
+        entrypoint: 'main.py',
+        zipBase64: createZip({ 'main.py': SMOKE_BOT_SOURCE }).toString('base64'),
+      },
+    });
+    expect(deadlineRes.statusCode).toBe(409);
+    expect(deadlineRes.json().message).toMatch(/registration deadline has passed/);
+    await db.query(`UPDATE tournaments SET registration_closes_at = NULL WHERE id = $1`, [t2Id]);
+
+    // Candidate retention: receipt A → READY; receipt B (broken TS) → FAILED.
+    // Lock must freeze A, not B.
+    const aRes = await app.inject({
+      method: 'POST',
+      url: `/api/v2/tournaments/${t2Id}/submissions`,
+      headers: { cookie: team2Cookie },
+      payload: {
+        teamId: team2Id,
+        language: 'PYTHON',
+        entrypoint: 'main.py',
+        zipBase64: createZip({ 'main.py': SMOKE_BOT_SOURCE }).toString('base64'),
+      },
+    });
+    expect(aRes.statusCode).toBe(200);
+    const aId: string = aRes.json().data.submissionId;
+    expect((await buildPipeline.buildSubmission(aId)).status).toBe('READY');
+
+    const bRes = await app.inject({
+      method: 'POST',
+      url: `/api/v2/tournaments/${t2Id}/submissions`,
+      headers: { cookie: team2Cookie },
+      payload: {
+        teamId: team2Id,
+        language: 'TYPESCRIPT',
+        entrypoint: 'bot.ts',
+        zipBase64: createZip({ 'bot.ts': 'const broken = ;@@@ not typescript' }).toString('base64'),
+      },
+    });
+    expect(bRes.statusCode).toBe(200);
+    const bId: string = bRes.json().data.submissionId;
+    expect((await buildPipeline.buildSubmission(bId)).status).toBe('REJECTED');
+
+    const lockRes = await app.inject({
+      method: 'POST',
+      url: `/api/v2/organizer/tournaments/${t2Id}/lock`,
+      headers: { cookie: adminCookie },
+    });
+    expect(lockRes.statusCode).toBe(200);
+
+    const entry = await db.query<{ frozen_submission_id: string | null }>(
+      'SELECT frozen_submission_id FROM tournament_entries WHERE tournament_id = $1 AND team_id = $2',
+      [t2Id, team2Id]
+    );
+    // The FAILED receipt B must not displace A; frozen = A.
+    expect(entry.rows[0].frozen_submission_id).toBe(aId);
   });
 });
