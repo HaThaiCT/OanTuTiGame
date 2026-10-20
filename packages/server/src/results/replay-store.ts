@@ -29,19 +29,35 @@ export interface StoredReplay {
   readonly absolutePath: string;
 }
 
-const DEFAULT_OBJECTS_ROOT = process.env.OANTUTI_OBJECTS_DIR ?? join(homedir(), '.local/share/oantuti/development/objects');
-const DEFAULT_REPLAY_ROOT = process.env.OANTUTI_REPLAYS_DIR ?? join(DEFAULT_OBJECTS_ROOT, 'replays');
-const DEFAULT_REPLAY_STAGING = process.env.OANTUTI_REPLAY_STAGING_DIR ?? join(DEFAULT_OBJECTS_ROOT, 'staging');
+/** Resolve configured roots at construction so environment changes are not hidden by import caching. */
+function resolveReplayRoot(argument: string | undefined, envKey: 'OANTUTI_REPLAYS_DIR' | 'OANTUTI_REPLAY_STAGING_DIR', child: 'replays' | 'staging'): { root: string; ownedByConvention: boolean } {
+  const configured = process.env[envKey];
+  const shared = process.env.OANTUTI_OBJECTS_DIR;
+  if (configured === '') throw new Error(`${envKey} must not be empty`);
+  if (shared === '') throw new Error('OANTUTI_OBJECTS_DIR must not be empty');
+  if (argument !== undefined) return { root: argument, ownedByConvention: false };
+  if (configured !== undefined) return { root: configured, ownedByConvention: false };
+  if (shared !== undefined) return { root: join(shared, child), ownedByConvention: false };
+  return {
+    root: child === 'replays' ? join(homedir(), '.local/share/oantuti/development/objects/replays') : join(homedir(), '.local/share/oantuti/development/objects/staging'),
+    ownedByConvention: true,
+  };
+}
 
 export class ReplayStore {
+  readonly storageRoot: string;
+  private readonly stagingRoot: string;
   constructor(
-    readonly storageRoot: string = DEFAULT_REPLAY_ROOT,
-    private readonly stagingRoot: string = DEFAULT_REPLAY_STAGING,
-    options: { readonly ownedByConvention?: boolean } = {}
+    storageRoot?: string,
+    stagingRoot?: string,
+    options: { readonly storageOwnedByConvention?: boolean; readonly stagingOwnedByConvention?: boolean } = {}
   ) {
-    const byConvention = options.ownedByConvention ?? (this.storageRoot === DEFAULT_REPLAY_ROOT && this.stagingRoot === DEFAULT_REPLAY_STAGING);
-    assertPrivateObjectRoot(this.storageRoot, 'Replay object root', { ownedByConvention: byConvention });
-    assertPrivateObjectRoot(this.stagingRoot, 'Replay staging root', { ownedByConvention: byConvention });
+    const storage = resolveReplayRoot(storageRoot, 'OANTUTI_REPLAYS_DIR', 'replays');
+    const staging = resolveReplayRoot(stagingRoot, 'OANTUTI_REPLAY_STAGING_DIR', 'staging');
+    this.storageRoot = storage.root;
+    this.stagingRoot = staging.root;
+    assertPrivateObjectRoot(this.storageRoot, 'Replay object root', { ownedByConvention: options.storageOwnedByConvention ?? storage.ownedByConvention });
+    assertPrivateObjectRoot(this.stagingRoot, 'Replay staging root', { ownedByConvention: options.stagingOwnedByConvention ?? staging.ownedByConvention });
   }
 
   /**

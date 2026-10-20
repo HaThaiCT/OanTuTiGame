@@ -21,23 +21,21 @@ không tự đấu**. Portal đang phục vụ bản **production build**: sửa
 
 ## 2. Chạy test
 
+Set the exact test-only connection from `deploy/linux/test-isolated.mts`'s guard. Never point a suite at the demo database. Confirm `current_database()` and schema status before running tests.
+
 ```bash
-PGHOST=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket \
-PGPORT=55434 PGUSER=arena_rebuild_migrator PGDATABASE=arena_rebuild_c72cd5a74f33 \
-OANTUTI_DEV_EXECUTION=1 npm test
+export PGHOST=/home/ha-thai/.local/share/oantuti/rebuild/c72cd5a7-4f33-44ae-82da-723b6953024d/pg16/socket
+export PGPORT=55434 PGDATABASE=arena_rebuild_test PGUSER=ha-thai
+export OANTUTI_DEV_EXECUTION=1 OANTUTI_BACKUP_FENCE=off
+node --import tsx deploy/linux/test-isolated.mts
 ```
 
-Kết quả đã kiểm chứng trong phiên này: **69 test file passed, 421 test passed / 1 skipped**, ~38 giây.
+The wrapper requires an explicit database name matching `arena_*test*`, compares it with the active connection, then invokes Vitest. The suite performs fixture cleanup and may reseed its test database; do not run `npm test` directly with demo credentials or a non-test `PGDATABASE`.
 
-- Chạy từng phần: `npm run test:server` (326 passed / 1 skipped), `test:engine`, `test:runner`,
-  `test:protocol`, `test:web`, `test:specs`, `test:proto`.
-- **Bắt buộc có env PG.** Thiếu env, `packages/server/src/persistence/db.ts` rơi về cấu hình mặc
-  định (socket `…/development/pg16/socket`, port `55432`) — instance đó không chạy ở đây, và ~34 test
-  file fail vì không kết nối được. Đó là lỗi môi trường, không phải regression.
-- `npm test` **re-seed database dev**: dữ liệu bạn tạo bằng tay (giải, đội, tài khoản) sẽ bị thay
-  bằng fixture của test. Chạy demo trước, hoặc seed lại sau khi test.
-- Benchmark tải (`tests/load`/`load-benchmark.test.ts`) chạy trong suite: 500 spectator, không mất
-  gói, p99 < 80 ms. Đo capacity trên host thật là `npm run measure:capacity`.
+- Focus a suite by adding its test path after `test-isolated.mts`.
+- The wrapper's database-name check is a safety fence, not proof that a cluster is disposable; verify the selected cluster independently before a cleanup-capable run.
+- CI uses an isolated PostgreSQL 16 service and a separate migration-hardening URL. Local migration-hardening tests remain skipped unless that separately authorized test URL is available.
+- Benchmark tests run in the suite; capacity certification on a release host is separate.
 
 ## 3. Chạy demo
 
@@ -121,9 +119,7 @@ npm run demo:login <username>    # hoặc mint session 4 giờ, không cần m�
 3. đặt mật khẩu mới (≥ 12 ký tự, UI; API yêu cầu ≥ 8) → server thu hồi mọi phiên cũ và cấp phiên `FULL`,
    portal vào thẳng không gian đội (hoặc bảng điều khiển ban tổ chức với ADMIN).
 
-Tài khoản có sẵn sau `demo:seed`: một ADMIN (tài khoản ADMIN đầu tiên trong DB, thường là `system_admin`)
-và một đội trưởng cho mỗi đội demo (`demo_cap1…N`). Sau khi chạy `npm test`, DB bị re-seed: chạy lại
-`npm run demo:seed` rồi `npm run demo:accounts`.
+Tài khoản có sẵn sau `demo:seed`: một ADMIN (thường là `system_admin`) và một đội trưởng cho mỗi đội demo (`demo_cap1…N`). Test suites chỉ chạy trên database test cô lập và có thể dọn/seed lại database đó; không chạy trên database demo.
 
 ## 5. Ghi chú vận hành
 

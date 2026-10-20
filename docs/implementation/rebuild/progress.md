@@ -1,14 +1,14 @@
 # Rebuild ledger — plan: OANTUTI_ARENA_V2_PLAN.md
 
-## Current status — LAN software delivery (updated 2026-10-19)
+## Current status — LAN software delivery (updated 2026-10-21)
 
-The latest delivery scope is LAN software only. ONLINE remains deferred by the user. LAN account flows, tournament logic, Rust authority, UID-bound broker/native worker, durable completion, archive, corrections, and role-separated UX are implemented; see [LAN completion evidence](lan-completion-evidence.md) and [LAN UX evidence](core-role-ux-evidence.md). Do not use earlier S-session labels below as current gap inventory.
+The delivery scope is the LAN software snapshot only. ONLINE remains deferred. Software status and operational certification are separate: G0–G4 remain unsigned, `productionReady=false`, and human U5 acceptance is pending.
 
-The demo is on schema 26 and serves the portal/API locally. Current readiness is `degraded`, `productionReady=false`: the demo arms the unsandboxed development executor, has no native gateway/worker and disables the backup fence. It is not safe for untrusted Bot execution.
+The demo serves locally; its live schema/readiness are runtime observations, not software-release evidence. Known constraints include the unsandboxed development executor and disabled backup fence. Do not use the demo database for cleanup-capable tests.
 
-Remaining handoff items: human U5 visual/usability and accessibility acceptance. The hosted CI runner pass has succeeded on GitHub Actions (run 39503085649, branch `rebuild/v2`: workspace tests, Web standalone build, Docker images and bundled Rust verifier smoke all green). Locally, migration locking/checksums/grant atomicity, the version-27 fresh install under a separate migrator role, the Bookworm server image and its bundled Rust verifier have been verified. `npm audit --omit=dev --workspace=@oantuti/server` reports zero findings; the web workspace advisories were triaged 2026-10-21 (uuid chain fixed via override to 11.1.1; monaco's vendored DOMPurify 3.4.15 waived — see [dependency-advisory-disposition-2026-10-21.md](dependency-advisory-disposition-2026-10-21.md)). Infrastructure provisioning, capacity, off-host custody and endurance runs remain outside this software-delivery scope and have no measured claim. See `acceptance-matrix.json` `deliveryScopeOverride` and [LAN handover boundaries](../../runbooks/lan-handover.md#9-bi%C3%AAn-nh%E1%BA%ADn-nghi%E1%BB%87m-thu).
+Hosted CI run 39503085649 passed for predecessor commit `71064d2` on `rebuild/v2`; it does not verify the LAN freeze candidate. Dependency advisory disposition is recorded in [the 2026-10-21 advisory note](dependency-advisory-disposition-2026-10-21.md).
 
-## Hosted CI runner pass & code debt cleanup (2026-10-21)
+## Historical hosted CI runner pass & code debt cleanup (2026-10-21; not candidate verification)
 
 - **Hosted CI pass observed on GitHub Actions (run 39503085649):**
   - Triggered by push of commit `71064d2` to branch `rebuild/v2`.
@@ -20,8 +20,7 @@ Remaining handoff items: human U5 visual/usability and accessibility acceptance.
   - Deleted `packages/server/src/submissions/private-test-service.ts` (312 lines) and its dead re-export in `packages/server/src/index.ts`.
   - Deleted redundant legacy integration suite `packages/server/tests/submission-test-integration.test.ts` (419 lines).
   - Added live-path regressions to `packages/server/tests/submission-lifecycle.test.ts`: official submission locked-state rejection, registration deadline rejection, and candidate retention when newer submission fails compilation (`REJECTED`). All 18 tests pass across `submission-lifecycle` (10/10) and `private-test-runner` (8/8).
-- **Independent security review:**
-  - Audited `packages/server/src` across all 6 core surfaces: (1) cookie flags (`HttpOnly`, `Path=/`, `SameSite=Lax`, `Secure` on HTTPS), SHA-256 session token hashing (`identity_session_valid`), Argon2id password hashing; (2) `checkActorTeam` strictly enforces `FULL` session scope, rejects ADMIN for submissions and private tests, audits ADMIN source inspections; (3) ZIP intake enforces 2 MiB archive, 256 KiB file, 4 MiB expanded, blocks symlinks and directory traversal, forbids binary extensions; (4) idempotent result acceptance rejects duplicate version commits; (5) zero string-interpolated SQL queries (all parameterized with `$1`, `$2`); (6) WebSocket `/api/v2/live/:gameId` bound to official games only with backpressure limits and heartbeat timeouts.
+- **Historical review status corrected:** the attempted reviewer did not produce an assessable result; code inspection is not independent sign-off. SQL includes dynamic identifiers/constants, so no “zero string-interpolated SQL” claim is made.
 
 ## Web advisory triage (2026-10-21)
 

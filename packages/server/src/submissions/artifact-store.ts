@@ -230,18 +230,28 @@ export function computeCanonicalManifest(
   return { manifest, digest };
 }
 
-/** Application-owned default; see `assertPrivateObjectRoot` for why the module may tighten it. */
-const DEFAULT_OBJECTS_ROOT = process.env.OANTUTI_OBJECTS_DIR ?? path.join(os.homedir(), '.local/share/oantuti/development/objects');
-const DEFAULT_SOURCE_ROOT = process.env.OANTUTI_SUBMISSION_DIR ?? path.join(DEFAULT_OBJECTS_ROOT, 'sources');
+/** Application-owned fallback; explicit configuration always remains operator-owned. */
+function resolveSourceRoot(argument?: string): { root: string; ownedByConvention: boolean } {
+  const configured = process.env.OANTUTI_SUBMISSION_DIR;
+  const shared = process.env.OANTUTI_OBJECTS_DIR;
+  if (configured === '') throw new Error('OANTUTI_SUBMISSION_DIR must not be empty');
+  if (shared === '') throw new Error('OANTUTI_OBJECTS_DIR must not be empty');
+  if (argument !== undefined) return { root: argument, ownedByConvention: false };
+  if (configured !== undefined) return { root: configured, ownedByConvention: false };
+  if (shared !== undefined) return { root: path.join(shared, 'sources'), ownedByConvention: false };
+  return { root: path.join(os.homedir(), '.local/share/oantuti/development/objects/sources'), ownedByConvention: true };
+}
 
 export class ArtifactStore {
+  readonly storageRoot: string;
   constructor(
     private readonly db: Database,
-    readonly storageRoot: string = DEFAULT_SOURCE_ROOT,
+    storageRoot?: string,
     options: { readonly ownedByConvention?: boolean } = {}
   ) {
-    const byConvention = options.ownedByConvention ?? (this.storageRoot === DEFAULT_SOURCE_ROOT);
-    assertPrivateObjectRoot(this.storageRoot, 'Submission source root', { ownedByConvention: byConvention });
+    const resolved = resolveSourceRoot(storageRoot);
+    this.storageRoot = resolved.root;
+    assertPrivateObjectRoot(this.storageRoot, 'Submission source root', { ownedByConvention: options.ownedByConvention ?? resolved.ownedByConvention });
   }
 
   async storeSource(

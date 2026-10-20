@@ -335,6 +335,7 @@ Liên quan trực tiếp tới vùng chạy Bot (khi cài trên host mới): `de
 | G4 | Phát hành vận hành (runbook, custody, drill off-host) | `NOT_SIGNED` | Người vận hành + reviewer |
 
 `LAN_COMPLETE_STABLE` theo chứng nhận vận hành lịch sử cần L0–L9/G0–G4 trên đúng target/BOM/digest; **không dùng nhãn đó làm điều kiện bàn giao phần mềm hiện tại**. Infrastructure/provision/72h/7 ngày được loại khỏi delivery theo chỉ đạo người dùng, không có nghĩa các gate đã đạt. Không suy chứng nhận từ Markdown hay test luôn-đúng.
+Software snapshot receipt (kept separate from these operational gates): [LAN software freeze](../implementation/rebuild/lan-software-freeze.md). `LAN_SOFTWARE_FROZEN` describes the versioned software artifact only; it does not sign G0–G4, change `releaseReady`, or establish `productionReady=true`. U5 remains pending user acceptance.
 
 ## 10. Giới hạn chứng nhận và khuyến nghị triển khai sau (không phải infrastructure blockers của delivery)
 

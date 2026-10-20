@@ -210,7 +210,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     // Replays must live under this workspace's storage, never a neighbouring install's default.
     const replayObjectsDir = options.replaysDir ?? path.resolve(process.cwd(), 'storage/replays');
     const replayStagingDir = path.resolve(process.cwd(), 'storage/replay-staging');
-    const replayStore = new ReplayStore(replayObjectsDir, replayStagingDir, { ownedByConvention: !options.replaysDir });
+    const replayStore = new ReplayStore(replayObjectsDir, replayStagingDir, { storageOwnedByConvention: options.replaysDir === undefined, stagingOwnedByConvention: true });
     // Scratch root for the dev-only executors (the match executor and the private-test runner).
     const executionSpoolDir = options.executionSpoolDir ?? path.resolve(process.cwd(), 'storage/execution');
     // Private practice runs: real matches that touch no official table (migration 011).

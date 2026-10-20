@@ -3,7 +3,7 @@ name: CI and container release
 on:
   pull_request:
   push:
-    branches: [main, rebuild/v2]
+    branches: [main, rebuild/v2, release/lan-v2, develop/online-v2]
     tags: ['v*']
   workflow_dispatch:
 
@@ -69,6 +69,10 @@ jobs:
         # The server treats this binary as the rules authority and has no TypeScript fallback, so
         # the suite cannot pass without it. Debug profile matches the server's default lookup path.
         run: cargo build --locked -p arena-runner --bin verify-trace
+      - name: Test Rust workspace
+        run: cargo test --workspace --tests --locked
+      - name: Typecheck server
+        run: npx tsc --noEmit -p packages/server/tsconfig.json
       - name: Apply migrations to the isolated CI database
         env:
           # The applier refuses a raw PGPASSWORD value; it reads this private file and sets the
