@@ -6,7 +6,7 @@ Same Linux container package runs on a personal host or VPS. This is a web deplo
 Docker Engine and Docker Compose v2, Linux x86_64, sufficient persistent disk. PostgreSQL and object storage use separate named volumes. The host still needs independent sandbox certification before enabling bot execution. Container Ubuntu/Alpine does not change the host kernel.
 
 ## Secrets and first start
-Create two different random passwords in files OUTSIDE the checkout. Never commit them or pass passwords in Compose command lines. Export PG_OWNER_PASSWORD_FILE and PG_APP_PASSWORD_FILE to the absolute paths of those files. Local container users must be able to read the files; secure the enclosing directory from other host users.
+Create two different random passwords in files OUTSIDE the checkout. Never commit them or pass passwords in Compose command lines. Export PG_OWNER_PASSWORD_FILE and PG_APP_PASSWORD_FILE to the absolute paths of those files. Local container users must be able to read the files; secure the enclosing directory from other host users. Compose file-backed secret `uid`/`gid`/`mode` keys cannot remap bind-source permissions, so set them on the host: enclosing directory `0700`, password files `0444` (PostgreSQL runs as UID 999, Node as UID 1000 — mode `0600` owned by your host user makes first init fail closed with `Permission denied`).
 
 ```
 export PG_OWNER_PASSWORD_FILE=/absolute/private/path/postgres-owner

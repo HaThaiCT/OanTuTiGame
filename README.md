@@ -1,437 +1,268 @@
-# OanTuTi Arena — Nền tảng Đấu trường Bot Thuật toán
+# OanTuTi Arena
 
-[![Node.js](https://img.shields.io/badge/Node.js-22%20LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-16%20App%20Router-black?logo=next.js&logoColor=white)](https://nextjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose%20v2-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+Nền tảng thi đấu Bot Búa–Kéo–Bao trên bàn cờ: Python, TypeScript và C++20; giải loại trực tiếp, Swiss → playoff, vòng tròn và Elo arena; bảng Rating toàn cầu, live spectator, replay và trang quản trị.
 
-**OanTuTi Arena** là nền tảng thi đấu bot trí tuệ nhân tạo đối kháng thời gian thực dựa trên cơ chế trò chơi **Búa · Kéo · Bao chiến thuật trên bàn cờ lưới** (phong cách Battlecode). Nền tảng được tối ưu hóa cho các giải đấu lập trình trường đại học, hackathon và sự kiện thi đấu nội bộ (LAN Tournament).
+## Chọn cách cài
 
-Dự án tích hợp đầy đủ:
-- **Game Engine bất biến (Deterministic Engine)**: Xử lý luật chơi, di chuyển 8 hướng, tương khắc Oẳn Tù Tì và phân định thắng thua.
-- **Hệ thống Giải đấu & Xếp hạng**: Hỗ trợ 4 thể thức chuẩn (Loại trực tiếp, Swiss → Playoff, Vòng tròn, Elo Arena) và thuật toán tính điểm Rating Global.
-- **Sân chơi Đa ngôn ngữ**: Hỗ trợ lập trình bot bằng **Python 3**, **TypeScript** và **C++20**.
-- **Giao diện Web Esports (Next.js 16)**: Bảng điểm trực tiếp (Live Match HUD), trình xem Replay bàn cờ hoạt họa cử chỉ tay ✊ ✌️ 🖐️, Monaco Code Editor trực tiếp trên trình duyệt, bảng xếp hạng và giao diện Ban tổ chức.
-- **Đóng gói sẵn bộ dữ liệu Demo thực tế**: Có sẵn 46 giải đấu, 72 đội thi đấu, 616 ván đấu Replay và bảng xếp hạng hoàn chỉnh.
+| Nhu cầu | Cách chạy |
+|---|---|
+| Xem dữ liệu demo, đăng nhập, xem giải/bảng xếp hạng/replay | **Docker Compose** bên dưới; không cần cài Node, Rust hoặc PostgreSQL trên host |
+| Chỉnh sửa mã, biên dịch và đấu thử Bot tin cậy | **Local development trên Ubuntu 24.04 / WSL2 Ubuntu** |
+| Nhận mã Bot không tin cậy qua Internet | Không dùng cấu hình demo. Cần cấu hình/certify sandbox và backup theo [tài liệu vận hành](docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md) |
 
----
+Bộ demo nằm trong Git ở `deploy/demo-data/`, không lấy dữ liệu từ máy tác giả: 46 giải, 72 đội, 616 kết quả/replay và 48 đội showcase có lịch sử Rating. Restore chỉ dành cho **database và object roots mới, trống**; không dùng để ghi đè dữ liệu hiện có.
 
-## ⚡ Khởi động nhanh trong 1 phút (Quick Start với Docker)
+## 1. Docker Compose — khuyến nghị để xem demo
 
-Nếu máy bạn đã cài sẵn **Docker** và **Docker Compose**, chỉ cần chạy 4 dòng lệnh sau:
+### Điều kiện
+
+- Git, Docker Engine hoặc Docker Desktop đang chạy, **Docker Compose v2**.
+- Kiểm tra cả hai lệnh: `docker version` và `docker compose version`. Có Docker Engine chưa chắc đã có Compose plugin.
+- Internet để tải dependencies/base images ở lần build đầu. Build lần đầu mất vài phút tùy máy và mạng, không phải cam kết một phút.
+- Linux amd64 là môi trường kiểm chứng. Trên Windows dùng Docker Desktop Linux containers/WSL2; trên macOS dùng Docker Desktop. Chưa chứng nhận native Windows hay Apple Silicon.
+
+### Tải và chạy
+
+Các lệnh dưới đây dùng Bash (Linux/macOS/terminal WSL2):
 
 ```bash
-# 1. Tải mã nguồn về máy
 git clone https://github.com/HaThaiCT/OanTuTiGame.git
 cd OanTuTiGame
 
-# 2. Khởi tạo 2 tệp mật khẩu bảo mật cho database
-mkdir -p secrets
-echo "postgres_owner_secret_pass" > secrets/postgres-owner
-echo "postgres_app_secret_pass" > secrets/postgres-app
-
-# 3. Thiết lập biến môi trường và khởi chạy
-export PG_OWNER_PASSWORD_FILE=$(pwd)/secrets/postgres-owner
-export PG_APP_PASSWORD_FILE=$(pwd)/secrets/postgres-app
-export PUBLIC_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+# Mật khẩu database tự sinh, không dùng lại mật khẩu thật của bạn.
+umask 077
+mkdir -p "$HOME/.config/oantuti-demo"
+chmod 700 "$HOME/.config/oantuti-demo"
+openssl rand -hex 24 > "$HOME/.config/oantuti-demo/postgres-owner"
+openssl rand -hex 24 > "$HOME/.config/oantuti-demo/postgres-app"
+# Compose mount từng file vào các container chạy UID khác nhau.
+# Thư mục cha 0700 chặn người dùng host khác; file 0444 cho UID trong container đọc.
+chmod 444 "$HOME/.config/oantuti-demo/postgres-owner" "$HOME/.config/oantuti-demo/postgres-app"
+export PG_OWNER_PASSWORD_FILE="$HOME/.config/oantuti-demo/postgres-owner"
+export PG_APP_PASSWORD_FILE="$HOME/.config/oantuti-demo/postgres-app"
 export OANTUTI_BACKUP_FENCE=off
+export PUBLIC_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 docker compose up --build -d
+docker compose ps
 ```
 
-👉 **Mở trình duyệt truy cập ngay:** **[http://localhost:3000](http://localhost:3000)**
+Mở **http://localhost:3000** sau khi PostgreSQL và API khỏe, web/gateway đang chạy. API/PostgreSQL không công bố cổng ra host; gateway mặc định chỉ bind `127.0.0.1`.
 
-*Hệ thống sẽ tự động khởi động PostgreSQL 16, nạp sẵn bộ dữ liệu 46 giải đấu và 616 trận đấu replay mà không cần cấu hình thêm.*
+Database mới tự nạp demo; server tự phục hồi các object replay/source vào volume riêng. Named volumes giữ dữ liệu qua restart. Nếu restore thất bại, đọc log và sửa nguyên nhân; không bỏ qua lỗi rồi coi như thành công.
 
----
+```bash
+docker compose logs --tail=100 postgres server web gateway
+docker compose restart
+# Dừng nhưng giữ dữ liệu:
+docker compose down
+# Lần sau dùng lại cùng các biến secret-file ở trên:
+docker compose up -d
+```
 
-## 🔑 Tài khoản đăng nhập có sẵn trong hệ thống
+**Không chạy `docker compose down -v` để xử lý lỗi thông thường:** lệnh đó xóa database và object volumes. Muốn một demo mới độc lập, dùng project name khác, ví dụ `docker compose -p oantuti-second-demo up --build -d` và cổng khác.
 
-Bạn có thể bấm vào nút **Đăng nhập** ở góc phải trên cùng (hoặc vào `/workspace`) để trải nghiệm các quyền hạn khác nhau:
+Đổi cổng phải đổi cả origin:
 
-| Vai trò | Tên đăng nhập | Mật khẩu | Quyền hạn & Chức năng trải nghiệm |
-|---|---|---|---|
-| **👑 Ban tổ chức (Admin)** | `system_admin` | `DemoAdmin@2026` | Toàn quyền quản trị giải đấu, phê duyệt đội thi đấu, chỉnh sửa bản đồ (Map Editor), chốt kết quả và công bố Rating. |
-| **🎮 Đội trưởng thí sinh (Captain)** | `demo_cap1` | `DemoStudent@2026` | Quản lý đội, phòng soạn thảo bot Monaco IDE, tải file `.zip`, chạy kiểm thử riêng tư (Private Test). |
-| **🎮 Thành viên thí sinh (Member)** | `student_alice` | `DemoStudent@2026` | Xem thông tin giải đấu, theo dõi kết quả thi đấu của đội. |
+```bash
+export WEB_PORT=3300
+export PUBLIC_ORIGINS=http://localhost:3300,http://127.0.0.1:3300
+docker compose up -d
+```
 
----
+### Tài khoản demo công khai
 
-## 📋 Mục lục hướng dẫn chi tiết
-1. [Yêu cầu môi trường](#1-yêu-cầu-môi-trường)
-2. [Hướng dẫn Cài đặt & Khởi chạy](#2-hướng-dẫn-cài-đặt--khởi-chạy)
-   - [Phương án A: Khởi chạy bằng Docker Compose (Khuyên dùng)](#phương-án-a-khởi-chạy-bằng-docker-compose-khuyên-dùng)
-   - [Phương án B: Cài đặt và Chạy trực tiếp trên máy host (Local Development)](#phương-án-b-cài-đặt-và-chạy-trực-tiếp-trên-máy-host-local-development)
-3. [Khám phá Giao diện & Tính năng chính](#3-khám-phá-giao-diện--tính-năng-chính)
-4. [Hướng dẫn Lập trình Bot (Bot Developer Guide)](#4-hướng-dẫn-lập-trình-bot-bot-developer-guide)
-   - [Luật chơi & Điều kiện thắng](#luật-chơi--điều-kiện-thắng)
-   - [Giao thức giao tiếp STDIO NDJSON](#giao-thức-giao-tiếp-stdio-ndjson)
-   - [Bot mẫu Python](#bot-mẫu-python)
-   - [Bot mẫu TypeScript](#bot-mẫu-typescript)
-   - [Bot mẫu C++20](#bot-mẫu-c20)
-5. [Đấu thử 2 Bot bằng dòng lệnh (CLI Match Runner)](#5-đấu-thử-2-bot-bằng-dòng-lệnh-cli-match-runner)
-6. [Chạy kiểm thử tự động (Test Suite)](#6-chạy-kiểm-thử-tự-động-test-suite)
-7. [Xử lý sự cố thường gặp (FAQ & Troubleshooting)](#7-xử-lý-sự-cố-thường-gặp-faq--troubleshooting)
+| Vai trò | Username | Password |
+|---|---|---|
+| ADMIN | `system_admin` | `DemoAdmin@2026` |
+| Đội trưởng mẫu | `demo_cap1` | `DemoStudent@2026` |
+| Sinh viên mẫu | `student_alice` | `DemoStudent@2026` |
+| Showcase: đội trưởng / thành viên đội 01–48 | `showcase_01a` … `showcase_48a` / `showcase_01b` … `showcase_48b` | `DemoStudent@2026` |
 
----
+Đây là mật khẩu fixture **công khai**, không phải mật khẩu của một triển khai đang vận hành. Chỉ dùng demo trên loopback; không đưa cấu hình này lên Internet và không dùng mật khẩu này cho hệ thống thật. Bundle không chứa các phiên đăng nhập/token recovery đang hoạt động.
 
-## 1. Yêu cầu môi trường
+Đăng nhập tại `/workspace`; ADMIN vào `/organizer`. Khi thao tác nhạy cảm yêu cầu xác thực lại, nhập mật khẩu ADMIN demo ở trên.
 
-Để tự tải về và cài đặt dự án, máy tính của bạn cần đáp ứng:
+### Giới hạn cấu hình Docker mặc định
 
-- **Hệ điều hành**: Linux (Ubuntu 22.04 / 24.04 khuyến nghị), macOS, hoặc Windows 10/11 (qua WSL2).
-- **Node.js**: Phiên bản `>= 20.x` (khuyến nghị **Node.js 22 LTS** hoặc **24 LTS**) cùng `npm >= 10.x`.
-- **Docker**: Docker Engine `>= 24.x` và Docker Compose v2 (nếu dùng phương án Docker).
-- **Python**: Phiên bản `>= 3.10` (nếu lập trình bot Python).
-- **C++ Compiler**: `g++` hoặc `clang++` hỗ trợ chuẩn **C++20** (nếu lập trình bot C++).
-- **PostgreSQL**: Phiên bản `16.x` (nếu chạy cục bộ không dùng Docker).
+Docker Compose mặc định **tắt thực thi Bot mới** (`OANTUTI_DEV_EXECUTION=0`). Bạn xem được dữ liệu lịch sử/replay, nhưng submission/private test/trận mới không tự hoàn tất khi chưa có executor. `/api/health` là liveness; `/api/health/ready` có thể trả `503 degraded` vì chưa có sandbox/backup. Đây không phải cấu hình production-ready.
 
----
+`OANTUTI_BACKUP_FENCE=off` chỉ dành cho demo cá nhân; không chứng minh backup hay khả năng khôi phục.
 
-## 2. Hướng dẫn Cài đặt & Khởi chạy
+## 2. Local development — Ubuntu 24.04 / WSL2
 
-### Phương án A: Khởi chạy bằng Docker Compose (Khuyên dùng)
+### Prerequisites
 
-Phương án này đóng gói sẵn toàn bộ môi trường bao gồm: CSDL PostgreSQL 16, backend Fastify, frontend Next.js và Nginx reverse proxy.
+- **Node.js 24.7 trở lên thuộc dòng 24**, npm đi kèm Node 24. Node 20/22 không có API Argon2 mà dự án dùng.
+- PostgreSQL **16** server và client (`psql`, `createdb`).
+- Rust toolchain theo `rust-toolchain.toml` (cài qua [rustup](https://rustup.rs/)); Cargo tự chọn phiên bản đã pin khi chạy trong repo.
+- `protoc`, compiler/linker, Python 3.12 và g++ C++20.
 
-#### Bước 1: Tải mã nguồn
+Cài gói hệ thống trên Ubuntu (không thay thế bước cài Node 24/rustup):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y postgresql-16 postgresql-client-16 \
+  build-essential python3 protobuf-compiler pkg-config libssl-dev
+sudo systemctl start postgresql
+
+node --version
+npm --version
+cargo --version
+psql --version
+protoc --version
+python3 --version
+g++ --version
+```
+
+Nếu dùng WSL không có systemd, khởi động PostgreSQL bằng cơ chế service của distro. Không hạ/nâng kernel để chạy demo này.
+
+### Cài dependencies và verifier từ source
+
 ```bash
 git clone https://github.com/HaThaiCT/OanTuTiGame.git
 cd OanTuTiGame
-```
-
-#### Bước 2: Tạo tệp mật khẩu (Secrets)
-Docker Compose sử dụng cơ chế Docker Secrets để bảo mật mật khẩu CSDL:
-- **Trên Linux / macOS**:
-  ```bash
-  mkdir -p secrets
-  openssl rand -hex 24 > secrets/postgres-owner
-  openssl rand -hex 24 > secrets/postgres-app
-  ```
-- **Trên Windows (PowerShell)**:
-  ```powershell
-  New-Item -ItemType Directory -Force -Path secrets
-  [System.Guid]::NewGuid().ToString("N") | Out-File -Encoding ascii secrets/postgres-owner
-  [System.Guid]::NewGuid().ToString("N") | Out-File -Encoding ascii secrets/postgres-app
-  ```
-
-#### Bước 3: Thiết lập biến môi trường và chạy container
-- **Trên Linux / macOS**:
-  ```bash
-  export PG_OWNER_PASSWORD_FILE=$(pwd)/secrets/postgres-owner
-  export PG_APP_PASSWORD_FILE=$(pwd)/secrets/postgres-app
-  export PUBLIC_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-  export OANTUTI_BACKUP_FENCE=off
-
-  docker compose up --build -d
-  ```
-- **Trên Windows (PowerShell)**:
-  ```powershell
-  $env:PG_OWNER_PASSWORD_FILE = "$PWD/secrets/postgres-owner"
-  $env:PG_APP_PASSWORD_FILE = "$PWD/secrets/postgres-app"
-  $env:PUBLIC_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000"
-  $env:OANTUTI_BACKUP_FENCE = "off"
-
-  docker compose up --build -d
-  ```
-
-#### Bước 4: Kiểm tra trạng thái và mở ứng dụng
-Sau khoảng 15–30 giây, kiểm tra trạng thái các container:
-```bash
-docker compose ps
-```
-Khi thấy cả 4 container (`postgres`, `server`, `web`, `gateway`) đều ở trạng thái `running (healthy)`, hãy mở trình duyệt vào:
-👉 **[http://localhost:3000](http://localhost:3000)**
-
-#### Các lệnh quản trị Docker hữu ích:
-```bash
-# Xem log máy chủ theo thời gian thực
-docker compose logs -f server web
-
-# Khởi động lại các dịch vụ
-docker compose restart
-
-# Dừng hệ thống (DỮ LIỆU ĐƯỢC GIỮ NGUYÊN trong named volumes)
-docker compose down
-
-# Xoá sạch toàn bộ dữ liệu để làm lại từ đầu (cẩn trọng!)
-docker compose down -v
-```
-
----
-
-### Phương án B: Cài đặt và Chạy trực tiếp trên máy host (Local Development)
-
-Dành cho các bạn muốn phát triển hoặc tùy biến mã nguồn trực tiếp mà không qua container.
-
-#### Bước 1: Cài đặt dependencies
-Tại thư mục gốc dự án:
-```bash
 npm ci
+cargo build --release --locked -p arena-runner --bin verify-trace
+export OANTUTI_VERIFIER_BIN="$PWD/target/release/verify-trace"
 ```
 
-#### Bước 2: Chuẩn bị cơ sở dữ liệu PostgreSQL 16
-Tạo database tên là `arena` trên PostgreSQL cục bộ của bạn (qua `psql` hoặc pgAdmin):
-```sql
-CREATE DATABASE arena;
-```
+Rust verifier là authority kiểm tra luật/kết quả. Không có TypeScript fallback nếu thiếu binary. Trình xem replay đã có WASM được đóng gói trong `packages/web/public/wasm/`; [script build WASM](deploy/linux/build-wasm-verifier.sh) dùng khi cần tái biên dịch nó.
 
-#### Bước 3: Phục hồi bộ dữ liệu Demo chỉ với 1 lệnh
-Chạy lệnh tự động phục hồi dữ liệu demo (bao gồm 46 giải đấu, bảng xếp hạng và 616 ván replay):
+### Database mới và restore demo
+
+Chỉ tạo một role/database riêng cho demo. Các tên dưới đây có thể đổi, nhưng phải nhất quán với biến môi trường:
+
 ```bash
-PGHOST=localhost PGPORT=5432 PGDATABASE=arena PGUSER=postgres PGPASSWORD=your_password \
-  npm run demo:restore
-```
-*Script sẽ tự động nạp cơ sở dữ liệu và giải nén toàn bộ các tệp replay `.oantuti` vào thư mục `storage/replays/`.*
+sudo -u postgres createuser --login --pwprompt arena_local
+sudo -u postgres createdb --owner=arena_local arena_demo
 
-#### Bước 4: Khởi động Backend Fastify Server (`packages/server`)
-Mở cửa sổ terminal thứ nhất:
+export PGHOST=127.0.0.1 PGPORT=5432 PGUSER=arena_local PGDATABASE=arena_demo
+read -rsp 'Database password: ' PGPASSWORD; export PGPASSWORD; printf '\n'
+npm run demo:restore -- --fresh-empty-database
+```
+
+Restore yêu cầu đủ bốn biến PG, từ chối database có dữ liệu/schema ứng dụng và object roots không trống. Lỗi restore trả exit code khác 0. Không có mật khẩu/database path hard-code của máy tác giả. Cần kết nối PostgreSQL hoạt động trước khi restore.
+
+Mặc định object nằm ở `<repo>/storage/submissions` và `<repo>/storage/replays`. Nếu chọn thư mục ngoài checkout, đặt `OANTUTI_SUBMISSION_DIR` và `OANTUTI_REPLAYS_DIR` **giống nhau khi restore và khi chạy server**. Đường dẫn object được rebase theo thư mục đích.
+
+### Chạy API và web
+
+Terminal 1, tại gốc repo, với các biến PG và verifier ở trên:
+
 ```bash
-export PORT=4301
-export HOST=127.0.0.1
-export PGHOST=localhost
-export PGPORT=5432
-export PGDATABASE=arena
-export PGUSER=postgres
-export PGPASSWORD=your_password
+export PORT=4301 HOST=127.0.0.1
+export PUBLIC_ORIGINS=http://127.0.0.1:4300,http://localhost:4300
 export OANTUTI_AUTH_PROFILE=LAN_OFFLINE
-export OANTUTI_DEV_EXECUTION=1   # Bật bộ tự động đấu trận (Tournament Auto-Runner)
 export OANTUTI_BACKUP_FENCE=off
-
+export OANTUTI_DEV_EXECUTION=1
+export DB_LOCATION="$PWD/storage/legacy.sqlite"
 node --import tsx packages/server/src/index.ts
 ```
-Máy chủ API sẽ lắng nghe tại `http://127.0.0.1:4301`.
 
-#### Bước 5: Khởi động Frontend Next.js Web (`packages/web`)
-Mở cửa sổ terminal thứ hai:
-```bash
-cd packages/web
+**Executor development không sandbox:** chỉ chạy Bot mẫu hoặc mã bạn tin cậy; không mở nhận mã từ người khác. Không đổi `HOST` sang `0.0.0.0` một cách tùy tiện.
 
-# Chạy bản production build đã tối ưu (khuyên dùng):
-npm run build
-npm run start -- -H 127.0.0.1 -p 4300
-
-# Hoặc nếu muốn chỉnh sửa giao diện với hot-reload:
-# npm run dev
-```
-Mở trình duyệt truy cập:
-👉 **[http://127.0.0.1:4300](http://127.0.0.1:4300)** (hoặc cổng cấu hình của bạn).
-
----
-
-## 3. Khám phá Giao diện & Tính năng chính
-
-Sau khi khởi chạy thành công, bạn có thể trải nghiệm các phân hệ chính trên thanh điều hướng:
-
-1. **Trang chủ (`/`)**:
-   - Dải thông báo trận đấu gần nhất (Match Ticker) với tỉ số trực tiếp và liên kết xem Replay ngay lập tức.
-   - Thẻ giải đấu tiêu điểm đang diễn ra (`● ĐANG DIỄN RA`).
-   - Danh sách các cặp đối đầu mới nhất và Bảng xếp hạng Top 8 đội mạnh nhất.
-2. **Giải đấu (`/tournaments`)**:
-   - Trang chuyên biệt quản lý tất cả các giải đấu trên hệ thống.
-   - Bộ tìm kiếm và các bộ lọc thể thức: *Loại trực tiếp*, *Swiss → Playoff*, *Vòng tròn*, *Elo Arena*.
-   - Chi tiết giải đấu: **Sơ đồ nhánh đấu đồ họa (Bracket)** tương tác hiển thị trực quan, xem tỷ số từng cặp đấu và trạng thái từng ván.
-3. **Bảng xếp hạng (`/rankings`)**:
-   - Bảng xếp hạng toàn cục (Global Standings) cập nhật theo thời gian thực.
-   - Hiển thị danh hiệu phân hạng: *Novice*, *Pupil*, *Specialist*, *Expert*, *Master*, *Grandmaster*.
-4. **Trình phát lại ván đấu (Replay Player)**:
-   - Truy cập qua nút **Replay** ở bất kỳ trận đấu nào.
-   - Bàn cờ hiển thị trực quan các quân cờ cử chỉ tay ✊ Búa, ✌️ Kéo, 🖐️ Bao với hiệu ứng 3D phát sáng.
-   - Hỗ trợ Play/Pause, tua lùi, tua tiến, thay đổi tốc độ (0.5x, 1x, 2x, 4x) và danh sách nước đi bên phải.
-5. **Không gian đội (`/workspace`)**:
-   - Đăng nhập với tài khoản `demo_cap1` / `DemoStudent@2026`.
-   - Trình soạn thảo mã nguồn **Monaco Code Editor** hỗ trợ code bot trực tiếp nhiều file trên trình duyệt.
-   - Tải file nộp bài `.zip`.
-   - Tính năng **Chạy test riêng tư (Private Test)**: Kiểm tra bot đánh thử với bot mẫu để xem trước replay mà không bị tính điểm phạt.
-6. **Bảng điều khiển Ban tổ chức (`/organizer`)**:
-   - Đăng nhập với tài khoản `system_admin` / `DemoAdmin@2026`.
-   - Quản lý học phần, cấp tài khoản sinh viên hàng loạt, tạo giải đấu mới.
-   - Công cụ vẽ bản đồ **Map Editor**: Tạo ô cấm, đặt vị trí Hoàng toạ và quân ban đầu.
-
----
-
-## 4. Hướng dẫn Lập trình Bot (Bot Developer Guide)
-
-### Luật chơi & Điều kiện thắng
-- **Bàn cờ**: Kích thước lưới $N \times M$ (mặc định $8 \times 8$).
-- **Di chuyển**: Mỗi lượt đi, bạn chọn 1 quân cờ còn sống của phe mình để di chuyển tới 1 trong 8 ô lân cận (ngang, dọc, chéo).
-- **Quy tắc ăn quân**:
-  - ✊ **Búa (Rock)**: Ăn ✌️ Kéo, bị ăn bởi 🖐️ Bao.
-  - ✌️ **Kéo (Scissors)**: Ăn 🖐️ Bao, bị ăn bởi ✊ Búa.
-  - 🖐️ **Bao (Paper)**: Ăn ✊ Búa, bị ăn bởi ✌️ Kéo.
-  - Không thể đi vào ô có quân cùng phe hoặc quân địch cùng loại / quân địch khắc chế mình.
-- **Điều kiện thắng**:
-  1. Quân cờ của bạn đi vào ô **Hoàng toạ (Throne)** của đối phương.
-  2. Bạn ăn sạch **toàn bộ một chủng loại quân** của đối thủ (ví dụ: đối thủ mất sạch cả 2 quân Kéo).
-  3. Đối thủ không còn nước đi hợp lệ hoặc bị xử thua do vi phạm (quá giờ, crash).
-
----
-
-### Giao thức giao tiếp STDIO NDJSON
-Bot chạy độc lập dưới dạng một tiến trình con (child process), giao tiếp qua `stdin` (nhận dữ liệu) và `stdout` (gửi nước đi) bằng các dòng JSON (NDJSON):
-
-1. **Giai đoạn khởi tạo (`INIT`)**:
-   - Nhận thông tin cấu hình ván đấu, phe thi đấu (`WHITE` hoặc `BLACK`), vị trí xuất phát.
-   - Bot phải phản hồi: `{"status": "READY"}` trong vòng **1000ms**.
-2. **Giai đoạn tính toán nước đi (`TURN`)**:
-   - Nhận trạng thái bàn cờ hiện tại, lượt đánh, danh sách quân sống/chết.
-   - Bot phải phản hồi: `{"action": "MOVE", "piece_id": 1, "target": [3, 4]}` trong vòng **100ms** (có 5ms grace).
-   - *Lưu ý: Mọi log in ra màn hình để gỡ lỗi (debug) phải ghi vào `stderr`, không ghi vào `stdout`.*
-
----
-
-### Bot mẫu Python
-Tệp `sdk/python/starter_bot.py`:
-```python
-import random
-from oantuti import Bot, Context, MoveAction
-
-class StarterBot(Bot):
-    def on_init(self, ctx: Context) -> None:
-        # Khởi tạo chiến thuật ban đầu
-        pass
-
-    def on_turn(self, ctx: Context) -> MoveAction:
-        # Lấy danh sách toàn bộ các nước đi hợp lệ
-        moves = ctx.get_legal_moves()
-        if not moves:
-            return None
-
-        # Ví dụ chiến thuật: Ưu tiên nước đi ăn quân đối phương
-        attack_moves = [m for m in moves if ctx.is_capture_move(m)]
-        if attack_moves:
-            return random.choice(attack_moves)
-
-        # Nếu không có nước ăn quân, chọn ngẫu nhiên nước đi hợp lệ
-        return random.choice(moves)
-
-if __name__ == "__main__":
-    StarterBot().run()
-```
-
----
-
-### Bot mẫu TypeScript
-Tệp `sdk/typescript/starter_bot.ts`:
-```typescript
-import { BotHandler, Context, MoveAction, runBot } from './oantuti';
-
-const starterBot: BotHandler = {
-  onInit(ctx: Context): void {
-    // Khởi tạo
-  },
-
-  onTurn(ctx: Context): MoveAction | null {
-    const legalMoves = ctx.getLegalMoves();
-    if (legalMoves.length === 0) return null;
-
-    // Chọn ngẫu nhiên một nước đi hợp lệ
-    return legalMoves[Math.floor(Math.random() * legalMoves.length)];
-  },
-};
-
-runBot(starterBot);
-```
-
----
-
-### Bot mẫu C++20
-Tệp `sdk/cpp/starter_bot.cpp`:
-```cpp
-#include "oantuti.hpp"
-#include <random>
-
-class StarterBot : public oantuti::Bot {
-public:
-    void on_init(const oantuti::Context& ctx) override {
-        // Khởi tạo
-    }
-
-    std::optional<oantuti::MoveAction> on_turn(const oantuti::Context& ctx) override {
-        auto legal_moves = ctx.get_legal_moves();
-        if (legal_moves.empty()) {
-            return std::nullopt;
-        }
-
-        // Chọn nước đi đầu tiên hợp lệ
-        return legal_moves[0];
-    }
-};
-
-int main() {
-    StarterBot bot;
-    bot.run();
-    return 0;
-}
-```
-
----
-
-## 5. Đấu thử 2 Bot bằng dòng lệnh (CLI Match Runner)
-
-Bạn hoàn toàn có thể kiểm tra thuật toán của 2 bot đối đầu trực tiếp trên máy mình mà không cần bật Web Server:
+Terminal 2, tại gốc repo:
 
 ```bash
-# Đấu thử Bot Python (Phe Trắng) với Bot C++ (Phe Đen):
-# Bộ chạy runner sẽ tự động biên dịch mã C++ nếu chưa có binary!
+API_BASE=http://127.0.0.1:4301 npm run build --workspace=@oantuti/web
+API_BASE=http://127.0.0.1:4301 npm run start --workspace=@oantuti/web -- -H 127.0.0.1
+```
+
+Mở **http://127.0.0.1:4300**. Đăng nhập bằng tài khoản demo của mục 1. Sửa web phải build và restart `next start`; dùng `npm run dev --workspace=@oantuti/web` nếu muốn hot reload. `API_BASE` cần đúng cả lúc build vì Next rewrites được resolve khi build.
+
+## 3. Tự kiểm tra sau cài đặt
+
+1. Trang chủ/`/tournaments`: thấy danh sách 46 giải demo, không có lỗi kết nối API.
+2. `/rankings`: thấy 48 đội `SHOWCASE_Txx` cùng các đội Rated có sẵn.
+3. Mở một đội: có lịch sử Rating, không lộ danh sách thành viên trên trang public.
+4. Mở một giải FINALIZED → chọn một ván → Replay: tải được dữ liệu object và điều khiển playback.
+5. Đăng nhập `system_admin` → `/organizer`: thấy course, đội, giải và phần review Rating.
+6. Đăng nhập `showcase_01a` → `/workspace`: vào đúng đội; không có quyền quản trị.
+
+Docker:
+
+```bash
+docker compose ps
+docker compose logs --tail=50 postgres server
+# Kiểm tra API từ trong container (không cần công bố cổng API):
+docker compose exec server node -e "fetch('http://127.0.0.1:3001/api/health').then(async r=>{console.log(await r.text());process.exit(r.ok?0:1)})"
+```
+
+Local: `curl --fail http://127.0.0.1:4301/api/health`.
+
+## 4. Viết và đấu thử Bot
+
+Luật: di chuyển một ô theo 8 hướng trên các ô hợp lệ; Rock thắng Scissors, Scissors thắng Paper, Paper thắng Rock. Thắng bằng cách diệt hết một loại quân đối thủ hoặc chiếm throne đối thủ; chi tiết/tie-break xem [luật v2](docs/specs/v2/02-GAMEPLAY-TOURNAMENT-RULES.md).
+
+Dùng đúng starter và SDK đi kèm, không chép API giả từ ví dụ cũ:
+
+- [Python](sdk/python/starter_bot.py) + [SDK](sdk/python/oantuti.py)
+- [TypeScript](sdk/typescript/starter_bot.ts) + [SDK](sdk/typescript/oantuti.ts)
+- [C++20](sdk/cpp/starter_bot.cpp) + [SDK](sdk/cpp/oantuti.hpp)
+- [Giao thức STDIO NDJSON](docs/specs/04-BOT-RUNNER-IPC-SPEC.md)
+
+Bot nhận INIT và TURN qua stdin, chỉ xuất protocol JSON ra stdout; log chẩn đoán dùng stderr. ZIP submission phải có cả entrypoint và SDK/project files.
+
+Đấu thử không cần web/database, sau `npm ci` và cài Python/g++:
+
+```bash
 npm run match:play -- \
   --map docs/specs/maps/sample-donut.map.json \
   --white sdk/python/starter_bot.py \
-  --black sdk/cpp/starter_bot.cpp \
-  --replay /tmp/test-match.oantuti
+  --black sdk/cpp/starter_bot.cpp
 ```
 
-Sau khi trận đấu kết thúc, kết quả thắng thua sẽ hiển thị trên terminal và xuất ra tệp `/tmp/test-match.oantuti`. Bạn có thể mở giao diện web mục Replay để xem lại diễn biến trận đấu đó.
+CLI này là công cụ development, không ghi rating/kết quả chính thức. Replay chính thức hiển thị trên portal phải có accepted evidence trong server, không chỉ một file tùy ý trên máy.
 
----
+## 5. Tests — dùng database riêng
 
-## 6. Chạy kiểm thử tự động (Test Suite)
-
-Dự án tích hợp bộ kiểm thử tự động toàn diện với hơn 400+ unit/integration tests bao phủ toàn bộ hệ thống:
+Các test PostgreSQL ghi/sửa dữ liệu fixture. **Không trỏ test vào database demo hay dữ liệu thật.**
 
 ```bash
-# Chạy toàn bộ test suite
-npm test
-
-# Hoặc chạy kiểm thử riêng từng thành phần:
-npm run test:engine    # Kiểm tra game engine, luật chơi và tính tất định
-npm run test:protocol  # Kiểm tra giao thức mã hóa dữ liệu
-npm run test:runner    # Kiểm tra bộ chạy bot và xử lý timeout
-npm run test:web       # Kiểm tra các components giao diện web
-npm run test:server    # Kiểm tra các API backend Fastify
+npm run test:engine
+npm run test:protocol
+npm run test:runner
+npm run test:specs
+npm run test:proto
 ```
 
----
+`test:web` hiện không có test files; build web và kiểm tra browser là bước xác minh UI.
 
-## 7. Xử lý sự cố thường gặp (FAQ & Troubleshooting)
+Để chạy suite có PostgreSQL, dùng role có quyền tạo fixture và một database mới chứa `test` trong tên:
 
-**Hỏi: Cổng 3000 đã bị chiếm bởi một ứng dụng khác trên máy tôi?**
-> **Trả lời**: Bạn có thể đổi cổng web khi chạy Docker Compose bằng cách đặt biến `WEB_PORT`:
-> ```bash
-> WEB_PORT=3300 docker compose up -d
-> ```
-> Sau đó truy cập tại `http://localhost:3300`.
+```bash
+sudo -u postgres createdb --owner=arena_local arena_local_test
+export PGHOST=127.0.0.1 PGPORT=5432 PGUSER=arena_local PGDATABASE=arena_local_test
+read -rsp 'Test database password: ' PGPASSWORD; export PGPASSWORD; printf '\n'
 
-**Hỏi: Làm sao để đăng nhập Admin mà không cần nhập mật khẩu?**
-> **Trả lời**: Trong môi trường dòng lệnh, bạn có thể tạo session cookie trực tiếp:
-> ```bash
-> npm run demo:login system_admin
-> ```
-> Terminal sẽ in ra chuỗi cookie phiên `oantuti_session=...` để bạn dán vào DevTools trình duyệt.
+# Migration CLI nhận mật khẩu qua file riêng, không qua raw PGPASSWORD.
+umask 077
+mkdir -p "$HOME/.config/oantuti-demo"
+printf '%s' "$PGPASSWORD" > "$HOME/.config/oantuti-demo/test-db-password"
+PGPASSWORD= PGPASSWORD_FILE="$HOME/.config/oantuti-demo/test-db-password" \
+  node --import tsx deploy/linux/apply-migrations.mts --apply --grant-to arena_local
 
-**Hỏi: Làm sao để cài lại dữ liệu mẫu nếu lỡ tay xóa?**
-> **Trả lời**:
-> - Nếu dùng Docker Compose:
->   ```bash
->   docker compose down -v
->   docker compose up -d
->   ```
-> - Nếu chạy cục bộ:
->   ```bash
->   npm run demo:restore
->   ```
+export OANTUTI_VERIFIER_BIN="$PWD/target/release/verify-trace"
+OANTUTI_DEV_EXECUTION=1 node --import tsx deploy/linux/test-isolated.mts
+```
 
----
+Một số test nâng quyền/migration cần URL PostgreSQL admin riêng; các test skip không được tính là đã kiểm chứng. `npx tsc --noEmit` ở root hiện không đồng nghĩa typecheck web/server package: root còn diagnostics của test/NodeNext; dùng build web và package configs tương ứng, đọc output thật thay vì coi exit lỗi là pass.
 
-## 📜 Giấy phép & Bản quyền
-Dự án được xây dựng và phát hành theo các tiêu chuẩn học thuật của **OanTuTi Tournament Platform**. Mọi quyền được bảo lưu.
+## 6. Khắc phục sự cố
+
+- **Node thiếu `crypto.argon2`**: dùng Node 24.7+, chạy lại `npm ci`; Node20/22 không được hỗ trợ.
+- **`docker: unknown command: compose`**: cài Compose plugin hoặc Docker Desktop; kiểm tra `docker compose version`.
+- **`permission denied` đọc secret file**: đường dẫn phải là file mật khẩu có nội dung, Docker được quyền đọc. Không dùng `/dev/null` để chạy thật.
+- **Restore từ chối database không trống**: dùng database/project volume mới. Không chạy restore lại trên dữ liệu đang dùng và không xóa volume chỉ để né guard.
+- **Không thấy replay / lỗi object root**: restore cả SQL và archive; giữ nguyên thư mục object đã chọn; kiểm tra log. `storage` phải riêng tư với service identity, không `chmod -R 777`.
+- **`RUST_VERIFIER_PROCESS` / thiếu `verify-trace`**: build Rust verifier và đặt `OANTUTI_VERIFIER_BIN` tuyệt đối; Docker image đã mang binary này.
+- **Không có trận mới chạy trong Docker**: mặc định Docker chỉ xem demo, executor tắt. Không phải lỗi nạp dữ liệu.
+- **Login/CSRF khi đổi cổng**: sửa `PUBLIC_ORIGINS` khớp origin trên trình duyệt rồi tạo lại container server bằng `docker compose up -d`.
+- **Mất dữ liệu sau `down -v`**: volume đã bị xóa; không có bảo đảm khôi phục dữ liệu tự tạo nếu chưa backup. Bundle chỉ chứa snapshot demo công khai.
+
+## 7. Phạm vi và bảo mật
+
+Compose/local development không phải chứng nhận production, sandbox, backup hay tải 500 đội. Xem [specs v2](docs/specs/v2/README.md) và [hướng dẫn vận hành](docs/implementation/rebuild/demo-and-tests.md). Các tài khoản/mật khẩu riêng của môi trường tác giả không nằm trong README hoặc bản demo chia sẻ.
+
+Các thay đổi cục bộ chưa commit/push không xuất hiện khi clone GitHub. Báo cáo kiểm chứng phải nêu đúng revision đã clone và các bản sửa chưa phát hành; không ngầm coi working tree là mã đã có trên GitHub.

@@ -2,7 +2,7 @@
 # The server treats Rust as the rules authority and has no TypeScript fallback, so the binary ships in this image.
 # Builder and runtime are both Debian Bookworm, keeping the glibc ABI baseline aligned.
 # The local development toolchain builds the same crate for the host.
-FROM rust:1.98.1-slim-bookworm AS verifier
+FROM rust:1.99.1-slim-bookworm AS verifier
 RUN apt-get update \
  && apt-get install -y --no-install-recommends protobuf-compiler \
  && rm -rf /var/lib/apt/lists/*
@@ -51,13 +51,17 @@ RUN chmod 0755 /app/bin/verify-trace
 
 # Persistent storage directories. Object roots must be private to the service identity: the stores
 # refuse a group/world-accessible root, and the checkpoint producer refuses to back one up.
-RUN mkdir -p /app/storage/replays /app/storage/bots /app/storage/execution \
- && chown -R node:node /app/storage && chmod 700 /app/storage /app/storage/replays /app/storage/bots /app/storage/execution
+RUN mkdir -p /app/storage/replays /app/storage/submissions /app/storage/bots /app/storage/execution \
+ && chown -R node:node /app/storage \
+ && chmod 700 /app/storage /app/storage/replays /app/storage/submissions /app/storage/bots /app/storage/execution
 
 ENV PORT=3001
 ENV HOST=0.0.0.0
 ENV NODE_ENV=production
 ENV DB_LOCATION=/app/storage/arena.sqlite
+ENV OANTUTI_SUBMISSION_DIR=/app/storage/submissions
+ENV OANTUTI_REPLAYS_DIR=/app/storage/replays
+ENV OANTUTI_SPOOL_DIR=/app/storage/execution
 ENV OANTUTI_VERIFIER_BIN=/app/bin/verify-trace
 
 USER node

@@ -10,6 +10,8 @@
 **/*.log
 .env
 .env.*
+**/.env
+**/.env.*
 storage
 sdk/cpp/starter_bot
 **/*.exe
@@ -19,3 +21,9 @@ sdk/cpp/starter_bot
 downloads
 tmp-*
 deploy/local-secrets
+**/local-secrets
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/.DS_Store

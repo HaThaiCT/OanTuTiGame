@@ -15,7 +15,7 @@ services:
       - ./packages/server/src/persistence/migrations:/opt/arena-migrations:ro
       - ./deploy/demo-data:/opt/demo-data:ro
     healthcheck:
-      test: [CMD-SHELL, 'pg_isready -U arena_owner -d arena']
+      test: [CMD-SHELL, 'test -f "$$PGDATA/.arena-initialized" && pg_isready -U arena_owner -d arena']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -35,12 +35,15 @@ services:
       PGUSER: arena_app
       PGPASSWORD_FILE: /run/secrets/pg_app_password
       DB_LOCATION: /app/storage/legacy.sqlite
+      OANTUTI_SUBMISSION_DIR: /app/storage/submissions
+      OANTUTI_REPLAYS_DIR: /app/storage/replays
+      OANTUTI_SPOOL_DIR: /app/storage/execution
       PUBLIC_ORIGINS: '${PUBLIC_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}'
       OANTUTI_AUTH_PROFILE: LAN_OFFLINE
       OANTUTI_DEV_EXECUTION: '0'
-      # The bundled nginx front must be named as the trusted proxy, otherwise every client shares the
-      # proxy address and therefore one login-throttle bucket. Empty keeps the socket address.
-      OANTUTI_TRUSTED_PROXIES: '${OANTUTI_TRUSTED_PROXIES:-}'
+      # Only the gateway is published. It replaces forwarded client addresses; trust its private
+      # Compose-network address so clients do not share one login-throttle bucket.
+      OANTUTI_TRUSTED_PROXIES: '${OANTUTI_TRUSTED_PROXIES:-uniquelocal}'
       OANTUTI_BACKUP_FENCE: '${OANTUTI_BACKUP_FENCE:?Set OANTUTI_BACKUP_FENCE explicitly to off or enforce}'
     secrets: [pg_app_password]
     volumes:

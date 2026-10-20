@@ -8,6 +8,16 @@ The demo is on schema 26 and serves the portal/API locally. Current readiness is
 
 Remaining handoff items: human U5 visual/usability and accessibility acceptance, and an actual CI runner pass after the workflow update. Locally, migration locking/checksums/grant atomicity, the version-26 fresh install under a separate migrator role, the Bookworm server image and its bundled Rust verifier have been verified. `npm audit --omit=dev --workspace=@oantuti/server` reports zero findings; the web workspace still has known low/moderate advisories (including Monaco's bundled DOMPurify 3.4.15 and the bracket viewer dependency tree), not waived or described as fixed. Infrastructure provisioning, capacity, off-host custody and endurance runs remain outside this software-delivery scope and have no measured claim. See `acceptance-matrix.json` `deliveryScopeOverride` and [LAN handover boundaries](../../runbooks/lan-handover.md#9-bi%C3%AAn-nh%E1%BA%ADn-nghi%E1%BB%87m-thu).
 
+## Fresh personal-machine installation proof (2026-10-21)
+
+Re-verified the portable Compose package end-to-end on this host as a clean target (project `oantuti-install-proof2-20261021`, gateway 127.0.0.1:44300), separate from the live demo (4300/4301/55434), which was restored and left running unchanged.
+
+- **Two real defects found and fixed, both fail-closed:** (1) the scrubbed demo SQL dropped `job_attempts` rows still referenced by `job_completions` FK, so fresh restore rolled back; the bundle was fixed and covered by `packages/server/tests/portable-demo-restore.test.ts` (10/10 pass). (2) Compose file-backed secrets at host mode `0600` were unreadable by the PostgreSQL container UID, so init aborted and the health marker kept the stack unhealthy; README now specifies secret directory `0700` with files `0444` (Compose `uid/gid/mode` cannot remap bind-source permissions).
+- **Fresh restore into an empty database:** 126 users / 72 teams / 46 tournaments / 616 accepted results; 628 objects inventoried, 0 missing; no sessions/reset tokens/test snapshots shipped. Restore also passed under a non-superuser role (`arena_personal`), and re-running restore on a non-empty database exits 1 without overwriting.
+- **Fresh Compose stack:** all four services (postgres, server, web, gateway) healthy after `up --build`. Browser-verified: public rankings (50 teams listed), admin login, organizer console, and a 300-move official replay page with SHA-256 checksum match. API replay download returns 200.
+- **Persistence across restart:** `docker compose down` + `up -d` (volumes kept) → identical counts (126/72/46/616), storage volume holds 616 replay files + 12 submission archives, admin login and replay download still 200.
+- Remaining limits unchanged: control-plane packaging evidence only — no TLS, off-host backup, sandboxed execution, or VPS certification claim.
+
 ## Historical deployment pause (2026-10-18)
 
 Public/VPS commissioning remains paused unless the user authorizes it. Historical session summaries/checkmarks below are records, not the current status.
