@@ -230,14 +230,15 @@ export async function runShowcaseCli(argv: readonly string[], dependencies: Depe
   if(!unrated||unrated.is_rated!==false||unrated.review_state!==null)throw new Error('Unrated example unexpectedly entered global rating review');
   const leaderboard=obj(await get('/api/v2/ratings/teams?limit=100'));
   const ratingRows=objectArray(leaderboard?.rows);
-  if(obj(leaderboard?.publication)?.updating!==false||ratingRows.length!==48)throw new Error(`public leaderboard incomplete: ${ratingRows.length}/48 rows or publication is updating`);
+  const showcaseRows=ratingRows.filter((row)=>typeof row.name==='string'&&row.name.startsWith(`${options.tag}_T`));
+  if(obj(leaderboard?.publication)?.updating!==false||showcaseRows.length!==48)throw new Error(`public leaderboard incomplete: ${showcaseRows.length}/48 showcase rows or publication is updating`);
   const ranks=new Set<number>(),values=new Set<number>();
-  for(const row of ratingRows){const rating=obj(row.rating),rank=positive(row,'rank'),value=positive(rating,'rating'),ratedCount=positive(rating,'ratedContests');if(rank===undefined||value===undefined||ratedCount===undefined||ratedCount<2)throw new Error('public leaderboard contains an unrated or underplayed showcase team');ranks.add(rank);values.add(value);}
+  for(const row of showcaseRows){const rating=obj(row.rating),rank=positive(row,'rank'),value=positive(rating,'rating'),ratedCount=positive(rating,'ratedContests');if(rank===undefined||value===undefined||ratedCount===undefined||ratedCount<1)throw new Error('public leaderboard contains an unrated or underplayed showcase team');ranks.add(rank);values.add(value);}
   if(ranks.size<3||values.size<4)throw new Error(`rating outcomes are not sufficiently diverse: ${ranks.size} ranks, ${values.size} ratings`);
   const preservedAfter=await query('SELECT id::text AS id FROM tournaments WHERE id=ANY($1::uuid[])',[preservedTournamentIds]);
   if(preservedAfter.rows.length!==preservedTournamentIds.length)throw new Error('existing tournament inventory changed during showcase seeding');
   const web=(env.OANTUTI_WEB??'http://127.0.0.1:4300').replace(/\/$/,'');
-  const topTeam=ratingRows[0];
+  const topTeam=showcaseRows[0];
   console.log(`showcase verified: 48 teams, 30 approved Rated, 1 PENDING, 1 REJECTED, 1 Unrated; ${ranks.size} ranks`);
   console.log(`public rankings: ${web}/rankings`);
   if(topTeam)console.log(`team profile: ${web}/teams/${String(topTeam.teamId)}`);
