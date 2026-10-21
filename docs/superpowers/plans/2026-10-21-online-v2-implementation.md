@@ -100,11 +100,11 @@
 
 **Files:** Update Online backlog status/progress, add Online software receipt and deploy/runbook/config template consistent with existing Compose/secret separation, README links and CI expected schema only where required.
 
-- [ ] Run isolated full JS suite, Rust workspace tests, server typecheck, separate web production build, Compose configuration and current CI-equivalent verifier/image smoke where environment permits; record skips truthfully.
+- [x] Run isolated full JS suite, Rust workspace tests, server typecheck, separate web production build, Compose configuration and current CI-equivalent verifier/image smoke where environment permits; record skips truthfully. Local Compose plugin unavailable; hosted exact-SHA Compose validation passed.
 - [x] Independent reviewer examines complete Online diff/source for token/storage/privacy/authorization/migration/lock/lifecycle and LAN regressions; fix reproducible blockers and rerun affected checks.
-- [ ] Supply validated deployment config/secret inventory, offline preflight (no mail), migration/bootstrap/recovery/rotation/hold/rollback instructions. Identify exact host/domain/provider/mailbox/TLS/DNS/backup/sandbox/human signoff prerequisites with commands and expected evidence, not fabricated PASS.
-- [ ] Commit only intended Online files, push develop/online-v2, observe exact-SHA CI (verify/images green, publication skipped), verify LAN ref unchanged.
-- [ ] Stop only at genuinely unreachable human deployment resources/authorization; keep objective active, report exact needed values/actions and already exercised evidence. No claim of public Online deployment.
+- [x] Supply validated deployment config/secret inventory, offline preflight (no mail), migration/bootstrap/recovery/rotation/hold/rollback instructions. Identify exact host/domain/provider/mailbox/TLS/DNS/backup/sandbox/human signoff prerequisites with commands and expected evidence, not fabricated PASS.
+- [x] Commit only intended Online files, push develop/online-v2, observe exact-SHA CI (verify/images green, publication skipped), verify LAN ref unchanged.
+- [x] Stop only at genuinely unreachable human deployment resources/authorization; keep objective active, report exact needed values/actions and already exercised evidence. No claim of public Online deployment.
 
 ## Execution decision
 

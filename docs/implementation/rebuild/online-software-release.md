@@ -13,7 +13,7 @@
 
 ## Source and Docker artifacts
 
-- Source branch: `develop/online-v2`. Integration began from `560d425784a6fe7ee81b6925166bcb5bbe84f643` (Online backlog). The published branch commit and its hosted CI run are recorded in the final hand-off message; CI must validate the exact pushed SHA before this package is treated as published.
+- Online implementation commit `c32f6bce48dbb2c8518fc238f973f009ab47ad0c` passed hosted GitHub Actions run [39581183145](https://github.com/HaThaiCT/OanTuTiGame/actions/runs/39581183145): workspace tests/build and both Docker image jobs succeeded; the registry publish job was correctly skipped on a branch push. The final receipt/plan update will be a docs-only commit and must also pass CI on its exact SHA.
 - Locally built Linux amd64 images: `oantuti-online-v2-server:local` (`sha256:fd07a9b353829c14d68348ccc32165f82043bbf070ea381ff3ab76adc08332ad`) and `oantuti-online-v2-web:local` (`sha256:c22c28fae7a1c1a30bf0aa852c810e8fdea1fdb39579bbcb7a1297c0af1c5e7b`).
 - Combined `docker save` archive: `/home/ha-thai/.local/share/oantuti/online-v2-release/online-v2-images.tar.gz` (281 MiB); checksum file `online-v2-images.tar.gz.sha256`; SHA-256 `5dd6159727a138cd00ca24e1c7fde73dc1699a4aed7c1649d8696b24e63cdb1a`. `sha256sum -c` passed after rebuilding the server image with the final email-delivery fix. Images are local artifacts, not pushed to GHCR or another registry.
 - Load the image archive on an authorized host, then follow [portable deployment — exported images and controlled Online startup](portable-deployment.md#loading-the-exported-docker-package). The archive checksum proves transfer integrity only, not image signature/provenance. Compose still requires Docker Compose v2.
