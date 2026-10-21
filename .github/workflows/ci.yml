@@ -95,12 +95,26 @@ jobs:
         env:
           PG_OWNER_PASSWORD_FILE: /dev/null
           PG_APP_PASSWORD_FILE: /dev/null
-          # Configuration validation only: CI has no offhost backup pipeline.
+          SMTP_PASSWORD_FILE: /dev/null
+          MAIL_KEYRING_FILE: /dev/null
           OANTUTI_BACKUP_FENCE: 'off'
+          OANTUTI_PUBLIC_BASE_URL: https://arena.example.invalid
+          OANTUTI_TRUST_PROXY: 127.0.0.1
+          OANTUTI_SMTP_HOST: smtp.example.invalid
+          OANTUTI_SMTP_PORT: '465'
+          OANTUTI_SMTP_TLS_MODE: implicit
+          OANTUTI_SMTP_USER: ci
+          OANTUTI_MAIL_FROM: arena@example.invalid
+          OANTUTI_MAIL_REPLY_TO: support@example.invalid
+          OANTUTI_BOOTSTRAP_ADMIN_EMAIL: admin@example.invalid
+          OANTUTI_BOOTSTRAP_CONFIRM: arena
+          OANTUTI_ACCOUNT_CAPACITY: '100'
+          WEB_BIND: 127.0.0.1
+          WEB_PORT: '3000'
         run: |
           docker compose config --quiet
           docker compose --profile ops config --quiet
-
+          docker compose -f docker-compose.yml -f docker-compose.online.yml config --quiet
   release:
     name: Publish image (${{ matrix.image }})
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')

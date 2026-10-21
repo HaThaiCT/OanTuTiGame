@@ -2,6 +2,11 @@
 
 Nền tảng thi đấu Bot Búa–Kéo–Bao trên bàn cờ: Python, TypeScript và C++20; giải loại trực tiếp, Swiss → playoff, vòng tròn và Elo arena; bảng Rating toàn cầu, live spectator, replay và trang quản trị.
 
+
+## Online deployment package
+
+This branch contains the Online software and Docker image build configuration. It is a controlled software package, **not** production commissioning, G0–G4 release certification, U5 acceptance, or a deployed public service. See the [Online software receipt and exported-image instructions](docs/implementation/rebuild/online-software-release.md) and [Online deployment/runbook](docs/implementation/rebuild/portable-deployment.md#controlled-online-startup-not-public-commissioning). Public commissioning requires human-supplied host, domain/TLS, mail provider/mailbox, backup custody, sandbox, and operator sign-off evidence.
+
 ## Chọn cách cài
 
 | Nhu cầu | Cách chạy |

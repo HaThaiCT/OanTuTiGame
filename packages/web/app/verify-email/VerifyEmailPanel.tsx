@@ -3,26 +3,33 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorText } from '../../lib/client';
-import { isProfileDisabled, verifyEmailToken } from '../../lib/api';
+import { isProfileDisabled, resendEmailVerification, verifyEmailToken } from '../../lib/api';
 import { OnlineOnlyNotice, ProfileProbeNotice, useAuthProfile } from '../_components/AuthProfile';
 
 /** Vietnamese explanation per verification failure code; unknown codes fall back to `errorText`. */
 const VERIFY_FAILURE: Record<string, string> = {
   EMAIL_VERIFICATION_INVALID: 'Token xác minh không hợp lệ.',
-  EMAIL_VERIFICATION_EXPIRED: 'Token xác minh đã hết hạn (token chỉ sống 24 giờ) — hãy đăng ký lại để nhận token mới.',
+  EMAIL_VERIFICATION_EXPIRED: 'Token xác minh đã hết hạn (token chỉ sống 24 giờ). Đăng nhập rồi yêu cầu gửi lại email xác minh.',
   EMAIL_VERIFICATION_CONSUMED: 'Token xác minh đã được dùng trước đó; tài khoản này đã xác minh.',
 };
 
-export default function VerifyEmailPanel({ token }: { token: string | null }) {
+export default function VerifyEmailPanel() {
   const profile = useAuthProfile();
-  const [verified, setVerified] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    setToken(fragment.get('token'));
+    setReady(true);
+  }, []);
+  const [verified, setVerified] = useState(false);
+  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   /** Raw `PROFILE_DISABLED` message from the API: evidence that this deployment is LAN_OFFLINE. */
   const [profileRefusal, setProfileRefusal] = useState<string | null>(null);
-  const inFlight = useRef(false);
-  const autoRan = useRef(false);
 
   /** Posts the token on demand; the ref keeps a double click from firing a second request. */
   const run = useCallback(async () => {
@@ -44,19 +51,12 @@ export default function VerifyEmailPanel({ token }: { token: string | null }) {
     }
     setCode(result.code ?? null);
     setError(VERIFY_FAILURE[result.code ?? ''] ?? errorText(result, 'Xác minh email thất bại.'));
-  }, [token]);
+  }, [profile, token]);
 
-  // One automatic attempt per page load, and only once the profile is known: in LAN_OFFLINE the
-  // refusal notice renders instead, so the verify route is never called. The ref survives the
-  // StrictMode double-invoked effect, keeping the attempt exactly-once.
-  useEffect(() => {
-    if (autoRan.current || !token || profile === undefined || profile === 'LAN_OFFLINE') return;
-    autoRan.current = true;
-    void run();
-  }, [run, token, profile]);
-
+  const [resent, setResent] = useState(false);
   if (profile === 'LAN_OFFLINE' || profileRefusal) return <OnlineOnlyNotice message={profileRefusal} />;
-  if (profile === undefined) return <ProfileProbeNotice />;
+  if (profile === undefined || !ready) return <ProfileProbeNotice />;
+  if (profile === null) return <p role="alert">Không thể xác định hồ sơ xác thực; xác minh email đã bị khóa.</p>;
 
   if (verified) {
     return (
@@ -80,8 +80,7 @@ export default function VerifyEmailPanel({ token }: { token: string | null }) {
       <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
         <h2 className="text-base font-semibold">Thiếu token xác minh</h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-          Đường dẫn không có tham số <span className="font-mono">?token=</span>, nên chưa có gì để xác minh. Hãy mở đúng liên
-          kết trong email xác minh, hoặc đăng nhập nếu tài khoản đã được xác minh.
+          Đường dẫn không có token trong phần <span className="font-mono">#token=</span>. Mở đúng liên kết email; trang không gửi hay dùng token cho đến khi bạn bấm xác nhận.
         </p>
         <Link
           href="/workspace"
@@ -92,17 +91,22 @@ export default function VerifyEmailPanel({ token }: { token: string | null }) {
       </section>
     );
   }
-
   return (
     <section className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
-      <p className="text-xs text-[var(--text-secondary)]">
-        Token trong liên kết đã được ghi nhận và gửi tới hệ thống để xác thực.
-      </p>
+      <p className="text-xs text-[var(--text-secondary)]">Token trong liên kết ở phần #token= được giữ trong trình duyệt; chưa có yêu cầu gửi đến máy chủ. Bấm nút xác nhận bên dưới để xác minh.</p>
+
       {busy ? <p className="text-xs text-[var(--text-secondary)]">Đang xác minh token...</p> : null}
       {error ? (
         <div className="border-l-2 border-[var(--danger-text)] bg-[var(--danger-tint)] px-3 py-2 font-mono text-xs text-[var(--danger-text)]">
           {error}
           {code ? <span className="ml-2 font-mono text-xs break-all text-[var(--text-secondary)]">[{code}]</span> : null}
+        </div>
+      ) : null}
+      {code === 'EMAIL_VERIFICATION_EXPIRED' ? (
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-2">Email đăng ký<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="rounded border border-[var(--border-control)] bg-[var(--canvas)] p-2" /></label>
+          <button type="button" disabled={busy || !email} onClick={() => { void resendEmailVerification(email).then(result => { if (result.ok) setResent(true); else setError(errorText(result, 'Không thể yêu cầu gửi lại.')); }); }} className="vct-btn-secondary">Yêu cầu gửi lại email xác minh</button>
+          {resent ? <p role="status">Nếu tài khoản cần xác minh, email mới đã được yêu cầu.</p> : null}
         </div>
       ) : null}
       <button
@@ -111,7 +115,7 @@ export default function VerifyEmailPanel({ token }: { token: string | null }) {
         disabled={busy}
         className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
       >
-        {busy ? 'Đang xác minh...' : 'Xác minh email'}
+        {busy ? 'Đang xác minh...' : 'Xác nhận xác minh email'}
       </button>
     </section>
   );

@@ -3,7 +3,7 @@
   "authorityPlan": "OANTUTI_ARENA_V2_PLAN.md",
   "releaseReady": false,
   "activeProfile": "LAN_OFFLINE",
-  "onlineStatus": "DEFERRED_BY_USER",
+  "onlineStatus": "SOFTWARE_COMPLETE_AWAITING_COMMISSIONING",
   "activePlan": "docs/superpowers/plans/2026-10-18-lan-first-completion.md",
   "deliveryScopeOverride": {
     "scope": "LAN software delivery only",

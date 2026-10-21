@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { TeamService } from './service.js';
 import type { IdentityService } from '../identity/service.js';
 import type { Actor, UUID } from '@oantuti/protocol';
@@ -30,8 +30,21 @@ export function registerTeamRoutes(
     if (!auth) {
       throw { statusCode: 401, code: 'UNAUTHENTICATED', message: 'Session expired or revoked' };
     }
+    if(auth.actor.scope !== 'FULL') throw {statusCode:403,code:'FULL_SESSION_REQUIRED',message:'Full session required'};
     return auth.actor;
   }
+
+  function privateResponse(reply: FastifyReply): void { reply.header('Cache-Control','private, no-store'); }
+  app.get('/api/v2/me/teams',async(request,reply)=>{ privateResponse(reply); return {teams:await teamService.listOwnTeams(await requireActor(request))}; });
+  app.post<{Body:{tournamentId:string;name:string}}>('/api/v2/me/teams',async(request,reply)=>{ privateResponse(reply); const actor=await requireActor(request); return reply.code(201).send(await teamService.createOwnTeam(request.body?.tournamentId,request.body?.name,actor)); });
+  app.get('/api/v2/me/team-invitations',async(request,reply)=>{ privateResponse(reply); return {invitations:await teamService.listInvitations(await requireActor(request))}; });
+  app.post<{Params:{id:string};Body:{username:string}}>('/api/v2/teams/:id/invitations',async(request,reply)=>{ privateResponse(reply); return reply.code(201).send(await teamService.issueInvitation(request.params.id,request.body?.username,await requireActor(request))); });
+  app.post<{Params:{id:string};Body:{decision:'ACCEPT'|'DECLINE'}}>('/api/v2/team-invitations/:id/respond',async(request,reply)=>{ privateResponse(reply); return {invitation:await teamService.respondToInvitation(request.params.id,request.body?.decision,await requireActor(request))}; });
+  app.post<{Params:{id:string}}>('/api/v2/team-invitations/:id/revoke',async(request,reply)=>{ privateResponse(reply); return {invitation:await teamService.revokeInvitation(request.params.id,await requireActor(request))}; });
+  app.delete<{Params:{id:string;userId:string}}>('/api/v2/teams/:id/members/:userId',async(request,reply)=>{ privateResponse(reply); return teamService.removeMember(request.params.id,request.params.userId,await requireActor(request)); });
+  app.post<{Params:{id:string};Body:{userId:string}}>('/api/v2/teams/:id/captain',async(request,reply)=>{ privateResponse(reply); return teamService.transferCaptain(request.params.id,request.body?.userId,await requireActor(request)); });
+  app.post<{Params:{id:string}}>('/api/v2/teams/:id/leave',async(request,reply)=>{ privateResponse(reply); await teamService.leaveTeam(request.params.id,await requireActor(request)); return {left:true}; });
+  app.post<{Params:{id:string}}>('/api/v2/teams/:id/close',async(request,reply)=>{ privateResponse(reply); await teamService.closeTeam(request.params.id,await requireActor(request)); return {closed:true}; });
 
   // POST /api/v2/organizer/courses
   app.post('/api/v2/organizer/courses', async (request, reply) => {

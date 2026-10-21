@@ -132,10 +132,9 @@ describe('one team per student per tournament', () => {
   });
 
   it('refuses adding a member who already plays for another team of an enrolled tournament', async () => {
-    // Student two joins Alpha, which is enrolled in this tournament.
-    await expect(teams.addMember(ids.teamC, ids.u2, admin)).rejects.toThrow(/MEMBER_ALREADY_ENROLLED/);
-    // Student three is already in Gamma itself — the duplicate path keeps its own error.
-    await expect(teams.addMember(ids.teamC, ids.u3, admin)).rejects.toThrow(/already a member/);
+    // Every entry, including a historical one, freezes the roster rather than changing participants.
+    await expect(teams.addMember(ids.teamC, ids.u2, admin)).rejects.toThrow(/ROSTER_LOCKED/);
+    await expect(teams.addMember(ids.teamC, ids.u3, admin)).rejects.toThrow(/ROSTER_LOCKED/);
   });
 
   it('reports the conflict inside one bulk preview instead of enrolling both', async () => {

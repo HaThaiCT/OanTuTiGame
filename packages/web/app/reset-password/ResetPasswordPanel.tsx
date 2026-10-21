@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { errorText } from '../../lib/client';
 import { isProfileDisabled, resetPasswordWithToken } from '../../lib/api';
 import { OnlineOnlyNotice, ProfileProbeNotice, useAuthProfile } from '../_components/AuthProfile';
@@ -13,14 +13,19 @@ const MIN_PASSWORD_LENGTH = 12;
 const RESET_FAILURE: Record<string, string> = {
   WEAK_PASSWORD: `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`,
   PASSWORD_RESET_INVALID: 'Token đặt lại mật khẩu không hợp lệ.',
-  PASSWORD_RESET_EXPIRED: 'Token đặt lại mật khẩu đã hết hạn (token chỉ sống 1 giờ) — hãy yêu cầu lại.',
+  PASSWORD_RESET_EXPIRED: 'Token đặt lại mật khẩu đã hết hạn (token chỉ sống 30 phút) — hãy yêu cầu lại.',
   PASSWORD_RESET_CONSUMED: 'Token đặt lại mật khẩu đã được dùng trước đó.',
 };
 
 const FIELD_CLASS =
   'h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors';
-export default function ResetPasswordPanel({ token }: { token: string | null }) {
+export default function ResetPasswordPanel() {
   const profile = useAuthProfile();
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    setToken(fragment.get('token'));
+  }, []);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [done, setDone] = useState(false);
@@ -62,6 +67,7 @@ export default function ResetPasswordPanel({ token }: { token: string | null }) 
 
   if (profile === 'LAN_OFFLINE' || profileRefusal) return <OnlineOnlyNotice message={profileRefusal} />;
   if (profile === undefined) return <ProfileProbeNotice />;
+  if (profile === null) return <p role="alert">Không thể xác định hồ sơ xác thực; đặt lại mật khẩu đã bị khóa.</p>;
 
   if (done) {
     return (
@@ -85,7 +91,7 @@ export default function ResetPasswordPanel({ token }: { token: string | null }) 
       <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
         <h2 className="text-base font-semibold">Thiếu token đặt lại</h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-          Đường dẫn không có tham số <span className="font-mono">?token=</span>, nên chưa thể đổi mật khẩu. Hãy mở đúng liên
+          Đường dẫn không có token trong phần <span className="font-mono">#token=</span>, nên chưa thể đổi mật khẩu. Hãy mở đúng liên
           kết trong email khôi phục, hoặc yêu cầu một liên kết mới.
         </p>
         <Link
@@ -101,7 +107,7 @@ export default function ResetPasswordPanel({ token }: { token: string | null }) 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
       <p className="text-sm leading-6 text-[var(--text-secondary)]">
-        Token trong đường dẫn đã được đọc và sẽ được gửi cùng mật khẩu mới (token không hiển thị lại ở đây).
+        Token trong phần #token= được giữ trong trình duyệt và chỉ gửi cùng mật khẩu mới sau khi bạn xác nhận biểu mẫu.
       </p>
       <label className="flex flex-col gap-2 text-sm">
         <span className="font-medium">Mật khẩu mới</span>

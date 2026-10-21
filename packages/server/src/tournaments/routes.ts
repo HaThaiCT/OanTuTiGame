@@ -135,6 +135,7 @@ function sessionGuard(identityService: IdentityService) {
       reply.code(401).send({ error: 'SESSION_EXPIRED' });
       return null;
     }
+    if(auth.actor.scope!=='FULL') { reply.code(403).send({error:'FULL_SESSION_REQUIRED'}); return null; }
     return auth.actor;
   }
 
@@ -776,6 +777,7 @@ export function registerAdmissionRoutes(
   app.post<{ Params: { id: string } }>(
     '/api/v2/organizer/tournaments/:id/enroll',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if(identityService.authProfile!=='LAN_OFFLINE') return sendProfileDisabled(reply);
       const actor = await requireActor(req, reply);
       if (!actor) return;
       if (actor.role !== 'ADMIN') return reply.code(403).send({ error: 'FORBIDDEN' });
@@ -802,6 +804,7 @@ export function registerAdmissionRoutes(
   app.post<{ Params: { id: string } }>(
     '/api/v2/organizer/tournaments/:id/enroll/bulk',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if(identityService.authProfile!=='LAN_OFFLINE') return sendProfileDisabled(reply);
       const actor = await requireActor(req, reply);
       if (!actor) return;
       if (actor.role !== 'ADMIN') return reply.code(403).send({ error: 'FORBIDDEN' });
@@ -834,6 +837,7 @@ export function registerAdmissionRoutes(
   app.post<{ Params: { id: string } }>(
     '/api/v2/organizer/tournaments/:id/enrollments',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if(identityService.authProfile!=='LAN_OFFLINE') return sendProfileDisabled(reply);
       const actor = await requireActor(req, reply);
       if (!actor) return;
       if (actor.role !== 'ADMIN') return reply.code(403).send({ error: 'FORBIDDEN' });
@@ -1062,11 +1066,27 @@ export function registerEntryCodeRoutes(
 ): void {
   const { requireActor } = sessionGuard(identityService);
 
+  app.post<{Params:{id:string;codeId:string};Body:{maxUses?:number;expiresAt?:string}}>('/api/v2/organizer/tournaments/:id/entry-codes/:codeId/rotate',async(req,reply)=>{
+    reply.header('Cache-Control','private, no-store');
+    if(identityService.authProfile!=='ONLINE') return sendProfileDisabled(reply);
+    const actor=await requireActor(req,reply); if(!actor) return;
+    try { return reply.code(201).send(await entryCodeService.rotateCode(req.params.id,req.params.codeId,req.body??{},{actor,requestId:req.id})); }
+    catch(err:unknown) { return sendEntryCodeError(reply,err); }
+  });
+  app.post<{Params:{id:string;codeId:string}}>('/api/v2/organizer/tournaments/:id/entry-codes/:codeId/revoke',async(req,reply)=>{
+    reply.header('Cache-Control','private, no-store');
+    if(identityService.authProfile!=='ONLINE') return sendProfileDisabled(reply);
+    const actor=await requireActor(req,reply); if(!actor) return;
+    try { return await entryCodeService.revokeCode(req.params.id,req.params.codeId,{actor,requestId:req.id}); }
+    catch(err:unknown) { return sendEntryCodeError(reply,err); }
+  });
+
   // POST /api/v2/organizer/tournaments/:id/entry-code  body: { maxUses?, expiresAt? }
   app.post<{ Params: { id: string } }>(
     '/api/v2/organizer/tournaments/:id/entry-code',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+      reply.header('Cache-Control','private, no-store');
       const actor = await requireActor(req, reply);
       if (!actor) return;
       if (actor.role !== 'ADMIN') return reply.code(403).send({ code: 'FORBIDDEN', message: 'ADMIN role required' });
@@ -1095,6 +1115,7 @@ export function registerEntryCodeRoutes(
     '/api/v2/organizer/tournaments/:id/entry-codes',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+      reply.header('Cache-Control','private, no-store');
       const actor = await requireActor(req, reply);
       if (!actor) return;
       if (actor.role !== 'ADMIN') return reply.code(403).send({ code: 'FORBIDDEN', message: 'ADMIN role required' });
@@ -1113,6 +1134,7 @@ export function registerEntryCodeRoutes(
     '/api/v2/tournaments/:id/join',
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+      reply.header('Cache-Control','private, no-store');
       const actor = await requireActor(req, reply);
       if (!actor) return;
 
@@ -1125,7 +1147,7 @@ export function registerEntryCodeRoutes(
         const entry = await entryCodeService.joinWithCode(
           req.params.id,
           { code: body.code, teamId: body.teamId },
-          { actor, requestId: req.id }
+          { actor, requestId: req.id, ip:req.ip }
         );
         return reply.code(201).send({ entry });
       } catch (err: unknown) {

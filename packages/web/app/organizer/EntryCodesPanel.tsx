@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { createEntryCode, listEntryCodes, type CreatedEntryCode, type EntryCodeSummary } from '../../lib/api';
+import { createEntryCode, listEntryCodes, onlineTeams, type CreatedEntryCode, type EntryCodeSummary } from '../../lib/api';
 import { errorText } from '../../lib/client';
 
 interface Notice {
@@ -188,6 +188,8 @@ export default function EntryCodesPanel({ tournamentId }: { readonly tournamentI
                   <span>tạo {formatInstant(entry.createdAt)}</span>
                   {isCodeExhausted(entry) ? <span className="text-[var(--warning-text)]">đã hết lượt</span> : null}
                   {isCodeExpired(entry) ? <span className="text-[var(--warning-text)]">đã hết hạn</span> : null}
+                  <button type="button" disabled={pending !== null} onClick={() => { if (!window.confirm('Xoay mã này? Mã cũ sẽ ngừng nhận lượt mới; các lượt đã ghi danh vẫn giữ nguyên.')) return; setPending(entry.id); void onlineTeams.rotateCode(tournamentId, entry.id, { maxUses: entry.maxUses }).then(result => { setPending(null); if (!result.ok || !result.data) { setNotice({ kind: 'error', text: errorText(result, 'Không thể xoay mã.') }); return; } setCreated(result.data); setCopied(false); setNotice({ kind: 'success', text: 'Mã đã xoay; mã mới chỉ hiển thị lần này.' }); setCodes(null); void load(); }); }} className={BUTTON_CLASS}>Xoay mã</button>
+                  <button type="button" disabled={pending !== null} onClick={() => { if (!window.confirm('Thu hồi mã này? Các lượt ghi danh hiện có vẫn được giữ.')) return; setPending(entry.id); void onlineTeams.revokeCode(tournamentId, entry.id).then(result => { setPending(null); if (!result.ok) { setNotice({ kind: 'error', text: errorText(result, 'Không thể thu hồi mã.') }); return; } setNotice({ kind: 'success', text: 'Đã thu hồi mã; các lượt ghi danh hiện có vẫn được giữ.' }); setCodes(null); void load(); }); }} className={BUTTON_CLASS}>Thu hồi</button>
                 </li>
               ))}
             </ul>

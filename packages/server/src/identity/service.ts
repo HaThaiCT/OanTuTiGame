@@ -1,14 +1,17 @@
 import type { Database } from '../persistence/db.js';
+import type { PoolClient } from 'pg';
 import { hashPassword, verifyPassword, generateToken, generateTemporaryPassword, hashToken, validPassword, needsPasswordRehash } from './crypto.js';
 import type { Actor, Instant, Role, SessionScope, UUID } from '@oantuti/protocol';
 import type { LanBulkUserEntry, LanProvisionedUser, SessionDto, UserDto } from '@oantuti/protocol';
 
+import { enqueueIdentityMail, type IdentityMailOptions } from './mail-outbox.js';
 export class IdentityError extends Error {
   constructor(
     readonly statusCode: number,
     message: string,
     /** Optional machine-readable discriminator surfaced by the HTTP layer. */
-    readonly code?: string
+    readonly code?: string,
+    readonly retryAfterSeconds?: number
   ) {
     super(message);
     this.name = 'IdentityError';
@@ -53,12 +56,12 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
  * own clock into the decision.
  */
 const REAUTH_WINDOW_SQL = "INTERVAL '10 minutes'";
-const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
-/** Self-service credentials are stricter than the admin-issued bootstrap minimum. */
-const MIN_PASSWORD_LENGTH = 12;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RATE_LIMIT_ACCOUNT = 3;
+const RATE_LIMIT_IP = 20;
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 export interface RegistrationInput {
   readonly username: string;
   readonly displayName: string;
@@ -83,46 +86,82 @@ export class IdentityService {
    */
   readonly authProfile: AuthProfile;
 
-  constructor(private readonly db: Database, authProfile?: AuthProfile) {
-    this.authProfile =
-      authProfile ?? (process.env.OANTUTI_AUTH_PROFILE?.trim().toUpperCase() === 'ONLINE' ? 'ONLINE' : 'LAN_OFFLINE');
+  constructor(private readonly db: Database, authProfile?: AuthProfile, private readonly options: { readonly mail?: IdentityMailOptions } = {}) {
+    this.authProfile = authProfile ?? (process.env.OANTUTI_AUTH_PROFILE?.trim().toUpperCase() === 'ONLINE' ? 'ONLINE' : 'LAN_OFFLINE');
   }
 
-  async bootstrapAdmin(username: string, password: string): Promise<UserDto> {
-    const existing = await this.db.query<UserRow>('SELECT * FROM users WHERE role = $1 LIMIT 1', ['ADMIN']);
-    if (existing.rows.length > 0) {
-      throw new IdentityError(409, 'Singleton ADMIN account already bootstrapped');
-    }
+  private requireMail(): IdentityMailOptions {
+    if (!this.options.mail) throw new IdentityError(503, 'Identity mail delivery is unavailable', 'MAIL_DELIVERY_UNAVAILABLE');
+    return this.options.mail;
+  }
 
-    if (!username.trim() || username.length < 3 || username.length > 50) {
-      throw new IdentityError(400, 'Invalid ADMIN username');
-    }
-    if (!validPassword(password)) {
-      throw new IdentityError(400, 'Password must contain 12–128 Unicode characters');
-    }
-
+  async bootstrapAdmin(username: string, password: string, email?: string, initialAccountCapacity?: number): Promise<UserDto> {
+    if (this.authProfile === 'ONLINE' && !email) throw new IdentityError(400, 'An ADMIN email address is required in ONLINE', 'INVALID_EMAIL');
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (normalizedEmail && (normalizedEmail.length > 254 || !EMAIL_PATTERN.test(normalizedEmail))) throw new IdentityError(400, 'A valid email address is required', 'INVALID_EMAIL');
+    if (this.authProfile === 'ONLINE') this.requireMail();
+    if (!username.trim() || username.length < 3 || username.length > 50) throw new IdentityError(400, 'Invalid ADMIN username');
+    if (!validPassword(password)) throw new IdentityError(400, 'Password must contain 12–128 Unicode characters');
     const hashed = await hashPassword(password);
+    const verification = this.authProfile === 'ONLINE' ? generateToken() : undefined;
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
     const result = await this.db.withTransaction(async (client) => {
       await client.query('LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE');
       const existing = await client.query("SELECT 1 FROM users WHERE role = 'ADMIN'");
+      if (verification) {
+        const configured = await client.query<{value:{limit?:unknown}}>("SELECT value FROM deployment_settings WHERE key='accountCapacity' FOR UPDATE");
+        let limit = configured.rows[0]?.value?.limit;
+        if (configured.rows.length === 0 && initialAccountCapacity !== undefined) {
+          if (!Number.isSafeInteger(initialAccountCapacity) || initialAccountCapacity < 1) throw new IdentityError(400,'Initial accountCapacity must be a positive integer','ACCOUNT_CAPACITY_REQUIRED');
+          await client.query("INSERT INTO deployment_settings(key,value) VALUES('accountCapacity',$1::jsonb)",[JSON.stringify({limit:initialAccountCapacity})]);
+          limit = initialAccountCapacity;
+        } else if (initialAccountCapacity !== undefined && initialAccountCapacity !== limit) {
+          throw new IdentityError(409,'Configured accountCapacity does not match the operator confirmation','ACCOUNT_CAPACITY_CONFLICT');
+        }
+        if(typeof limit!=='number'||!Number.isSafeInteger(limit)||limit<1) throw new IdentityError(409,'A valid accountCapacity must be configured','ACCOUNT_CAPACITY_REQUIRED');
+        const count=await client.query<{count:string}>('SELECT count(*)::text AS count FROM users');
+        if(Number(count.rows[0].count)>=limit) throw new IdentityError(409,'Account capacity is full','ACCOUNT_CAPACITY_EXCEEDED');
+      }
       if (existing.rows.length) throw new IdentityError(409, 'Singleton ADMIN account already bootstrapped');
-      return client.query<UserRow>(
-      `INSERT INTO users (username, display_name, password_hash, role, activation_method, password_change_required)
-       VALUES ($1, $2, $3, 'ADMIN', 'LOCAL_BOOTSTRAP', FALSE)
-       RETURNING *`,
-      [username.trim(), 'Administrator', hashed]
-      );
+      const inserted = await client.query<UserRow>(`INSERT INTO users(username,display_name,email,password_hash,role,activation_method,password_change_required,temporary_password_expires_at)
+        VALUES($1,'Administrator',$2,$3,'ADMIN',$4,$5,CASE WHEN $5 THEN clock_timestamp()+interval '24 hours' ELSE NULL END) RETURNING *`,
+        [username.trim(), normalizedEmail ?? null, hashed, verification ? 'SELF_REGISTER' : 'LOCAL_BOOTSTRAP', Boolean(verification)]);
+      const user = inserted.rows[0];
+      if (verification) {
+        await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_VERIFICATION',$4)", [user.id, verification.hash, normalizedEmail, expiresAt]);
+        await enqueueIdentityMail(client, this.requireMail().keyring, { userId: user.id, topic: 'EMAIL_VERIFICATION_REQUESTED', purpose: 'EMAIL_VERIFICATION', tokenHash: verification.hash, rawToken: verification.raw, recipient: normalizedEmail!, expiresAt });
+      }
+      await client.query("INSERT INTO audit_events(actor_user_id,action,resource_type,resource_id,details) VALUES($1::uuid,'ADMIN_BOOTSTRAPPED','user',$1::text,$2)", [user.id, JSON.stringify({ online: Boolean(verification) })]);
+      return inserted;
     });
-
-    const user = result.rows[0];
-    return {
-      id: user.id,
-      username: user.username,
-      displayName: user.display_name,
-      role: user.role,
-      passwordChangeRequired: user.password_change_required,
-      createdAt: user.created_at.toISOString(),
-    };
+    return this.toUserDto(result.rows[0]);
+  }
+  async recoverOnlineAdmin(newEmail: string, reason: string, authorizationReference: string): Promise<{ readonly username: string; readonly id: UUID; readonly temporaryPassword: string }> {
+    if (this.authProfile !== 'ONLINE') throw new IdentityError(404, 'Online admin recovery is unavailable in this profile', 'PROFILE_DISABLED');
+    const mail = this.requireMail();
+    const email = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
+    if (email.length > 254 || !EMAIL_PATTERN.test(email)) throw new IdentityError(400, 'A valid email address is required', 'INVALID_EMAIL');
+    if (!reason.trim() || reason.length > 1000 || !authorizationReference.trim() || authorizationReference.length > 200) throw new IdentityError(400, 'Recovery reason and authorization reference are required', 'INVALID_RECOVERY_AUTHORITY');
+    const temporary = generateTemporaryPassword();
+    const hashed = await hashPassword(temporary);
+    const verification = generateToken();
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+    return this.db.withTransaction(async (client) => {
+      await client.query('LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE');
+      const found = await client.query<{ id: string; username: string; email: string | null }>("SELECT id,username,email FROM users WHERE role='ADMIN' FOR UPDATE");
+      if (found.rows.length !== 1) throw new IdentityError(409, 'Recovery requires exactly one existing ADMIN', 'ADMIN_SINGLETON_REQUIRED');
+      const admin = found.rows[0];
+      const updated = await client.query("UPDATE users SET email=$2,email_verified_at=NULL,password_hash=$3,password_change_required=TRUE,activation_method='SELF_REGISTER',temporary_password_expires_at=clock_timestamp()+interval '24 hours',temporary_password_consumed_at=NULL,updated_at=clock_timestamp() WHERE id=$1 AND NOT EXISTS(SELECT 1 FROM users WHERE email=$2 AND id<>$1) RETURNING id", [admin.id, email, hashed]);
+      if (!updated.rows.length) throw new IdentityError(409, 'Email address is already registered', 'EMAIL_TAKEN');
+      await client.query('UPDATE sessions SET revoked_at=clock_timestamp() WHERE user_id=$1 AND revoked_at IS NULL', [admin.id]);
+      await client.query('UPDATE password_reset_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND consumed_at IS NULL', [admin.id]);
+      await client.query('UPDATE email_verification_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND consumed_at IS NULL', [admin.id]);
+      await client.query("UPDATE identity_mail_deliveries SET state='CANCELLED',envelope=NULL WHERE user_id=$1 AND state IN ('PENDING','SENDING','HELD')", [admin.id]);
+      await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_VERIFICATION',$4)", [admin.id, verification.hash, email, expiresAt]);
+      await enqueueIdentityMail(client, mail.keyring, { userId: admin.id, topic: 'EMAIL_VERIFICATION_REQUESTED', purpose: 'EMAIL_VERIFICATION', tokenHash: verification.hash, rawToken: verification.raw, recipient: email, expiresAt });
+      await client.query(`INSERT INTO audit_events(actor_user_id,action,resource_type,resource_id,details) VALUES($1::uuid,'LOCAL_ADMIN_RECOVERY','user',$1::text,$2)`, [admin.id, JSON.stringify({ reason, authorizationReference })]);
+      return { id: admin.id as UUID, username: admin.username, temporaryPassword: temporary };
+    });
   }
 
   async lanBulkProvision(entries: readonly LanBulkUserEntry[], actor: Actor): Promise<readonly LanProvisionedUser[]> {
@@ -234,19 +273,9 @@ export class IdentityService {
       if (!changed.rows.length) throw new IdentityError(401, 'Credentials changed; sign in again');
       user.password_hash = upgraded;
     }
-    // ONLINE gates self-registered accounts on the mailbox confirmation; LAN_OFFLINE
-    // has no mail transport and therefore ignores verification entirely. Admin-issued
-    // and locally bootstrapped accounts never carry the self-registration gate.
-    if (this.authProfile === 'ONLINE' && user.activation_method === 'SELF_REGISTER') {
-      const verified = await this.db.query(
-        `SELECT 1 FROM email_verification_tokens
-         WHERE user_id = $1 AND purpose = 'EMAIL_VERIFICATION' AND consumed_at IS NOT NULL
-         LIMIT 1`,
-        [user.id]
-      );
-      if (verified.rows.length === 0) {
-        throw new IdentityError(403, 'Email address is not verified for this account', 'EMAIL_NOT_VERIFIED');
-      }
+    if (this.authProfile === 'ONLINE') {
+      const verified = await this.db.query('SELECT 1 FROM users WHERE id=$1 AND email IS NOT NULL AND email_verified_at IS NOT NULL', [user.id]);
+      if (!verified.rows.length) throw new IdentityError(403, 'Email address is not verified for this account', 'EMAIL_VERIFICATION_REQUIRED');
     }
 
     const scope: SessionScope = user.password_change_required ? 'PASSWORD_CHANGE_ONLY' : 'FULL';
@@ -306,97 +335,103 @@ export class IdentityService {
     const passwordHash = await hashPassword(input.password);
     const verification = generateToken();
     const verificationExpiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
-
+    const mail = this.requireMail();
     return this.db.withTransaction(async (client) => {
-      const clash = await client.query<{ username: string; email: string | null }>(
-        'SELECT username, email FROM users WHERE username = $1 OR email = $2',
-        [username, email]
-      );
-      if (clash.rows.some((row) => row.username === username)) {
-        throw new IdentityError(409, 'Username is already taken', 'USERNAME_TAKEN');
-      }
-      if (clash.rows.some((row) => row.email === email)) {
-        throw new IdentityError(409, 'Email address is already registered', 'EMAIL_TAKEN');
-      }
-
-      let user!: UserRow;
-      try {
-        const inserted = await client.query<UserRow>(
-          `INSERT INTO users (username, display_name, email, password_hash, role, activation_method, password_change_required)
-           VALUES ($1, $2, $3, $4, 'STUDENT', 'SELF_REGISTER', FALSE)
-           RETURNING *`,
-          [username, displayName, email, passwordHash]
-        );
-        user = inserted.rows[0];
-      } catch (err: unknown) {
-        const constraint =
-          err && typeof err === 'object' && 'constraint' in err && typeof err.constraint === 'string' ? err.constraint : '';
-        if (constraint.includes('username')) {
-          throw new IdentityError(409, 'Username is already taken', 'USERNAME_TAKEN');
-        }
-        if (constraint.includes('email')) {
-          throw new IdentityError(409, 'Email address is already registered', 'EMAIL_TAKEN');
-        }
-        throw err;
-      }
-
-      await client.query(
-        `INSERT INTO email_verification_tokens (user_id, token_hash, purpose, expires_at)
-         VALUES ($1, $2, 'EMAIL_VERIFICATION', $3)`,
-        [user.id, verification.hash, verificationExpiresAt]
-      );
-
-      const payload: Record<string, unknown> = {
-        userId: user.id,
-        username: user.username,
-        email: user.email,
-        expiresAt: verificationExpiresAt.toISOString(),
-      };
-      if (process.env.OANTUTI_DEV_EXPOSE_EMAIL_TOKENS === '1') {
-        payload.token = verification.raw;
-      }
-      await client.query('INSERT INTO outbox_events (topic, payload) VALUES ($1, $2)', [
-        'EMAIL_VERIFICATION_REQUESTED',
-        JSON.stringify(payload),
-      ]);
-
-      return { user: this.toUserDto(user), emailVerificationRequired: true as const };
+      await client.query('LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE');
+      const capacity = await client.query<{ value: { limit?: unknown } }>("SELECT value FROM deployment_settings WHERE key='accountCapacity' FOR UPDATE");
+      const limit = capacity.rows[0]?.value?.limit;
+      if (typeof limit !== 'number' || !Number.isSafeInteger(limit) || limit < 1) throw new IdentityError(409, 'A valid accountCapacity must be configured', 'ACCOUNT_CAPACITY_REQUIRED');
+      const count = await client.query<{ count: string }>('SELECT count(*)::text AS count FROM users');
+      if (Number(count.rows[0].count) >= limit) throw new IdentityError(409, 'Account capacity is full', 'ACCOUNT_CAPACITY_EXCEEDED');
+      const clash = await client.query<{ username: string; email: string | null }>('SELECT username,email FROM users WHERE username=$1 OR email=$2', [username,email]);
+      if (clash.rows.some((row) => row.username === username)) throw new IdentityError(409, 'Username is already taken', 'USERNAME_TAKEN');
+      if (clash.rows.some((row) => row.email === email)) throw new IdentityError(409, 'Email address is already registered', 'EMAIL_TAKEN');
+      const inserted = await client.query<UserRow>(`INSERT INTO users(username,display_name,email,password_hash,role,activation_method,password_change_required)
+        VALUES($1,$2,$3,$4,'STUDENT','SELF_REGISTER',FALSE) RETURNING *`, [username,displayName,email,passwordHash]);
+      const user = inserted.rows[0];
+      await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_VERIFICATION',$4)", [user.id,verification.hash,email,verificationExpiresAt]);
+      await enqueueIdentityMail(client, mail.keyring, { userId:user.id, topic:'EMAIL_VERIFICATION_REQUESTED', purpose:'EMAIL_VERIFICATION', tokenHash:verification.hash, rawToken:verification.raw, recipient:email, expiresAt:verificationExpiresAt });
+      return { user:this.toUserDto(user), emailVerificationRequired:true as const };
     });
   }
 
   /** Consumes a mailbox-confirmation token; the failure code is machine-readable. */
   async verifyEmail(token: string): Promise<{ verified: true }> {
-    if (typeof token !== 'string' || token.length === 0) {
-      throw new IdentityError(400, 'Verification token is required', 'EMAIL_VERIFICATION_INVALID');
-    }
+    if (typeof token !== 'string' || token.length === 0) throw new IdentityError(400, 'Verification token is required', 'EMAIL_VERIFICATION_INVALID');
     const hash = hashToken(token);
-
     return this.db.withTransaction(async (client) => {
-      const consumed = await client.query(
-        `UPDATE email_verification_tokens
-         SET consumed_at = clock_timestamp()
-         WHERE token_hash = $1 AND purpose = 'EMAIL_VERIFICATION'
-           AND consumed_at IS NULL AND expires_at > clock_timestamp()
-         RETURNING id`,
-        [hash]
-      );
-      if ((consumed.rowCount ?? 0) > 0) {
-        return { verified: true as const };
-      }
+      const candidate = await client.query<{id:string;user_id:string;target_email:string;purpose:string;consumed_at:Date|null}>('SELECT id,user_id,target_email,purpose,consumed_at FROM email_verification_tokens WHERE token_hash=$1', [hash]);
+      const row = candidate.rows[0];
+      if (!row) throw new IdentityError(400, 'Verification token is invalid', 'EMAIL_VERIFICATION_INVALID');
+      const user = await client.query<{ email:string|null }>('SELECT email FROM users WHERE id=$1 FOR UPDATE', [row.user_id]);
+      if (!user.rows.length) throw new IdentityError(400, 'Verification token is invalid', 'EMAIL_VERIFICATION_INVALID');
+      const locked = await client.query('SELECT consumed_at FROM email_verification_tokens WHERE id=$1 FOR UPDATE', [row.id]);
+      if (locked.rows[0]?.consumed_at) throw new IdentityError(400, 'Verification token has already been used', 'EMAIL_VERIFICATION_CONSUMED');
+      const live = await client.query('SELECT 1 FROM email_verification_tokens WHERE id=$1 AND expires_at>clock_timestamp()', [row.id]);
+      if (!live.rows.length) throw new IdentityError(400, 'Verification token has expired', 'EMAIL_VERIFICATION_EXPIRED');
+      if (row.purpose === 'EMAIL_VERIFICATION') {
+        if (user.rows[0].email !== row.target_email) throw new IdentityError(400, 'Verification token no longer matches this address', 'EMAIL_VERIFICATION_INVALID');
+        await client.query('UPDATE users SET email_verified_at=clock_timestamp() WHERE id=$1 AND email=$2', [row.user_id,row.target_email]);
+      } else if (row.purpose === 'EMAIL_CHANGE') {
+        const prior = user.rows[0].email;
+        const updated = await client.query('UPDATE users SET email=$2,email_verified_at=clock_timestamp(),updated_at=clock_timestamp() WHERE id=$1 AND NOT EXISTS (SELECT 1 FROM users WHERE email=$2 AND id<>$1) RETURNING id', [row.user_id,row.target_email]);
+        if (!updated.rows.length) throw new IdentityError(409, 'Email address is already registered', 'EMAIL_TAKEN');
+        await client.query('UPDATE email_verification_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND id<>$2 AND consumed_at IS NULL', [row.user_id,row.id]);
+        await client.query('UPDATE password_reset_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND consumed_at IS NULL', [row.user_id]);
+        await client.query('UPDATE sessions SET revoked_at=clock_timestamp() WHERE user_id=$1 AND revoked_at IS NULL', [row.user_id]);
+        if (prior) { const mail=this.requireMail(); const expiresAt=new Date(Date.now()+24*60*60*1000); await enqueueIdentityMail(client,mail.keyring,{userId:row.user_id,topic:'EMAIL_CHANGED',purpose:'EMAIL_CHANGED',recipient:prior,expiresAt}); }
+      } else throw new IdentityError(400, 'Wrong verification token purpose', 'EMAIL_VERIFICATION_INVALID');
+      await client.query('UPDATE email_verification_tokens SET consumed_at=clock_timestamp() WHERE id=$1', [row.id]);
+      return { verified:true as const };
+    });
+  }
+  private async checkIdentityRate(client: PoolClient, account: string, ip: string): Promise<void> {
+    const limits: readonly [string, number][] = [[`account:${hashToken(account)}`, RATE_LIMIT_ACCOUNT], [`ip:${hashToken(ip)}`, RATE_LIMIT_IP]];
+    for (const [key, maximum] of limits) {
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [key]);
+      const current = await client.query<{ window_start: Date; attempts: number; age_seconds: number }>(
+        `SELECT window_start, attempts, floor(extract(epoch FROM clock_timestamp()-window_start))::int AS age_seconds
+         FROM identity_rate_limits WHERE key=$1 ORDER BY window_start DESC LIMIT 1 FOR UPDATE`, [key]);
+      let attempts = current.rows[0]?.attempts ?? 0;
+      const ageSeconds = current.rows[0]?.age_seconds;
+      if (ageSeconds === undefined || ageSeconds >= 3600) attempts = 0;
+      attempts += 1;
+      await client.query('DELETE FROM identity_rate_limits WHERE key=$1', [key]);
+      await client.query('INSERT INTO identity_rate_limits(key,window_start,attempts) VALUES($1,clock_timestamp(),$2)', [key, attempts]);
+      if (attempts > maximum) throw new IdentityError(429, 'Too many identity requests; retry later', 'IDENTITY_RATE_LIMITED', Math.max(1, 3600 - (ageSeconds ?? 0)));
+    }
+  }
 
-      const existing = await client.query<{ consumed_at: Date | null }>(
-        `SELECT consumed_at FROM email_verification_tokens
-         WHERE token_hash = $1 AND purpose = 'EMAIL_VERIFICATION'`,
-        [hash]
-      );
-      const found = existing.rows[0];
-      if (!found) {
-        throw new IdentityError(400, 'Verification token is invalid', 'EMAIL_VERIFICATION_INVALID');
-      }
-      if (found.consumed_at) {
-        throw new IdentityError(400, 'Verification token has already been used', 'EMAIL_VERIFICATION_CONSUMED');
-      }
-      throw new IdentityError(400, 'Verification token has expired', 'EMAIL_VERIFICATION_EXPIRED');
+  async resendVerification(email: string, ip: string): Promise<void> {
+    const normalized=email.trim().toLowerCase(); if (normalized.length>254 || !EMAIL_PATTERN.test(normalized)) return;
+    const mail=this.requireMail(); const token=generateToken(); const expiresAt=new Date(Date.now()+EMAIL_VERIFICATION_TTL_MS);
+    await this.db.withTransaction(async client=>{
+      await this.checkIdentityRate(client,normalized,ip);
+      const found=await client.query<{id:string;email:string|null;email_verified_at:Date|null}>('SELECT id,email,email_verified_at FROM users WHERE email=$1 FOR UPDATE',[normalized]);
+      const user=found.rows[0]; if (!user || user.email_verified_at) return;
+      await client.query("UPDATE email_verification_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND purpose='EMAIL_VERIFICATION' AND consumed_at IS NULL",[user.id]);
+      await client.query("UPDATE identity_mail_deliveries SET state='CANCELLED',envelope=NULL WHERE user_id=$1 AND purpose='EMAIL_VERIFICATION' AND state='PENDING'",[user.id]);
+      await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_VERIFICATION',$4)",[user.id,token.hash,normalized,expiresAt]);
+      await enqueueIdentityMail(client,mail.keyring,{userId:user.id,topic:'EMAIL_VERIFICATION_REQUESTED',purpose:'EMAIL_VERIFICATION',tokenHash:token.hash,rawToken:token.raw,recipient:normalized,expiresAt});
+    });
+  }
+  async requestEmailChange(sessionToken: string, newEmail: string): Promise<void> {
+    const email=typeof newEmail==='string'?newEmail.trim().toLowerCase():'';
+    if(email.length>254||!EMAIL_PATTERN.test(email)) throw new IdentityError(400,'A valid email address is required','INVALID_EMAIL');
+    const mail=this.requireMail(); const verification=generateToken(); const expiresAt=new Date(Date.now()+EMAIL_VERIFICATION_TTL_MS);
+    await this.db.withTransaction(async client=>{
+      const session=await client.query<{user_id:string;scope:string;reauthenticated_at:Date|null}>('SELECT user_id,scope,reauthenticated_at FROM sessions WHERE token_hash=$1 AND identity_session_valid(sessions) FOR UPDATE',[hashToken(sessionToken)]);
+      const auth=session.rows[0]; if(!auth) throw new IdentityError(401,'Session expired or revoked','UNAUTHENTICATED');
+      if(auth.scope!=='FULL') throw new IdentityError(403,'Full session required','PASSWORD_CHANGE_REQUIRED');
+      if(!auth.reauthenticated_at || auth.reauthenticated_at<=new Date(Date.now()-10*60*1000)) throw new IdentityError(403,'Recent re-authentication required','REAUTH_REQUIRED');
+      const user=await client.query<{email:string|null}>('SELECT email FROM users WHERE id=$1 FOR UPDATE',[auth.user_id]);
+      if(!user.rows[0]?.email) throw new IdentityError(409,'Account has no current email','EMAIL_REQUIRED');
+      const existing=await client.query('SELECT 1 FROM users WHERE email=$1 AND id<>$2',[email,auth.user_id]);
+      if(existing.rows.length) throw new IdentityError(409,'Email address is already registered','EMAIL_TAKEN');
+      await client.query("UPDATE email_verification_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND purpose='EMAIL_CHANGE' AND consumed_at IS NULL",[auth.user_id]);
+      await client.query("UPDATE identity_mail_deliveries SET state='CANCELLED',envelope=NULL WHERE user_id=$1 AND purpose='EMAIL_CHANGE' AND state='PENDING'",[auth.user_id]);
+      await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_CHANGE',$4)",[auth.user_id,verification.hash,email,expiresAt]);
+      await enqueueIdentityMail(client,mail.keyring,{userId:auth.user_id,topic:'EMAIL_CHANGE_REQUESTED',purpose:'EMAIL_CHANGE',tokenHash:verification.hash,rawToken:verification.raw,recipient:email,expiresAt});
     });
   }
 
@@ -404,39 +439,16 @@ export class IdentityService {
    * Starts e-mail recovery without disclosing whether the address is registered:
    * the caller answers 202 either way and a token exists only for known users.
    */
-  async requestPasswordReset(email: string): Promise<void> {
-    const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
-    if (normalized.length > 254 || !EMAIL_PATTERN.test(normalized)) {
-      return;
-    }
-    const reset = generateToken();
-    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
-
-    await this.db.withTransaction(async (client) => {
-      const found = await client.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [normalized]);
-      const user = found.rows[0];
-      if (!user) {
-        return;
-      }
-
-      await client.query('INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)', [
-        user.id,
-        reset.hash,
-        expiresAt,
-      ]);
-
-      const payload: Record<string, unknown> = {
-        userId: user.id,
-        email: normalized,
-        expiresAt: expiresAt.toISOString(),
-      };
-      if (process.env.OANTUTI_DEV_EXPOSE_EMAIL_TOKENS === '1') {
-        payload.token = reset.raw;
-      }
-      await client.query('INSERT INTO outbox_events (topic, payload) VALUES ($1, $2)', [
-        'PASSWORD_RESET_REQUESTED',
-        JSON.stringify(payload),
-      ]);
+  async requestPasswordReset(email: string, ip = 'local-service'): Promise<void> {
+    const normalized=typeof email==='string'?email.trim().toLowerCase():'';
+    if(normalized.length>254||!EMAIL_PATTERN.test(normalized)) return;
+    const mail=this.requireMail(); const reset=generateToken(); const expiresAt=new Date(Date.now()+PASSWORD_RESET_TTL_MS);
+    await this.db.withTransaction(async client=>{
+      await this.checkIdentityRate(client,normalized,ip);
+      const found=await client.query<{id:string;email:string}>('SELECT id,email FROM users WHERE email=$1 FOR UPDATE',[normalized]);
+      const user=found.rows[0]; if(!user) return;
+      await client.query('INSERT INTO password_reset_tokens(user_id,token_hash,target_email,expires_at) VALUES($1,$2,$3,$4)',[user.id,reset.hash,user.email,expiresAt]);
+      await enqueueIdentityMail(client,mail.keyring,{userId:user.id,topic:'PASSWORD_RESET_REQUESTED',purpose:'PASSWORD_RESET',tokenHash:reset.hash,rawToken:reset.raw,recipient:user.email,expiresAt});
     });
   }
 
@@ -445,49 +457,23 @@ export class IdentityService {
    * forced-change flag and revokes every session the account still holds.
    */
   async resetPassword(token: string, newPassword: string): Promise<{ reset: true }> {
-    if (!validPassword(newPassword)) {
-      throw new IdentityError(400, 'Password must contain 12–128 Unicode characters', 'WEAK_PASSWORD');
-    }
-    if (typeof token !== 'string' || token.length === 0) {
-      throw new IdentityError(400, 'Reset token is required', 'PASSWORD_RESET_INVALID');
-    }
-    const hash = hashToken(token);
-    const newHash = await hashPassword(newPassword);
-
-    return this.db.withTransaction(async (client) => {
-      const consumed = await client.query<{ user_id: string }>(
-        `UPDATE password_reset_tokens
-         SET consumed_at = clock_timestamp()
-         WHERE token_hash = $1 AND consumed_at IS NULL AND expires_at > clock_timestamp()
-         RETURNING user_id`,
-        [hash]
-      );
-      const row = consumed.rows[0];
-      if (!row) {
-        const existing = await client.query<{ consumed_at: Date | null }>(
-          'SELECT consumed_at FROM password_reset_tokens WHERE token_hash = $1',
-          [hash]
-        );
-        const found = existing.rows[0];
-        if (!found) {
-          throw new IdentityError(400, 'Reset token is invalid', 'PASSWORD_RESET_INVALID');
-        }
-        if (found.consumed_at) {
-          throw new IdentityError(400, 'Reset token has already been used', 'PASSWORD_RESET_CONSUMED');
-        }
-        throw new IdentityError(400, 'Reset token has expired', 'PASSWORD_RESET_EXPIRED');
-      }
-
-      await client.query(
-        `UPDATE users SET password_hash = $1, password_change_required = FALSE, updated_at = clock_timestamp()
-         WHERE id = $2`,
-        [newHash, row.user_id]
-      );
-      await client.query('UPDATE sessions SET revoked_at = clock_timestamp() WHERE user_id = $1 AND revoked_at IS NULL', [
-        row.user_id,
-      ]);
-
-      return { reset: true as const };
+    if (!validPassword(newPassword)) throw new IdentityError(400, 'Password must contain 12–128 Unicode characters', 'WEAK_PASSWORD');
+    if (typeof token !== 'string' || token.length === 0) throw new IdentityError(400, 'Reset token is required', 'PASSWORD_RESET_INVALID');
+    const hash=hashToken(token); const newHash=await hashPassword(newPassword);
+    return this.db.withTransaction(async client=>{
+      const candidate=await client.query<{id:string;user_id:string;target_email:string|null;consumed_at:Date|null}>('SELECT id,user_id,target_email,consumed_at FROM password_reset_tokens WHERE token_hash=$1',[hash]);
+      const row=candidate.rows[0]; if(!row) throw new IdentityError(400,'Reset token is invalid','PASSWORD_RESET_INVALID');
+      const user=await client.query<{email:string|null}>('SELECT email FROM users WHERE id=$1 FOR UPDATE',[row.user_id]);
+      if(!user.rows.length||user.rows[0].email!==row.target_email) throw new IdentityError(400,'Reset token no longer matches this address','PASSWORD_RESET_INVALID');
+      const locked=await client.query('SELECT consumed_at FROM password_reset_tokens WHERE id=$1 FOR UPDATE',[row.id]);
+      if(locked.rows[0]?.consumed_at) throw new IdentityError(400,'Reset token has already been used','PASSWORD_RESET_CONSUMED');
+      const valid=await client.query('SELECT 1 FROM password_reset_tokens WHERE id=$1 AND expires_at>clock_timestamp()',[row.id]);
+      if(!valid.rows.length) throw new IdentityError(400,'Reset token has expired','PASSWORD_RESET_EXPIRED');
+      await client.query('UPDATE password_reset_tokens SET consumed_at=clock_timestamp() WHERE user_id=$1 AND consumed_at IS NULL',[row.user_id]);
+      await client.query("UPDATE identity_mail_deliveries SET state='CANCELLED',envelope=NULL WHERE user_id=$1 AND purpose='PASSWORD_RESET' AND state='PENDING'",[row.user_id]);
+      await client.query('UPDATE users SET password_hash=$1,password_change_required=FALSE,updated_at=clock_timestamp() WHERE id=$2',[newHash,row.user_id]);
+      await client.query('UPDATE sessions SET revoked_at=clock_timestamp() WHERE user_id=$1 AND revoked_at IS NULL',[row.user_id]);
+      return {reset:true as const};
     });
   }
 
@@ -704,6 +690,7 @@ export class IdentityService {
       JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1
         AND identity_session_valid(s)
+        AND ($2::boolean = FALSE OR (u.email IS NOT NULL AND u.email_verified_at IS NOT NULL))
       LIMIT 1
     `;
     const res = await this.db.query<{
@@ -718,7 +705,7 @@ export class IdentityService {
       role: Role;
       password_change_required: boolean;
       user_created_at: Date;
-    }>(query, [hash]);
+    }>(query, [hash, this.authProfile === 'ONLINE']);
 
     const row = res.rows[0];
     if (!row) {

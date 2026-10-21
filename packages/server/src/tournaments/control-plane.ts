@@ -13,6 +13,7 @@ export class TournamentControlPlane {
   private timer?: NodeJS.Timeout;
   private running = false;
   private lastRetentionAt = 0;
+  private activeTick?: Promise<void>;
 
   constructor(
     private readonly db: PostgresDatabase,
@@ -33,14 +34,22 @@ export class TournamentControlPlane {
 
   start(): void {
     if (this.timer) return;
-    this.timer = setInterval(() => { void this.tick(); }, this.intervalMs);
+    this.timer = setInterval(() => this.scheduleTick(), this.intervalMs);
     this.timer.unref();
-    void this.tick();
+    this.scheduleTick();
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     clearInterval(this.timer);
     this.timer = undefined;
+    await this.activeTick;
+  }
+
+  private scheduleTick(): void {
+    if (this.activeTick) return;
+    const active = this.tick();
+    this.activeTick = active;
+    void active.finally(() => { if (this.activeTick === active) this.activeTick = undefined; });
   }
 
   async tick(): Promise<void> {

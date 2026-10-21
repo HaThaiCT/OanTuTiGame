@@ -36,12 +36,26 @@ export interface TeamDto {
   readonly courseId: UUID;
   readonly name: string;
   readonly captainUserId: UUID;
+  readonly tournamentId?: UUID;
+  readonly closedAt?: Instant;
+  readonly rosterLocked?: boolean;
   readonly members: readonly {
     readonly userId: UUID;
     readonly username: string;
     readonly displayName: string;
     readonly role: 'CAPTAIN' | 'MEMBER';
   }[];
+  readonly createdAt: Instant;
+}
+
+export interface TeamInvitationDto {
+  readonly id: UUID;
+  readonly teamId: UUID;
+  readonly teamName: string;
+  readonly tournamentId: UUID;
+  readonly recipientUserId: UUID;
+  readonly status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED';
+  readonly expiresAt: Instant;
   readonly createdAt: Instant;
 }
 

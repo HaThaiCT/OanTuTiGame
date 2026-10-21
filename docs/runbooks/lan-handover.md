@@ -161,7 +161,7 @@ Guard hai tầng: DB tên khớp `arena_*test*` chạy ngay; mọi DB khác **b�
 ### Phục hồi ADMIN
 
 ```sh
-sudo node --import tsx deploy/linux/recover-admin.ts <lý do> <mã-tham-chiếu-cho-phép>
+sudo node --import tsx deploy/linux/recover-admin.mts <lý do> <mã-tham-chiếu-cho-phép>
 ```
 
 Chỉ chạy được với root thật + terminal tương tác, yêu cầu **đúng một** ADMIN tồn tại, in mật khẩu tạm ra `/dev/tty` (không nhận mật khẩu/UUID qua tham số). Mọi lần dùng phải ghi lại lý do và người cho phép.

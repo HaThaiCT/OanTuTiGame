@@ -3,8 +3,11 @@
  */
 
 import { createApp } from './app.js';
+import type { FastifyInstance } from 'fastify';
 import { PostgresDatabase } from './persistence/db.js';
 import { nativeGatewayConfig } from './jobs/runtime-config.js';
+import { loadOnlineConfig } from './identity/online-config.js';
+import { createSmtpTransport } from './identity/smtp-transport.js';
 
 export * from './db.js';
 export * from './match-service.js';
@@ -47,21 +50,31 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 if (process.argv[1]?.endsWith('src/index.ts') || process.argv[1]?.endsWith('dist/index.js')) {
   const pgDb = new PostgresDatabase();
+  let appContext: { readonly app: FastifyInstance } | undefined;
+  let shuttingDown = false;
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    try { await appContext?.app.close(); }
+    finally { await pgDb.close(); }
+  };
+  process.once('SIGTERM', () => { void shutdown().then(() => process.exit(0)); });
+  process.once('SIGINT', () => { void shutdown().then(() => process.exit(0)); });
   const localJobBroker = nativeGatewayConfig();
-
+  const onlineConfig = loadOnlineConfig();
   createApp({
     dbLocation: process.env.DB_LOCATION,
     allowedOrigins: process.env.PUBLIC_ORIGINS?.split(',').map(origin => origin.trim()).filter(Boolean),
     pgDb,
+    ...(onlineConfig ? { onlineConfig, mailTransport: createSmtpTransport(onlineConfig.smtp) } : {}),
     localJobBroker,
-    // Evidence bytes belong on the operator's data disk, not inside the checkout. Unset keeps the
-    // historical `<cwd>/storage/*` layout that the container image uses.
     botsDir: process.env.OANTUTI_SUBMISSION_DIR,
     replaysDir: process.env.OANTUTI_REPLAYS_DIR,
     executionSpoolDir: process.env.OANTUTI_SPOOL_DIR,
   })
-    .then(async ({ app }) => {
-      await app.listen({ port: PORT, host: HOST });
+    .then(async (context) => {
+      appContext = context;
+      await context.app.listen({ port: PORT, host: HOST });
       process.stdout.write(`\n=======================================================\n`);
       process.stdout.write(`        OanTuTi Arena Game Server & WS Hub             \n`);
       process.stdout.write(`=======================================================\n`);
@@ -70,8 +83,9 @@ if (process.argv[1]?.endsWith('src/index.ts') || process.argv[1]?.endsWith('dist
       process.stdout.write(`Execution is dispatched to sandboxed workers; readiness reports what this build accepts.\n`);
       process.stdout.write(`=======================================================\n\n`);
     })
-    .catch((err) => {
+    .catch(async (err) => {
       process.stderr.write(`Failed to start server: ${(err as Error).stack || err}\n`);
-      process.exit(1);
+      await shutdown();
+      process.exitCode = 1;
     });
 }

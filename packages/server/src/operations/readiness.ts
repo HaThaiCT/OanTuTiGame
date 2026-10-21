@@ -52,15 +52,13 @@ export interface BackupFenceLike {
 }
 
 export interface ReadinessInputs {
-  /** Control plane database. v2 requires PostgreSQL, so its absence fails the check. */
   readonly database?: ReadinessQueryable;
   readonly executionGateway?: { isReady(): boolean; capabilities?(): Promise<ReadinessAccepts> };
-  /** The unsandboxed development executor, which must never be armed for a real competition. */
   readonly devExecutorEnabled: boolean;
   readonly backupFence?: BackupFenceLike;
-  /** Durable object roots vs. the paths the database records; absent when nothing is configured. */
   readonly objectRoots?: { check(): Promise<{ readonly ok: boolean; readonly detail: string }> };
   readonly expectedSchemaVersion?: number;
+  readonly mail?: { readonly configured: boolean; readonly running: boolean };
 }
 
 export async function readinessReport(inputs: ReadinessInputs): Promise<ReadinessReport> {
@@ -132,6 +130,9 @@ export async function readinessReport(inputs: ReadinessInputs): Promise<Readines
     checks.push({ name: 'objectRoots', ok: roots.ok, detail: roots.detail });
   }
 
+  if (inputs.mail) {
+    checks.push({ name: 'mail', ok: inputs.mail.configured && inputs.mail.running, detail: inputs.mail.configured && inputs.mail.running ? 'identity mail consumer is configured and started' : 'identity mail consumer is not running' });
+  }
   const nativeCapabilities = gatewayReady && inputs.executionGateway?.capabilities
     ? await inputs.executionGateway.capabilities()
     : { officialGame: false, build: false, privateTest: false };

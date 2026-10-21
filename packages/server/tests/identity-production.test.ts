@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID, scryptSync } from 'node:crypto';
+import { hashToken } from '../src/identity/crypto.js';
 import { Database } from '../src/persistence/db.js';
 import { IdentityService, IdentityError } from '../src/identity/service.js';
 import { TeamService, TeamError } from '../src/teams/service.js';
@@ -273,6 +274,25 @@ describe('S03 Production Identity, Teams & Tournament Substrate (PostgreSQL 16)'
     const count = await db.query<{ count: string }>('SELECT count(*)::text AS count FROM identity_login_attempts');
     expect(count.rows[0].count).toBe('0');
   }, 30_000);
+  it('expires throttle attempts using the database clock at the exact 15-minute boundary', async () => {
+    await db.query('DELETE FROM identity_login_attempts');
+    const accountKey = hashToken('db-clock-boundary');
+    await db.query("INSERT INTO identity_login_attempts(account_key,ip_key,attempted_at) VALUES ($1,$2,clock_timestamp()-interval '15 minutes')", [accountKey, hashToken('db-clock-boundary-ip')]);
+    await expect(identity.login('db-clock-boundary', 'incorrect password', 'db-clock-boundary-ip')).rejects.toMatchObject({ statusCode: 401 });
+    const count = await db.query<{ count: string }>('SELECT count(*)::text AS count FROM identity_login_attempts WHERE account_key=$1', [accountKey]);
+    expect(count.rows[0].count).toBe('1');
+    await db.query('DELETE FROM identity_login_attempts');
+  });
+  it('serializes concurrent failures so the account limit cannot be exceeded', async () => {
+    await db.query('DELETE FROM identity_login_attempts');
+    const accountKey = hashToken('concurrent_rate_account');
+    const results = await Promise.allSettled(Array.from({ length: 16 }, () => identity.login('concurrent_rate_account', 'incorrect password', randomUUID())));
+    expect(results.filter((result) => result.status === 'rejected' && (result.reason as IdentityError).statusCode === 401)).toHaveLength(10);
+    expect(results.filter((result) => result.status === 'rejected' && (result.reason as IdentityError).statusCode === 429)).toHaveLength(6);
+    const count = await db.query<{ count: string }>('SELECT count(*)::text AS count FROM identity_login_attempts WHERE account_key=$1', [accountKey]);
+    expect(count.rows[0].count).toBe('10');
+    await db.query('DELETE FROM identity_login_attempts');
+  });
 
   it('fails closed for missing/invalid capacity and serializes competing provisions', async () => {
     await db.query("DELETE FROM deployment_settings WHERE key = 'accountCapacity'");

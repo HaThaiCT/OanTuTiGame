@@ -1093,8 +1093,19 @@ export async function setAppealWindow(
  * cookie rides along and the API CSRF guard sees `application/json`.
  * ------------------------------------------------------------------------------------------- */
 
-/** Deployment authentication profile reported by `GET /api/v2/auth/me`. */
+/** Deployment authentication profile from the public, read-only endpoint. */
 export type AuthProfile = 'LAN_OFFLINE' | 'ONLINE';
+export async function getAuthProfile(options: ServerFetchOptions = {}): Promise<AuthProfile | null> {
+  try {
+    const url = typeof window === 'undefined' ? `${API}/api/v2/auth/profile` : '/api/v2/auth/profile';
+    const response = await fetch(url, { cache: 'no-store', ...(options.cookie ? { headers: { cookie: options.cookie } } : {}) });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { authProfile?: unknown };
+    return payload.authProfile === 'ONLINE' || payload.authProfile === 'LAN_OFFLINE' ? payload.authProfile : null;
+  } catch { return null; }
+}
+export { getAuthProfile as probeAuthProfile };
+
 
 /** Identity DTO (`@oantuti/protocol` `UserDto`) as the API serializes it. */
 export interface AuthUser {
@@ -1162,24 +1173,6 @@ export interface CreatedEntryCode {
   readonly expiresAt: string | null;
 }
 
-/**
- * Reads the deployment's authentication profile on the server, so an ONLINE-only control can be
- * hidden instead of failing with `PROFILE_DISABLED` when the server runs `LAN_OFFLINE`.
- */
-export async function getAuthProfile(options: ServerFetchOptions = {}): Promise<AuthProfile | null> {
-  if (!options.cookie) return null;
-  try {
-    const response = await fetch(`${API}/api/v2/auth/me`, {
-      cache: 'no-store',
-      headers: { cookie: options.cookie },
-    });
-    if (!response.ok) return null;
-    const payload = (await response.json()) as { authProfile?: unknown };
-    return payload.authProfile === 'ONLINE' || payload.authProfile === 'LAN_OFFLINE' ? payload.authProfile : null;
-  } catch {
-    return null;
-  }
-}
 
 function toEntryCodeSummary(row: Record<string, unknown>): EntryCodeSummary {
   return {
@@ -1371,7 +1364,7 @@ export async function requestPasswordReset(email: string): Promise<ApiResult<{ a
 
 /**
  * `POST /api/v2/auth/reset-password`. Failures are 400 `WEAK_PASSWORD` / `PASSWORD_RESET_INVALID` /
- * `_EXPIRED` / `_CONSUMED` (the token lives 1 h) and 404 `PROFILE_DISABLED` under LAN_OFFLINE.
+ * `_EXPIRED` / `_CONSUMED` (the token lives 30 minutes) and 404 `PROFILE_DISABLED` under LAN_OFFLINE.
  */
 export async function resetPasswordWithToken(
   token: string,
@@ -1393,6 +1386,20 @@ export async function resetPasswordWithToken(
   return { ok: true, status: result.status, message: result.message, code: result.code, data: { reset: true } };
 }
 
+/** Requests mailbox verification for a new address; server requires recent reauthentication. */
+export async function requestEmailChange(email: string): Promise<ApiResult<{ accepted: true }>> {
+  const result = await apiRequest<{ accepted?: unknown }>('/api/v2/auth/change-email', { method: 'POST', body: { email } });
+  if (!result.ok || result.data?.accepted !== true) return { ok: false, status: result.status, data: null, message: result.message, code: result.code };
+  return { ok: true, status: result.status, data: { accepted: true }, message: result.message, code: result.code };
+}
+
+/** Resends the mailbox-confirmation token to an address without disclosing account existence. */
+export async function resendEmailVerification(email: string): Promise<ApiResult<{ accepted: true }>> {
+  const result = await apiRequest<{ accepted?: unknown }>('/api/v2/auth/resend-verification', { method: 'POST', body: { email } });
+  if (!result.ok || result.data?.accepted !== true) return { ok: false, status: result.status, data: null, message: result.message, code: result.code };
+  return { ok: true, status: result.status, data: { accepted: true }, message: result.message, code: result.code };
+}
+
 /**
  * True when the API refused an ONLINE-only route because the deployment runs the LAN_OFFLINE
  * authentication profile: 404 `{ code: 'PROFILE_DISABLED' }`. Those routes are registered in both
@@ -1402,22 +1409,7 @@ export function isProfileDisabled(result: ApiResult<unknown>): boolean {
   return result.status === 404 && result.code === 'PROFILE_DISABLED';
 }
 
-/**
- * Resolves the active authentication profile for a visitor who may hold no session yet.
- * `/auth/me` needs a session, so a signed-out caller is probed through the ONLINE-only verification
- * route with an empty token: ONLINE rejects it with 400 `EMAIL_VERIFICATION_INVALID` (the service
- * throws on the empty token before any database query), while LAN_OFFLINE answers
- * 404 `PROFILE_DISABLED`. `null` means the profile could not be established — API unreachable or an
- * unexpected answer — so no ONLINE-only surface may be assumed.
- */
-export async function probeAuthProfile(): Promise<AuthProfile | null> {
-  const me = await fetchAuthMe();
-  if (me.ok && me.data) return me.data.authProfile;
-  if (me.status !== 401) return null;
-  const probe = await apiRequest<unknown>('/api/v2/auth/verify-email', { method: 'POST', body: { token: '' } });
-  if (isProfileDisabled(probe)) return 'LAN_OFFLINE';
-  return probe.status === 400 ? 'ONLINE' : null;
-}
+
 
 /* ---------------------------------------------------------------------------------------------
  * Recent re-authentication — the password confirmation the destructive organizer actions require.
@@ -1558,3 +1550,19 @@ export function searchOrganizerTeams(q: string, input: { readonly limit?: number
   const query = new URLSearchParams({ q, limit: String(input.limit ?? 50), offset: String(input.offset ?? 0) });
   return apiRequest(`/api/v2/organizer/teams?${query}`);
 }
+export interface TeamDto { readonly id: string; readonly name: string; readonly captainUserId: string; readonly tournamentId?: string | null; readonly closedAt?: string | null; readonly rosterLocked?: boolean; readonly members?: readonly { readonly userId: string; readonly username: string; readonly displayName: string; readonly role: string }[] }
+export interface TeamInvitationDto { readonly id: string; readonly teamId: string; readonly teamName: string; readonly tournamentId: string; readonly recipientUserId: string; readonly status: 'PENDING'|'ACCEPTED'|'DECLINED'|'REVOKED'; readonly expiresAt: string; readonly createdAt: string }
+export const onlineTeams = {
+  list(): Promise<ApiResult<{ teams: TeamDto[] }>> { return apiRequest('/api/v2/me/teams'); },
+  create(input: { tournamentId: string; name: string }): Promise<ApiResult<TeamDto>> { return apiRequest('/api/v2/me/teams', { method: 'POST', body: input }); },
+  invitations(): Promise<ApiResult<{ invitations: TeamInvitationDto[] }>> { return apiRequest('/api/v2/me/team-invitations'); },
+  invite(teamId: string, username: string): Promise<ApiResult<TeamInvitationDto>> { return apiRequest(`/api/v2/teams/${encodeURIComponent(teamId)}/invitations`, { method: 'POST', body: { username } }); },
+  respond(id: string, decision: 'ACCEPT'|'DECLINE'): Promise<ApiResult<{ invitation: TeamInvitationDto }>> { return apiRequest(`/api/v2/team-invitations/${encodeURIComponent(id)}/respond`, { method: 'POST', body: { decision } }); },
+  revoke(id: string): Promise<ApiResult<{ invitation: TeamInvitationDto }>> { return apiRequest(`/api/v2/team-invitations/${encodeURIComponent(id)}/revoke`, { method: 'POST', body: {} }); },
+  remove(teamId: string, userId: string): Promise<ApiResult<TeamDto>> { return apiRequest(`/api/v2/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(userId)}`, { method: 'DELETE' }); },
+  captain(teamId: string, userId: string): Promise<ApiResult<TeamDto>> { return apiRequest(`/api/v2/teams/${encodeURIComponent(teamId)}/captain`, { method: 'POST', body: { userId } }); },
+  leave(teamId: string): Promise<ApiResult<{ left: true }>> { return apiRequest(`/api/v2/teams/${encodeURIComponent(teamId)}/leave`, { method: 'POST', body: {} }); },
+  close(teamId: string): Promise<ApiResult<{ closed: true }>> { return apiRequest(`/api/v2/teams/${encodeURIComponent(teamId)}/close`, { method: 'POST', body: {} }); },
+  rotateCode(tournamentId: string, codeId: string, input: { maxUses?: number; expiresAt?: string }): Promise<ApiResult<CreatedEntryCode>> { return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/entry-codes/${encodeURIComponent(codeId)}/rotate`, { method: 'POST', body: input }); },
+  revokeCode(tournamentId: string, codeId: string): Promise<ApiResult<{ id: string; revision: number; revoked: true }>> { return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/entry-codes/${encodeURIComponent(codeId)}/revoke`, { method: 'POST', body: {} }); },
+};

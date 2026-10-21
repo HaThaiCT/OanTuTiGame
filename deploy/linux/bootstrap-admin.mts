@@ -13,18 +13,19 @@
  *  - it never accepts a password on the command line. Over a Unix socket it runs as the operator;
  *    over TCP it requires `PGPASSWORD_FILE` (a file, never an environment value).
  *
- * Usage:
- *   OANTUTI_BOOTSTRAP_CONFIRM=<exact database name> \
- *   OANTUTI_ACCOUNT_CAPACITY=<positive integer> \
- *     node --import tsx deploy/linux/bootstrap-admin.mts <username>
- *
+ * Usage (LAN_OFFLINE): OANTUTI_BOOTSTRAP_CONFIRM=<exact database name> OANTUTI_ACCOUNT_CAPACITY=<positive integer> node --import tsx deploy/linux/bootstrap-admin.mts <username>
+ * Usage (ONLINE): set OANTUTI_AUTH_PROFILE=ONLINE, validated Online mail configuration, OANTUTI_BOOTSTRAP_ADMIN_EMAIL, and OANTUTI_ACCOUNT_CAPACITY; run the same command.
+ * ONLINE creates a pending ADMIN, stores accountCapacity if absent in the same transaction, and queues encrypted verification delivery. No mail is sent by this script.
  * Environment: standard PGHOST/PGPORT/PGUSER/PGDATABASE. PGPASSWORD is refused; use PGPASSWORD_FILE.
  */
-import { closeSync, openSync, readFileSync, writeSync } from 'node:fs';
+import { closeSync, constants, fstatSync, openSync, readSync, writeSync } from 'node:fs';
 import { randomInt } from 'node:crypto';
 import type pg from 'pg';
 import { PostgresDatabase } from '../../packages/server/src/persistence/db.js';
 import { hashPassword, validPassword } from '../../packages/server/src/identity/crypto.js';
+import { IdentityService } from '../../packages/server/src/identity/service.js';
+import { loadOnlineConfig, resolveAuthProfile } from '../../packages/server/src/identity/online-config.js';
+import { type IdentityMailOptions } from '../../packages/server/src/identity/mail-outbox.js';
 
 const [username, ...extra] = process.argv.slice(2);
 if (!username || username.length < 2 || username.length > 50 || extra.length || !/^[A-Za-z0-9._-]+$/.test(username)) {
@@ -47,9 +48,17 @@ if (process.env.PGPASSWORD) {
 if (!process.env.PGHOST.startsWith('/')) {
   const secretFile = process.env.PGPASSWORD_FILE;
   if (!secretFile) throw new Error('TCP connections require PGPASSWORD_FILE');
-  const secret = readFileSync(secretFile, 'utf8').trim();
-  if (!secret) throw new Error('PGPASSWORD_FILE must not be empty');
-  process.env.PGPASSWORD = secret;
+  const fd = openSync(secretFile, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 || stat.size < 1 || stat.size > 4096) throw new Error('Unsafe PGPASSWORD_FILE');
+    const buffer = Buffer.alloc(stat.size);
+    const bytes = readSync(fd, buffer, 0, buffer.length, 0);
+    let secret: string;
+    try { secret = new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, bytes)); } catch { throw new Error('Invalid PGPASSWORD_FILE encoding'); }
+    if (bytes !== stat.size || !secret || /[\r\n\0]/.test(secret)) throw new Error('Invalid PGPASSWORD_FILE contents');
+    process.env.PGPASSWORD = secret;
+  } finally { closeSync(fd); }
 }
 
 const confirmation = process.env.OANTUTI_BOOTSTRAP_CONFIRM;
@@ -67,9 +76,24 @@ function temporaryPassword(): string {
 }
 
 const configuredCapacity = Number(process.env.OANTUTI_ACCOUNT_CAPACITY ?? '');
+const initialOnlineCapacity = process.env.OANTUTI_ACCOUNT_CAPACITY === undefined ? undefined : configuredCapacity;
 
 const db = new PostgresDatabase();
 try {
+  const authProfile = resolveAuthProfile();
+  if (authProfile === 'ONLINE') {
+    const config = loadOnlineConfig();
+    const email = process.env.OANTUTI_BOOTSTRAP_ADMIN_EMAIL;
+    if (!config || !email) throw new Error('ONLINE bootstrap requires validated ONLINE mail configuration and OANTUTI_BOOTSTRAP_ADMIN_EMAIL');
+    if (initialOnlineCapacity !== undefined && (!Number.isSafeInteger(initialOnlineCapacity) || initialOnlineCapacity < 1)) throw new Error('OANTUTI_ACCOUNT_CAPACITY must be a positive integer');
+    const password = temporaryPassword();
+    if (!validPassword(password)) throw new Error('Generated credential failed the password policy');
+    const mail: IdentityMailOptions = { keyring: config.keyring, publicBaseUrl: config.publicBaseUrl, from: config.from, replyTo: config.replyTo };
+    const created = await new IdentityService(db, 'ONLINE', { mail }).bootstrapAdmin(username.trim(), password, email, initialOnlineCapacity);
+    writeSync(tty, `\nONLINE ADMIN ${created.username} created pending email verification (${created.id}).\nTemporary password (printed once): ${password}\nVerification delivery is queued.\n\n`);
+    process.stdout.write(`ONLINE ADMIN ${created.username} created pending verification\n`);
+    closeSync(tty);
+  } else {
   // Validate the capacity *before* anything is written: LAN provisioning refuses to run without it,
   // so an ADMIN created without it could not issue a single account.
   const capacityRow = await db.query<{ value: { limit?: unknown } }>(
@@ -123,7 +147,7 @@ try {
   try {
     writeSync(tty, `\nADMIN ${admin.username} created (${admin.id}).\nTemporary password (printed once): ${password}\nHand it over privately; first login forces a change.\n\n`);
   } finally { closeSync(tty); }
-  process.stdout.write(`ADMIN ${admin.username} created\n`);
+  }
 } catch (error) {
   closeSync(tty);
   throw error;

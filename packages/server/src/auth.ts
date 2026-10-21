@@ -132,12 +132,15 @@ export function isLanOrLocalOrigin(origin: string): boolean {
   }
 }
 
-export function protectMutations(app: FastifyInstance, allowedOrigins: readonly string[]): void {
+export function protectMutations(app: FastifyInstance, allowedOrigins: readonly string[], options: { readonly exactOrigin?: boolean } = {}): void {
   app.addHook('onRequest', async (request) => {
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return;
     if (request.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Cross-origin mutation denied');
     const origin = request.headers.origin;
-    if (origin) {
+    if (options.exactOrigin && (!origin || !allowedOrigins.includes(origin))) {
+      throw new HttpError(403, 'Cross-origin mutation denied');
+    }
+    if (origin && !options.exactOrigin) {
       let normalized: string;
       try { normalized = new URL(origin).origin; } catch { throw new HttpError(403, 'Cross-origin mutation denied'); }
       // Never use forwarded headers to decide which origin is trusted.

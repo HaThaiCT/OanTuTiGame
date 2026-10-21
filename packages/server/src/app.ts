@@ -14,7 +14,7 @@ import { migrateBotSourceFiles, registerBotRoutes } from './bot-routes.js';
 import { PostgresDatabase } from './persistence/db.js';
 import { IdentityService } from './identity/service.js';
 import { registerIdentityRoutes } from './identity/routes.js';
-import { TeamService } from './teams/service.js';
+import { TeamError, TeamService } from './teams/service.js';
 import { registerTeamRoutes } from './teams/routes.js';
 import { ArtifactStore } from './submissions/artifact-store.js';
 import { BuildPipeline } from './builds/build-pipeline.js';
@@ -54,6 +54,14 @@ import { NativeLiveProjector } from './live/native-live-projector.js';
 import { registerGlobalRatingRoutes } from './ratings/routes.js';
 import { GlobalTeamRatingService } from './ratings/service.js';
 
+import { loadOnlineConfig, resolveAuthProfile, type OnlineConfig } from './identity/online-config.js';
+import { MailConsumer, type MailTransport } from './identity/mail-consumer.js';
+import { createSmtpTransport } from './identity/smtp-transport.js';
+import type { IdentityMailOptions } from './identity/mail-outbox.js';
+function toIdentityMailOptions(config: OnlineConfig): IdentityMailOptions {
+  return { keyring: config.keyring, publicBaseUrl: config.publicBaseUrl, from: config.from, replyTo: config.replyTo };
+}
+
 export interface ServerOptions {
   readonly dbLocation?: string;
   readonly mapsDir?: string;
@@ -61,9 +69,9 @@ export interface ServerOptions {
   readonly botsDir?: string;
   readonly allowedOrigins?: readonly string[];
   readonly pgDb?: PostgresDatabase;
-  /** Linux native SO_PEERCRED gateway; never inferred from untrusted request data. */
+  readonly onlineConfig?: OnlineConfig;
+  readonly mailTransport?: MailTransport;
   readonly localJobBroker?: LocalJobBrokerOptions;
-  /** Scratch root for the dev-only match executor (see MatchExecutionService). */
   readonly executionSpoolDir?: string;
 }
 export interface AppContext {
@@ -93,10 +101,20 @@ function trustedProxies(env: NodeJS.ProcessEnv = process.env): string[] | false 
 
 export async function createApp(options?: ServerOptions): Promise<AppContext> {
   if (options?.localJobBroker && !options.pgDb) throw new Error('Local job broker requires PostgreSQL');
+  const authProfile = options?.onlineConfig ? 'ONLINE' : resolveAuthProfile();
+  const onlineConfig = authProfile === 'ONLINE'
+    ? options?.onlineConfig ?? loadOnlineConfig()
+    : undefined;
+  if (authProfile === 'ONLINE' && !onlineConfig) throw new Error('ONLINE startup requires a validated OnlineConfig');
+  if (options?.onlineConfig && authProfile !== 'ONLINE') throw new Error('OnlineConfig is only valid with OANTUTI_AUTH_PROFILE=ONLINE');
+  if (authProfile === 'ONLINE' && !options?.pgDb) throw new Error('ONLINE profile requires PostgreSQL');
+  if (authProfile === 'ONLINE' && options?.mailTransport && !options.onlineConfig) throw new Error('Injected mail transport requires validated OnlineConfig');
+  const trustedProxyConfig = authProfile === 'ONLINE'
+    ? (onlineConfig!.trustedProxies.length ? [...onlineConfig!.trustedProxies] : false)
+    : trustedProxies();
   let localJobBroker: LocalJobBrokerTransport | undefined;
-  /** Backup freshness fence, when a durable control plane is wired; readiness reports its state. */
+  let mailConsumer: MailConsumer | undefined;
   let backupFence: BackupFence | undefined;
-  /** Filled by the control-plane block below; the readiness route is registered outside it. */
   let objectRootsProbe: ReadinessInputs['objectRoots'];
   const db = new Database(options?.dbLocation ?? ':memory:');
   const matchService = new MatchService(db, options?.mapsDir, options?.replaysDir);
@@ -153,10 +171,11 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
   }
   migrateBotSourceFiles(db, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
 
-  const app = Fastify({ logger: false, trustProxy: trustedProxies() });
+  const app = Fastify({ logger: false, trustProxy: trustedProxyConfig });
   const auth = new AuthService(db);
-  const identityService = options?.pgDb ? new IdentityService(options.pgDb) : undefined;
+  const identityService = options?.pgDb ? new IdentityService(options.pgDb, authProfile, onlineConfig ? { mail: toIdentityMailOptions(onlineConfig) } : {}) : undefined;
   app.setErrorHandler((error: unknown, _request, reply) => {
+    if (error instanceof TeamError) return reply.code(error.statusCode).send({ code: error.code, message: error.message });
     if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
     if (error && typeof error === 'object' && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500) {
       return reply.code(error.statusCode).send({ error: 'Invalid request payload' });
@@ -167,14 +186,20 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const url = request.url.split('?')[0];
     if (['POST', 'PUT', 'DELETE'].includes(request.method) && ['/api/bots', '/api/matches', '/api/matches/test', '/api/tournaments'].some((route) => url === route || (route === '/api/bots' && url.startsWith('/api/bots/')))) auth.requireUser(request);
   });
-  protectMutations(app, options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']));
+  protectMutations(app, authProfile === 'ONLINE' ? [onlineConfig!.publicBaseUrl] : options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']), { exactOrigin: authProfile === 'ONLINE' });
   if (!options?.pgDb) {
     auth.registerRoutes(app);
     registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
   }
   await app.register(fastifyWebsocket);
   if (options?.pgDb && identityService) {
-    const teamService = new TeamService(options.pgDb);
+    const teamService = new TeamService(options.pgDb, authProfile);
+    if (authProfile === 'ONLINE') {
+      const transport = options.mailTransport ?? createSmtpTransport(onlineConfig!.smtp);
+      mailConsumer = new MailConsumer(options.pgDb, toIdentityMailOptions(onlineConfig!), transport);
+      app.addHook('onReady', async () => { mailConsumer!.start(); });
+      app.addHook('onClose', async () => { await mailConsumer!.stop(); });
+    }
     const artifactStore = new ArtifactStore(
       options.pgDb,
       options.botsDir ?? path.resolve(process.cwd(), 'storage/submissions'),
@@ -217,7 +242,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const privateTestRunner = new PrivateTestRunner(options.pgDb, artifactStore, replayStore, {
       spoolDir: path.join(executionSpoolDir, 'tests'),
     });
-    registerIdentityRoutes(app, identityService, options.allowedOrigins);
+    registerIdentityRoutes(app, identityService, authProfile === 'ONLINE' ? [onlineConfig!.publicBaseUrl] : options.allowedOrigins);
     registerTeamRoutes(app, teamService, identityService);
     registerSubmissionRoutes(app, submissionService, identityService, privateTestRunner);
     const resultService = new ResultService(options.pgDb, replayStore);
@@ -234,11 +259,11 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const tournamentAdmissionService = new TournamentAdmissionService(
       options.pgDb,
       async (tournamentId) => {
-        // Withdrawals resolve encounters without game completions; let the scheduler notice.
         await schedulerService.markTerminalRounds(tournamentId);
       },
       backupFence,
-      ratingService
+      ratingService,
+      authProfile
     );
     const schedulerService = new TournamentSchedulerService(options.pgDb, jobBroker);
     // Immutable completion capsules live outside the attempt spool so a restarted process can still
@@ -283,7 +308,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       identityService
     );
     registerAdmissionRoutes(app, tournamentAdmissionService, identityService);
-    registerEntryCodeRoutes(app, new TournamentEntryCodeService(options.pgDb), identityService);
+    registerEntryCodeRoutes(app, new TournamentEntryCodeService(options.pgDb, authProfile), identityService);
     registerGlobalRatingRoutes(app, ratingService, identityService);
     // Compile + smoke-test gate: a receipt only becomes READY here.
     const buildPipeline = new BuildPipeline(options.pgDb, artifactStore, {
@@ -356,6 +381,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       devExecutorEnabled: process.env.OANTUTI_DEV_EXECUTION === '1',
       backupFence,
       objectRoots: objectRootsProbe,
+      mail: authProfile === 'ONLINE' ? { configured: Boolean(onlineConfig && mailConsumer), running: Boolean(mailConsumer) } : undefined,
     });
     return reply.code(report.status === 'ready' ? 200 : 503).send(report);
   });

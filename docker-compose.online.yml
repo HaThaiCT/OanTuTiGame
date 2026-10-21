@@ -1,0 +1,44 @@
+# Explicit ONLINE service profile; LAN defaults in docker-compose.yml are unchanged.
+services:
+  server:
+    environment:
+      OANTUTI_AUTH_PROFILE: ONLINE
+      OANTUTI_PUBLIC_BASE_URL: '${OANTUTI_PUBLIC_BASE_URL:?Set exact external HTTPS origin}'
+      PUBLIC_ORIGINS: '${OANTUTI_PUBLIC_BASE_URL:?Set exact external HTTPS origin}'
+      OANTUTI_TRUST_PROXY: '${OANTUTI_TRUST_PROXY:?Set trusted proxy IP/CIDR}'
+      OANTUTI_SMTP_HOST: '${OANTUTI_SMTP_HOST:?Set SMTP host}'
+      OANTUTI_SMTP_PORT: '${OANTUTI_SMTP_PORT:?Set SMTP port}'
+      OANTUTI_SMTP_TLS_MODE: '${OANTUTI_SMTP_TLS_MODE:?Set SMTP TLS mode}'
+      OANTUTI_SMTP_USER: '${OANTUTI_SMTP_USER:?Set SMTP user}'
+      OANTUTI_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      OANTUTI_MAIL_KEYRING_FILE: /run/secrets/mail_keyring
+      OANTUTI_MAIL_FROM: '${OANTUTI_MAIL_FROM:?Set verified sender address}'
+      OANTUTI_MAIL_REPLY_TO: '${OANTUTI_MAIL_REPLY_TO:?Set reply address}'
+    secrets:
+      - pg_app_password
+      - smtp_password
+      - mail_keyring
+  ops:
+    environment:
+      OANTUTI_AUTH_PROFILE: ONLINE
+      OANTUTI_PUBLIC_BASE_URL: '${OANTUTI_PUBLIC_BASE_URL:?Set exact external HTTPS origin}'
+      OANTUTI_SMTP_HOST: '${OANTUTI_SMTP_HOST:?Set SMTP host}'
+      OANTUTI_SMTP_PORT: '${OANTUTI_SMTP_PORT:?Set SMTP port}'
+      OANTUTI_SMTP_TLS_MODE: '${OANTUTI_SMTP_TLS_MODE:?Set SMTP TLS mode}'
+      OANTUTI_SMTP_USER: '${OANTUTI_SMTP_USER:?Set SMTP user}'
+      OANTUTI_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+      OANTUTI_MAIL_KEYRING_FILE: /run/secrets/mail_keyring
+      OANTUTI_MAIL_FROM: '${OANTUTI_MAIL_FROM:?Set verified sender address}'
+      OANTUTI_MAIL_REPLY_TO: '${OANTUTI_MAIL_REPLY_TO:?Set reply address}'
+      OANTUTI_BOOTSTRAP_ADMIN_EMAIL: '${OANTUTI_BOOTSTRAP_ADMIN_EMAIL:?Set authorized bootstrap mailbox}'
+      OANTUTI_BOOTSTRAP_CONFIRM: '${OANTUTI_BOOTSTRAP_CONFIRM:?Set the exact target database name}'
+      OANTUTI_RECOVERY_CONFIRM: '${OANTUTI_RECOVERY_CONFIRM:-}'
+      OANTUTI_ACCOUNT_CAPACITY: '${OANTUTI_ACCOUNT_CAPACITY:?Set positive account capacity}'
+    secrets:
+      - smtp_password
+      - mail_keyring
+secrets:
+  smtp_password:
+    file: '${SMTP_PASSWORD_FILE:?Set SMTP_PASSWORD_FILE to external mode-0600 secret}'
+  mail_keyring:
+    file: '${MAIL_KEYRING_FILE:?Set MAIL_KEYRING_FILE to external mode-0600 secret}'

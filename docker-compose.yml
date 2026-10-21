@@ -24,6 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.server
+    image: '${OANTUTI_SERVER_IMAGE:-oantuti-online-v2-server:local}'
     init: true
     environment:
       PORT: '3001'
@@ -39,7 +40,7 @@ services:
       OANTUTI_REPLAYS_DIR: /app/storage/replays
       OANTUTI_SPOOL_DIR: /app/storage/execution
       PUBLIC_ORIGINS: '${PUBLIC_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}'
-      OANTUTI_AUTH_PROFILE: LAN_OFFLINE
+      OANTUTI_AUTH_PROFILE: '${OANTUTI_AUTH_PROFILE:-LAN_OFFLINE}'
       OANTUTI_DEV_EXECUTION: '0'
       # Only the gateway is published. It replaces forwarded client addresses; trust its private
       # Compose-network address so clients do not share one login-throttle bucket.
@@ -61,6 +62,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+    image: '${OANTUTI_WEB_IMAGE:-oantuti-online-v2-web:local}'
     environment:
       API_BASE: http://server:3001
     depends_on:
@@ -76,19 +78,19 @@ services:
     depends_on: [web]
     restart: unless-stopped
 
-  # One-shot operator container (profile `ops`). It runs the migration applier and the first-ADMIN
-  # bootstrap against the same database, and it is the only container that carries the database
-  # owner secret; the API keeps the application role. It never runs as part of `up`.
-  #
-  #   docker compose --profile ops run --rm ops deploy/linux/apply-migrations.mts --apply --grant-to arena_app
-  #   docker compose --profile ops run --rm -it ops deploy/linux/bootstrap-admin.mts <username>
+# One-shot operator container (profile `ops`). It runs migrations/bootstrapping using the owner role;
+# the API keeps the application role. It never runs as part of `up`. `ops-entrypoint.mts` copies each
+# mounted secret into a temporary private 0600 file for the CLI and removes the staged copy on exit.
+#   docker compose --profile ops run --rm ops deploy/linux/apply-migrations.mts --apply --grant-to arena_app
+#   docker compose --profile ops run --rm -it ops deploy/linux/bootstrap-admin.mts <username>
   ops:
     profiles: ['ops']
     build:
       context: .
       dockerfile: Dockerfile.server
+    image: '${OANTUTI_SERVER_IMAGE:-oantuti-online-v2-server:local}'
     init: true
-    entrypoint: ['node', '--import', 'tsx']
+    entrypoint: ['node', '--import', 'tsx', 'deploy/linux/ops-entrypoint.mts']
     environment:
       PGHOST: postgres
       PGPORT: '5432'
@@ -113,3 +115,7 @@ secrets:
     file: '${PG_OWNER_PASSWORD_FILE:?Set PG_OWNER_PASSWORD_FILE to an external secret file}'
   pg_app_password:
     file: '${PG_APP_PASSWORD_FILE:?Set PG_APP_PASSWORD_FILE to an external secret file}'
+  smtp_password:
+    file: '${SMTP_PASSWORD_FILE:-/dev/null}'
+  mail_keyring:
+    file: '${MAIL_KEYRING_FILE:-/dev/null}'

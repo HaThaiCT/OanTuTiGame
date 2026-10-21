@@ -3,6 +3,7 @@ import type { CommandContext, Receipt } from '@oantuti/protocol';
 import type { BackupFence } from '../operations/backup-fence.js';
 import type { PostgresDatabase } from '../persistence/db.js';
 import { runIdempotent } from '../commands/idempotency.js';
+import { lockRosterAdmission } from '../teams/roster-policy.js';
 
 export class TournamentError extends Error {
   constructor(readonly statusCode: number, message: string) {
@@ -69,11 +70,12 @@ export class TournamentLifecycleService {
   }
 
   private async lockInternal(tournamentId: string, ctx: CommandContext): Promise<TournamentLockReceipt> {
-    if (ctx.actor.role !== 'ADMIN') {
+    if (ctx.actor.role !== 'ADMIN' || ctx.actor.scope !== 'FULL') {
       throw new TournamentError(403, 'Only administrators can lock tournament registration');
     }
 
     return this.db.withTransaction(async (client) => {
+      await lockRosterAdmission(client);
       await this.backupFence?.assertFresh(client);
       const tourneyRes = await client.query<{
         id: string;

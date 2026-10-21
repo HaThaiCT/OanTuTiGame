@@ -2,14 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../../lib/client';
-import { fetchAuthMe, probeAuthProfile, type AuthProfile } from '../../lib/api';
+import { apiRequest, type ApiResult } from '../../lib/client';
+import { fetchAuthMe, onlineTeams, probeAuthProfile, type AuthProfile, type TeamDto, type TeamInvitationDto } from '../../lib/api';
 import { stateLabel } from '../../lib/labels';
 import FirstPasswordChange from './FirstPasswordChange';
 import { TeamRatingName } from '../_components/TeamRatingName';
 import { TournamentRatingProvider } from '../_components/TournamentRatingContext';
 
 interface SessionUser {
+  id: string;
   username: string;
   displayName: string;
   role: string;
@@ -46,7 +47,13 @@ export default function WorkspacePage() {
    * session, so the signed-out screen stays without self-service links until the API reports ONLINE.
    */
   const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
-
+  const [teams, setTeams] = useState<TeamDto[]>([]);
+  const [invitations, setInvitations] = useState<TeamInvitationDto[]>([]);
+  const [teamName, setTeamName] = useState('');
+  const [tournamentId, setTournamentId] = useState('');
+  const [availableTournaments, setAvailableTournaments] = useState<{ id: string; name: string }[]>([]);
+  const [inviteUsername, setInviteUsername] = useState<Record<string, string>>({});
+  const [sentInvitations, setSentInvitations] = useState<TeamInvitationDto[]>([]);
   /**
    * Reads the current session (user + team memberships) and the deployment's authentication profile.
    * The profile comes from the same response, so no extra request is needed while signed in.
@@ -64,6 +71,7 @@ export default function WorkspacePage() {
       return;
     }
     setUser({
+      id: result.data.user.id,
       username: result.data.user.username,
       displayName: result.data.user.displayName,
       role: result.data.user.role,
@@ -77,6 +85,19 @@ export default function WorkspacePage() {
   useEffect(() => {
     void refreshSession();
   }, []);
+
+  useEffect(() => {
+    if (authProfile !== 'ONLINE' || !user || scope !== 'FULL' || user.role !== 'STUDENT') { setAvailableTournaments([]); return; }
+    let cancelled = false;
+    void apiRequest<{ tournaments?: Record<string, unknown>[] }>('/api/v2/tournaments').then(result => {
+      if (cancelled) return;
+      if (!result.ok) { setError('Không tải được danh sách giải mở.'); setAvailableTournaments([]); return; }
+      setAvailableTournaments((result.data?.tournaments ?? []).filter(row => ['PUBLISHED', 'REGISTRATION_OPEN'].includes(String(row.state ?? ''))).map(row => ({ id: String(row.id ?? ''), name: String(row.name ?? '') })).filter(row => row.id));
+    });
+    return () => { cancelled = true; };
+  }, [authProfile, user, scope]);
+
+  useEffect(() => { if (authProfile === 'ONLINE' && user && scope === 'FULL' && user.role === 'STUDENT') void refreshOnlineTeams(); }, [authProfile, user, scope]);
 
   useEffect(() => {
     if (!user || scope !== 'FULL' || user.role !== 'STUDENT' || teamIds.length === 0) {
@@ -139,6 +160,29 @@ export default function WorkspacePage() {
     };
   }, [user, teamIds, scope]);
 
+  async function refreshOnlineTeams() {
+    const [teamResult, invitationResult] = await Promise.all([onlineTeams.list(), onlineTeams.invitations()]);
+    if (!teamResult.ok || !teamResult.data || !invitationResult.ok || !invitationResult.data) {
+      setTeams([]);
+      setInvitations([]);
+      setSentInvitations([]);
+      setError(teamResult.message ?? invitationResult.message ?? 'Không tải được đội và lời mời. Hãy thử tải lại.');
+      return false;
+    }
+    setTeams(teamResult.data.teams);
+    setInvitations(invitationResult.data.invitations.filter(invitation => invitation.recipientUserId === user?.id));
+    setSentInvitations(invitationResult.data.invitations.filter(invitation => invitation.recipientUserId !== user?.id));
+    setError(null);
+    return true;
+  }
+  async function runTeamAction(action: () => Promise<ApiResult<unknown>>) {
+    setBusy(true);
+    try {
+      const result = await action();
+      if (!result.ok) setError(result.message ?? 'Không thể cập nhật đội.');
+      else { setError(null); await refreshOnlineTeams(); }
+    } finally { setBusy(false); }
+  }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -202,10 +246,30 @@ export default function WorkspacePage() {
             Tham gia giải bằng mã →
           </Link>
         ) : null}
+        {authProfile === 'ONLINE' && user.role === 'STUDENT' && scope === 'FULL' ? <Link className="vct-btn-secondary self-start" href="/account">Quản lý tài khoản</Link> : null}
+        {authProfile === 'ONLINE' && user.role === 'STUDENT' && scope === 'FULL' ? (
+          <section className="flex flex-col gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+            <h2 className="text-lg font-semibold">Tài khoản và đội</h2>
+            <form className="flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); void runTeamAction(async () => { const result = await onlineTeams.create({ tournamentId, name: teamName }); if (result.ok) { setTeamName(''); setTournamentId(''); } return result; }); }}>
+              <input required minLength={2} maxLength={50} placeholder="Tên đội" value={teamName} onChange={(event) => setTeamName(event.target.value)} className="rounded border border-[var(--border-control)] bg-[var(--canvas)] p-2" />
+              <select required value={tournamentId} onChange={(event) => setTournamentId(event.target.value)} className="rounded border border-[var(--border-control)] bg-[var(--canvas)] p-2"><option value="">Chọn giải đang mở</option>{availableTournaments.map(tournament => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select>
+              <button disabled={busy || !tournamentId || availableTournaments.length === 0} className="vct-btn-primary">Tạo đội</button>
+            </form>
+            <h3 className="font-semibold">Lời mời</h3>
+            {invitations.filter((invitation) => invitation.status === 'PENDING' && invitation.recipientUserId === user.id).map((invitation) => <div key={invitation.id} className="flex flex-wrap items-center gap-2"><span>{invitation.teamName} · hết hạn {invitation.expiresAt}</span><button disabled={busy} onClick={() => void runTeamAction(() => onlineTeams.respond(invitation.id, 'ACCEPT'))}>Chấp nhận</button><button disabled={busy} onClick={() => void runTeamAction(() => onlineTeams.respond(invitation.id, 'DECLINE'))}>Từ chối</button></div>)}
+            {teams.map((team) => <article key={team.id} className="flex flex-col gap-2 border-t border-[var(--border-subtle)] pt-3"><h3>{team.name}{team.closedAt ? ' · Đã đóng' : ''}{team.rosterLocked ? ' · Danh sách khóa' : ''}</h3><p className="text-xs">Giải {availableTournaments.find(t => t.id === team.tournamentId)?.name ?? '—'} · {team.rosterLocked ? 'Danh sách ghi danh đã khóa; không thể thay đổi thành viên.' : 'Danh sách có thể chỉnh sửa khi giải cho phép.'}</p>
+              {!team.closedAt && !team.rosterLocked && <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); const username = inviteUsername[team.id] ?? ''; void runTeamAction(async () => { const result = await onlineTeams.invite(team.id, username); const invitation = result.ok ? result.data : null; if (invitation) { setInviteUsername({ ...inviteUsername, [team.id]: '' }); setSentInvitations(current => [...current.filter(item => item.id !== invitation.id), invitation]); } return result; }); }}><input required placeholder="Username thành viên" value={inviteUsername[team.id] ?? ''} onChange={(event) => setInviteUsername({ ...inviteUsername, [team.id]: event.target.value })} /><button disabled={busy}>Mời</button></form>}
+              {team.members?.map((member) => <div key={member.userId} className="flex flex-wrap gap-2"><span>{member.displayName} · {member.role}</span>{team.captainUserId === user?.id && member.role !== 'CAPTAIN' && !team.rosterLocked && <><button disabled={busy} onClick={() => { if (window.confirm(`Chuyển quyền trưởng đội cho ${member.displayName}?`)) void runTeamAction(() => onlineTeams.captain(team.id, member.userId)); }}>Chuyển trưởng đội</button><button disabled={busy} onClick={() => { if (window.confirm(`Xóa ${member.displayName} khỏi đội?`)) void runTeamAction(() => onlineTeams.remove(team.id, member.userId)); }}>Xóa thành viên</button></>}</div>)}
+              {sentInvitations.filter(invitation => invitation.teamId === team.id && invitation.status === 'PENDING').map(invitation => <div key={invitation.id} className="flex items-center gap-2 text-xs"><span>Lời mời đang chờ · {invitation.expiresAt}</span><button disabled={busy} onClick={() => { if (window.confirm('Thu hồi lời mời đang chờ?')) void runTeamAction(async () => { const result = await onlineTeams.revoke(invitation.id); if (result.ok) setSentInvitations(current => current.filter(item => item.id !== invitation.id)); return result; }); }}>Thu hồi lời mời</button></div>)}
+              {!team.closedAt && <div className="flex gap-2"><button disabled={busy} onClick={() => { if (window.confirm('Rời đội? Trưởng đội cần chuyển quyền trước.')) void runTeamAction(() => onlineTeams.leave(team.id)); }}>Rời đội</button>{team.captainUserId === user?.id ? <button disabled={busy} onClick={() => { if (window.confirm('Đóng đội? Các lượt ghi danh hiện có vẫn được giữ.')) void runTeamAction(() => onlineTeams.close(team.id)); }}>Đóng đội</button> : null}</div>}
+            </article>)}
+          </section>
+        ) : null}
 
         {error ? (
           <div role="alert" className="p-3 bg-[var(--danger-tint)] rounded-xl border border-[var(--danger-text)] text-xs text-[var(--danger-text)]">
             {error}
+            {authProfile === 'ONLINE' && user.role === 'STUDENT' && scope === 'FULL' ? <button type="button" disabled={busy} className="ml-3 underline" onClick={() => { setBusy(true); void refreshOnlineTeams().finally(() => setBusy(false)); }}>Tải lại đội và lời mời</button> : null}
           </div>
         ) : null}
 
@@ -250,6 +314,8 @@ export default function WorkspacePage() {
       </section>
     );
   }
+
+  if (authProfile === null) return <section className="mx-auto max-w-md p-6" role="status">Không thể xác định hồ sơ máy chủ; đăng nhập và mọi thao tác Online đang bị khóa.</section>;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">

@@ -7,11 +7,16 @@ import { hashPassword, hashToken } from '../src/identity/crypto.js';
 import { TournamentAdmissionService } from '../src/tournaments/admission-service.js';
 import { TournamentEntryCodeService } from '../src/tournaments/entry-code-service.js';
 import { registerAdmissionRoutes, registerEntryCodeRoutes } from '../src/tournaments/routes.js';
+import { openMailMaterial, type MailEnvelope } from '../src/identity/mail-crypto.js';
+import { mailAad, type IdentityMailOptions } from '../src/identity/mail-outbox.js';
+import { MailConsumer, type MailMessage, type MailTransport } from '../src/identity/mail-consumer.js';
 
 const RUN = Date.now().toString(36);
-const DEV_FLAG = 'OANTUTI_DEV_EXPOSE_EMAIL_TOKENS';
-const PASSWORD = 'OnlinePassword123!';
 const RESET_PASSWORD = 'ResetPassword456!';
+const PASSWORD = 'OnlineIdentityPassword456!';
+const ORIGIN = 'https://arena.example';
+const mail: IdentityMailOptions = { keyring:{currentKeyId:'test',keys:new Map([['test',Buffer.alloc(32,7)]])},publicBaseUrl:ORIGIN,from:'arena@example.test',replyTo:'support@example.test' };
+class RecordingIdentityTransport implements MailTransport { readonly messages: MailMessage[]=[]; async send(message:MailMessage):Promise<void>{this.messages.push(message);} }
 
 function cookieOf(res: { headers: Record<string, string | string[] | undefined> }): string {
   return String(res.headers['set-cookie']).split(';')[0];
@@ -26,14 +31,21 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
   /** LAN_OFFLINE profile: identity routes only. */
   let lanApp: FastifyInstance;
 
-  let previousDevFlag: string | undefined;
   const userIds: string[] = [];
   const tournamentIds: string[] = [];
   const teamIds: string[] = [];
   const courseCodes: string[] = [];
+  const transport = new RecordingIdentityTransport();
+  let mailConsumer: MailConsumer;
+  async function tokenFor(topic: string, recipient: string): Promise<string> {
+    const result = await db.query<{outbox_id:string;user_id:string;purpose:string;token_hash:string|null;envelope:MailEnvelope}>(`SELECT d.outbox_id,d.user_id,d.purpose,d.token_hash,d.envelope FROM identity_mail_deliveries d JOIN outbox_events o ON o.id=d.outbox_id WHERE o.topic=$1 AND d.user_id IN (SELECT id FROM users WHERE email=$2) ORDER BY d.created_at DESC LIMIT 1`, [topic,recipient]);
+    const row=result.rows[0]; if(!row) throw new Error(`Missing delivery for ${topic}`);
+    return openMailMaterial(mail.keyring,mailAad(row.outbox_id,topic,row.user_id,row.purpose,row.token_hash),row.envelope).rawToken!;
+  }
 
   const courseCode = `OC${RUN}`;
   const alice = { username: `alice_${RUN}`, email: `alice.${RUN}@example.test` };
+  const carol = { username: `carol_${RUN}`, email: `carol.${RUN}@example.test` };
   const dave = { username: `dave_${RUN}`, email: `dave.${RUN}@example.test` };
 
   let aliceId = '';
@@ -49,43 +61,29 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
   let t2 = '';
   let t3 = '';
 
-  /** Reads the plaintext token the development transport puts in the outbox payload. */
-  async function outboxToken(topic: string, email: string): Promise<string> {
-    const res = await db.query<{ payload: { token?: string } }>(
-      `SELECT payload FROM outbox_events
-       WHERE topic = $1 AND payload->>'email' = $2
-       ORDER BY created_at DESC LIMIT 1`,
-      [topic, email]
-    );
-    const token = res.rows[0]?.payload.token;
-    if (typeof token !== 'string') {
-      throw new Error(`No dev-exposed token in ${topic} event for ${email}`);
-    }
-    return token;
-  }
 
   async function register(username: string, email: string) {
     return app.inject({
       method: 'POST',
       url: '/api/v2/auth/register',
+      headers: { origin: ORIGIN },
       payload: { username, displayName: username, email, password: PASSWORD },
     });
   }
 
   async function login(target: FastifyInstance, username: string, password: string) {
-    return target.inject({ method: 'POST', url: '/api/v2/auth/login', payload: { username, password } });
+    return target.inject({ method: 'POST', url: '/api/v2/auth/login', headers: target === app ? { origin: ORIGIN } : undefined, payload: { username, password } });
   }
 
   beforeAll(async () => {
-    previousDevFlag = process.env[DEV_FLAG];
-    process.env[DEV_FLAG] = '1';
 
     db = new Database();
-    online = new IdentityService(db, 'ONLINE');
+    mailConsumer = new MailConsumer(db, mail, transport);
+    online = new IdentityService(db, 'ONLINE', { mail });
     lan = new IdentityService(db, 'LAN_OFFLINE');
 
     app = Fastify();
-    registerIdentityRoutes(app, online);
+    registerIdentityRoutes(app, online, [ORIGIN]);
     registerAdmissionRoutes(app, new TournamentAdmissionService(db), online);
     registerEntryCodeRoutes(app, new TournamentEntryCodeService(db), online);
     await app.ready();
@@ -102,10 +100,10 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     // would depend on whatever the previous test file left behind).
     const adminUsername = `admin_${RUN}`;
     const adminInsert = await db.query<{ id: string }>(
-      `INSERT INTO users (username, display_name, password_hash, role, activation_method, password_change_required)
-       VALUES ($1, 'Online Admin', $2, 'ADMIN', 'LOCAL_BOOTSTRAP', FALSE)
+      `INSERT INTO users (username, display_name, email, email_verified_at, password_hash, role, activation_method, password_change_required)
+       VALUES ($1, 'Online Admin', $2, clock_timestamp(), $3, 'ADMIN', 'SELF_REGISTER', FALSE)
        RETURNING id`,
-      [adminUsername, await hashPassword(PASSWORD)]
+      [adminUsername, `admin.${RUN}@example.test`, await hashPassword(PASSWORD)]
     );
     userIds.push(adminInsert.rows[0].id);
     const adminLogin = await login(app, adminUsername, PASSWORD);
@@ -120,7 +118,8 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const aliceVerification = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/verify-email',
-      payload: { token: await outboxToken('EMAIL_VERIFICATION_REQUESTED', alice.email) },
+      headers: { origin: ORIGIN },
+      payload: { token: await tokenFor('EMAIL_VERIFICATION_REQUESTED', alice.email) },
     });
     expect(aliceVerification.statusCode).toBe(200);
     const aliceLogin = await login(app, alice.username, PASSWORD);
@@ -131,13 +130,19 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const daveRegistration = await register(dave.username, dave.email);
     expect(daveRegistration.statusCode).toBe(201);
     daveId = daveRegistration.json().user.id;
-    userIds.push(daveId);
+    const carolRegistration = await register(carol.username, carol.email);
+    expect(carolRegistration.statusCode).toBe(201);
+    const carolId: string = carolRegistration.json().user.id;
+    userIds.push(carolId);
+    const carolVerification = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', headers: { origin: ORIGIN }, payload: { token: await tokenFor('EMAIL_VERIFICATION_REQUESTED', carol.email) } });
+    expect(carolVerification.statusCode).toBe(200);
+
 
     async function createTeam(name: string, captainUsername: string): Promise<string> {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v2/organizer/teams',
-        headers: { cookie: adminCookie },
+        headers: { cookie: adminCookie, origin: ORIGIN },
         payload: { courseCode, name, captainUsername },
       });
       expect(res.statusCode).toBe(201);
@@ -148,7 +153,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
 
     teamA = await createTeam(`Team A ${RUN}`, alice.username);
     teamB = await createTeam(`Team B ${RUN}`, dave.username);
-    teamC = await createTeam(`Team C ${RUN}`, dave.username);
+    teamC = await createTeam(`Team C ${RUN}`, carol.username);
     teamD = await createTeam(`Team D ${RUN}`, dave.username);
     teamE = await createTeam(`Team E ${RUN}`, dave.username);
 
@@ -156,7 +161,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
       const created = await app.inject({
         method: 'POST',
         url: '/api/v2/organizer/tournaments',
-        headers: { cookie: adminCookie },
+        headers: { cookie: adminCookie, origin: ORIGIN },
         payload: { courseCode, name, format: 'ROUND_ROBIN', maxTeams },
       });
       expect(created.statusCode).toBe(201);
@@ -166,14 +171,14 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
         const published = await app.inject({
           method: 'POST',
           url: `/api/v2/organizer/tournaments/${id}/publish`,
-          headers: { cookie: adminCookie },
+          headers: { cookie: adminCookie, origin: ORIGIN },
           payload: {},
         });
         expect(published.statusCode).toBe(200);
         const opened = await app.inject({
           method: 'POST',
           url: `/api/v2/organizer/tournaments/${id}/open-registration`,
-          headers: { cookie: adminCookie },
+          headers: { cookie: adminCookie, origin: ORIGIN },
           payload: {},
         });
         expect(opened.statusCode).toBe(200);
@@ -188,6 +193,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
 
   afterAll(async () => {
     await db.withTransaction(async (client) => {
+      await client.query('DELETE FROM tournament_admissions WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_entry_codes WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_entries WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_admissions WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
@@ -205,11 +211,6 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     await app.close();
     await lanApp.close();
     await db.close();
-    if (previousDevFlag === undefined) {
-      delete process.env[DEV_FLAG];
-    } else {
-      process.env[DEV_FLAG] = previousDevFlag;
-    }
   });
 
   it('registers a student, stores only the token hash, then verifies the mailbox and logs in', async () => {
@@ -231,6 +232,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const weak = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/register',
+      headers: { origin: ORIGIN },
       payload: { username: `weak_${RUN}`, displayName: 'Weak', email: `weak.${RUN}@example.test`, password: 'short-pass' },
     });
     expect([weak.statusCode, weak.json().code]).toEqual([400, 'WEAK_PASSWORD']);
@@ -239,23 +241,19 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const duplicateEmail = await register(`other_${RUN}`, erin.email);
     expect([duplicateEmail.statusCode, duplicateEmail.json().code]).toEqual([409, 'EMAIL_TAKEN']);
 
-    // The outbox carries the plaintext token under the dev flag; the row keeps only its hash.
-    const token = await outboxToken('EMAIL_VERIFICATION_REQUESTED', erin.email);
+    // Delivery material is recovered only from the encrypted, AAD-bound test mail record.
+    const token = await tokenFor('EMAIL_VERIFICATION_REQUESTED', erin.email);
     expect(token).toHaveLength(64);
     const stored = await db.query('SELECT id FROM email_verification_tokens WHERE token_hash = $1', [hashToken(token)]);
     expect(stored.rows).toHaveLength(1);
     const plaintext = await db.query('SELECT id FROM email_verification_tokens WHERE token_hash = $1', [token]);
     expect(plaintext.rows).toHaveLength(0);
 
-    const verified = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', payload: { token } });
+    const verified = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', headers: { origin: ORIGIN }, payload: { token } });
     expect([verified.statusCode, verified.json().verified]).toEqual([200, true]);
-    const replay = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', payload: { token } });
+    const replay = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', headers: { origin: ORIGIN }, payload: { token } });
     expect([replay.statusCode, replay.json().code]).toEqual([400, 'EMAIL_VERIFICATION_CONSUMED']);
-    const bogus = await app.inject({
-      method: 'POST',
-      url: '/api/v2/auth/verify-email',
-      payload: { token: 'f'.repeat(64) },
-    });
+    const bogus = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', headers: { origin: ORIGIN }, payload: { token: 'f'.repeat(64) } });
     expect([bogus.statusCode, bogus.json().code]).toEqual([400, 'EMAIL_VERIFICATION_INVALID']);
 
     const loggedIn = await login(app, erin.username, PASSWORD);
@@ -265,25 +263,40 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     expect(me.json().authProfile).toBe('ONLINE');
   });
 
-  it('keeps the outbox payload token-free when the development transport flag is off', async () => {
-    process.env[DEV_FLAG] = '0';
-    try {
-      const frank = { username: `frank_${RUN}`, email: `frank.${RUN}@example.test` };
-      const registered = await register(frank.username, frank.email);
-      expect(registered.statusCode).toBe(201);
-      const frankId: string = registered.json().user.id;
-      userIds.push(frankId);
+  it('keeps encrypted delivery material independent of public outbox metadata', async () => {
+    const frank = { username: `frank_${RUN}`, email: `frank.${RUN}@example.test` };
+    const registered = await register(frank.username, frank.email);
+    expect(registered.statusCode).toBe(201);
+    const frankId: string = registered.json().user.id;
+    userIds.push(frankId);
+    const event = await db.query<{ payload: Record<string, unknown> }>("SELECT payload FROM outbox_events WHERE topic = 'EMAIL_VERIFICATION_REQUESTED' AND payload->>'userId' = $1", [frankId]);
+    expect(event.rows).toHaveLength(1);
+    expect(event.rows[0].payload).toEqual({ userId: frankId, purpose: 'EMAIL_VERIFICATION', expiresAt: expect.any(String) });
+    const token = await tokenFor('EMAIL_VERIFICATION_REQUESTED', frank.email);
+    expect(token).toHaveLength(64);
+  });
 
-      const event = await db.query<{ payload: { token?: string } }>(
-        "SELECT payload FROM outbox_events WHERE topic = 'EMAIL_VERIFICATION_REQUESTED' AND payload->>'userId' = $1",
-        [frankId]
-      );
-      expect(event.rows).toHaveLength(1);
-      expect(event.rows[0].payload.token).toBeUndefined();
-      expect(JSON.stringify(event.rows[0].payload)).not.toContain('"token"');
-    } finally {
-      process.env[DEV_FLAG] = '1';
-    }
+  it('cancels superseded pending email-change delivery and erases its encrypted material', async () => {
+    const target = { username: `change_${RUN}`, email: `change.${RUN}@example.test` };
+    const registered = await register(target.username, target.email);
+    expect(registered.statusCode).toBe(201);
+    const userId: string = registered.json().user.id;
+    userIds.push(userId);
+    const verified = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', headers: { origin: ORIGIN }, payload: { token: await tokenFor('EMAIL_VERIFICATION_REQUESTED', target.email) } });
+    expect(verified.statusCode).toBe(200);
+    const session = await online.login(target.username, PASSWORD);
+    await online.reauthenticate(session.token, PASSWORD);
+    const firstAddress = `first.${RUN}@example.test`;
+    const secondAddress = `second.${RUN}@example.test`;
+    await online.requestEmailChange(session.token, firstAddress);
+    const first = await db.query<{ id: string; token_hash: string }>(`SELECT t.id,t.token_hash FROM email_verification_tokens t WHERE t.user_id=$1 AND t.purpose='EMAIL_CHANGE' AND t.target_email=$2`, [userId, firstAddress]);
+    expect(first.rows).toHaveLength(1);
+    await online.requestEmailChange(session.token, secondAddress);
+    const superseded = await db.query<{ state: string; envelope: unknown; consumed_at: Date | null }>(`SELECT d.state,d.envelope,t.consumed_at FROM email_verification_tokens t JOIN identity_mail_deliveries d ON d.token_hash=t.token_hash WHERE t.id=$1`, [first.rows[0].id]);
+    expect(superseded.rows[0]).toMatchObject({ state: 'CANCELLED', envelope: null, consumed_at: expect.any(Date) });
+    const current = await db.query<{ state: string; envelope: unknown; consumed_at: Date | null }>(`SELECT d.state,d.envelope,t.consumed_at FROM email_verification_tokens t JOIN identity_mail_deliveries d ON d.token_hash=t.token_hash WHERE t.user_id=$1 AND t.purpose='EMAIL_CHANGE' AND t.target_email=$2`, [userId, secondAddress]);
+    expect(current.rows).toHaveLength(1);
+    expect(current.rows[0]).toMatchObject({ state: 'PENDING', envelope: expect.any(Object), consumed_at: null });
   });
 
   it('hides every ONLINE-only route and the verification gate under LAN_OFFLINE', async () => {
@@ -307,20 +320,18 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
       method: 'POST',
       url: `/api/v2/organizer/tournaments/${t1}/entry-code`,
       headers: { cookie: adminCookie },
-      payload: { maxUses: 5 },
     });
     expect([lanEntryCode.statusCode, lanEntryCode.json().code]).toEqual([404, 'PROFILE_DISABLED']);
     const lanJoin = await lanApp.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
       headers: { cookie: adminCookie },
-      payload: { code: 'K7QM-3XBP-9TFA-2WRL', teamId: teamA },
     });
     expect([lanJoin.statusCode, lanJoin.json().code]).toEqual([404, 'PROFILE_DISABLED']);
 
     // Verification is enforced only in ONLINE; the same unverified account logs in on LAN.
     const onlineRefusal = await login(app, dave.username, PASSWORD);
-    expect([onlineRefusal.statusCode, onlineRefusal.json().code]).toEqual([403, 'EMAIL_NOT_VERIFIED']);
+    expect([onlineRefusal.statusCode, onlineRefusal.json().code]).toEqual([403, 'EMAIL_VERIFICATION_REQUIRED']);
 
     const lanLogin = await login(lanApp, dave.username, PASSWORD);
     expect(lanLogin.statusCode).toBe(200);
@@ -351,6 +362,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const accepted = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/request-password-reset',
+      headers: { origin: ORIGIN },
       payload: { email: alice.email },
     });
     expect([accepted.statusCode, accepted.json().accepted]).toEqual([202, true]);
@@ -358,14 +370,16 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const unknown = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/request-password-reset',
+      headers: { origin: ORIGIN },
       payload: { email: `nobody.${RUN}@example.test` },
     });
     expect(unknown.statusCode).toBe(202);
 
-    const resetToken = await outboxToken('PASSWORD_RESET_REQUESTED', alice.email);
+    const resetToken = await tokenFor('PASSWORD_RESET_REQUESTED', alice.email);
     const reset = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/reset-password',
+      headers: { origin: ORIGIN },
       payload: { token: resetToken, newPassword: RESET_PASSWORD },
     });
     expect([reset.statusCode, reset.json().reset]).toEqual([200, true]);
@@ -380,18 +394,21 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const reused = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/reset-password',
+      headers: { origin: ORIGIN },
       payload: { token: resetToken, newPassword: 'AnotherPassword789!' },
     });
     expect([reused.statusCode, reused.json().code]).toEqual([400, 'PASSWORD_RESET_CONSUMED']);
     const garbage = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/reset-password',
+      headers: { origin: ORIGIN },
       payload: { token: 'a'.repeat(64), newPassword: 'AnotherPassword789!' },
     });
     expect([garbage.statusCode, garbage.json().code]).toEqual([400, 'PASSWORD_RESET_INVALID']);
     const weak = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/reset-password',
+      headers: { origin: ORIGIN },
       payload: { token: 'a'.repeat(64), newPassword: 'short' },
     });
     expect([weak.statusCode, weak.json().code]).toEqual([400, 'WEAK_PASSWORD']);
@@ -409,7 +426,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const nonAdminMint = await app.inject({
       method: 'POST',
       url: `/api/v2/organizer/tournaments/${t1}/entry-code`,
-      headers: { cookie: aliceCookie },
+      headers: { cookie: aliceCookie, origin: ORIGIN },
       payload: { maxUses: 5 },
     });
     expect(nonAdminMint.statusCode).toBe(403);
@@ -423,11 +440,11 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const created = await app.inject({
       method: 'POST',
       url: `/api/v2/organizer/tournaments/${t1}/entry-code`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { maxUses: 5 },
     });
     expect(created.statusCode).toBe(201);
-    const code: string = created.json().code;
+    let code: string = created.json().code;
     expect(code).toMatch(/^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/);
     expect([created.json().maxUses, created.json().expiresAt]).toEqual([5, null]);
 
@@ -445,7 +462,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const draft = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t3}/join`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { code, teamId: teamA },
     });
     expect([draft.statusCode, draft.json().code]).toEqual([409, 'TOURNAMENT_NOT_OPEN']);
@@ -453,7 +470,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const badCode = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie },
+      headers: { cookie: aliceCookie, origin: ORIGIN },
       payload: { code: 'ZZZZ-ZZZZ-ZZZZ-ZZZZ', teamId: teamA },
     });
     expect([badCode.statusCode, badCode.json().code]).toEqual([403, 'ENTRY_CODE_INVALID']);
@@ -462,31 +479,39 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const notCaptain = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie },
+      headers: { cookie: aliceCookie, origin: ORIGIN },
       payload: { code, teamId: teamB },
     });
     expect([notCaptain.statusCode, notCaptain.json().code]).toEqual([403, 'NOT_TEAM_CAPTAIN']);
 
     const expiredCreated = await app.inject({
       method: 'POST',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-code`,
-      headers: { cookie: adminCookie },
+      url: `/api/v2/organizer/tournaments/${t1}/entry-codes/${created.json().id}/rotate`,
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { maxUses: 1, expiresAt: new Date(Date.now() - 60_000).toISOString() },
     });
     expect(expiredCreated.statusCode).toBe(201);
     const expired = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie },
+      headers: { cookie: aliceCookie, origin: ORIGIN },
       payload: { code: expiredCreated.json().code, teamId: teamA },
     });
     expect([expired.statusCode, expired.json().code]).toEqual([403, 'ENTRY_CODE_EXPIRED']);
+    const renewed = await app.inject({
+      method: 'POST',
+      url: `/api/v2/organizer/tournaments/${t1}/entry-codes/${created.json().id}/rotate`,
+      headers: { cookie: adminCookie, origin: ORIGIN },
+      payload: { maxUses: 5 },
+    });
+    expect(renewed.statusCode).toBe(201);
+    code = renewed.json().code;
 
     // The captain redeems the shared code; one use is burned in the same transaction.
     const joined = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie },
+      headers: { cookie: aliceCookie, origin: ORIGIN },
       payload: { code, teamId: teamA },
     });
     expect(joined.statusCode).toBe(201);
@@ -505,7 +530,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const duplicate = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie },
+      headers: { cookie: aliceCookie, origin: ORIGIN },
       payload: { code, teamId: teamA },
     });
     expect([duplicate.statusCode, duplicate.json().code]).toEqual([409, 'ALREADY_ENROLLED']);
@@ -514,14 +539,14 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const adminJoin = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { code, teamId: teamB },
     });
     expect(adminJoin.statusCode).toBe(201);
     const capacity = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { code, teamId: teamC },
     });
     expect([capacity.statusCode, capacity.json().code]).toEqual([409, 'CAPACITY_EXCEEDED']);
@@ -530,7 +555,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const single = await app.inject({
       method: 'POST',
       url: `/api/v2/organizer/tournaments/${t2}/entry-code`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { maxUses: 1 },
     });
     expect(single.statusCode).toBe(201);
@@ -538,14 +563,14 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     const firstUse = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t2}/join`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { code: singleCode, teamId: teamD },
     });
     expect(firstUse.statusCode).toBe(201);
     const secondUse = await app.inject({
       method: 'POST',
       url: `/api/v2/tournaments/${t2}/join`,
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: ORIGIN },
       payload: { code: singleCode, teamId: teamE },
     });
     expect([secondUse.statusCode, secondUse.json().code]).toEqual([403, 'ENTRY_CODE_EXHAUSTED']);

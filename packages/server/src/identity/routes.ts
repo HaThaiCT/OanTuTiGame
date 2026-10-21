@@ -29,8 +29,8 @@ export function setSessionCookie(reply: FastifyReply, token: string, expiresAt: 
   reply.header('Set-Cookie', cookieParts.join('; '));
 }
 
-export function clearSessionCookie(reply: FastifyReply): void {
-  reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`);
+export function clearSessionCookie(reply: FastifyReply, secure = false): void {
+  reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure ? '; Secure' : ''}`);
 }
 
 /**
@@ -48,9 +48,10 @@ export function sendProfileDisabled(reply: FastifyReply): FastifyReply {
 
 /** Maps an IdentityError (or any thrown value) onto the `{code, message}` body contract. */
 export function sendIdentityError(reply: FastifyReply, err: unknown, fallbackCode: string): FastifyReply {
-  const statusCode =
-    err && typeof err === 'object' && 'statusCode' in err && typeof err.statusCode === 'number' ? err.statusCode : 500;
+  const statusCode = err && typeof err === 'object' && 'statusCode' in err && typeof err.statusCode === 'number' ? err.statusCode : 500;
   const code = err && typeof err === 'object' && 'code' in err && typeof err.code === 'string' ? err.code : fallbackCode;
+  const retryAfter = err && typeof err === 'object' && 'retryAfterSeconds' in err && typeof err.retryAfterSeconds === 'number' ? err.retryAfterSeconds : undefined;
+  if (retryAfter !== undefined) reply.header('Retry-After', String(retryAfter));
   return reply.status(statusCode).send({ code, message: err instanceof Error ? err.message : 'Request failed' });
 }
 
@@ -89,10 +90,11 @@ export function registerIdentityRoutes(
   app.addHook('preValidation', async (request, reply) => {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
       const origin = request.headers.origin;
-      if (allowedOrigins && allowedOrigins.length > 0 && origin) {
-        if (!allowedOrigins.includes(origin)) {
-          return reply.status(403).send({ code: 'FORBIDDEN_ORIGIN', message: 'Cross-origin mutation forbidden' });
-        }
+      if (identityService.authProfile === 'ONLINE' && (!origin || !allowedOrigins?.includes(origin))) {
+        return reply.status(403).send({ code: 'FORBIDDEN_ORIGIN', message: 'Cross-origin mutation forbidden' });
+      }
+      if (identityService.authProfile === 'LAN_OFFLINE' && allowedOrigins && allowedOrigins.length > 0 && origin && !allowedOrigins.includes(origin)) {
+        return reply.status(403).send({ code: 'FORBIDDEN_ORIGIN', message: 'Cross-origin mutation forbidden' });
       }
     }
   });
@@ -100,6 +102,10 @@ export function registerIdentityRoutes(
   // Helper hook to resolve Actor from session cookie
   app.decorateRequest('actor', undefined);
 
+  app.get('/api/v2/auth/profile', async (_request, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
+    return reply.send({ authProfile: identityService.authProfile });
+  });
   // POST /api/v2/auth/login
   app.post('/api/v2/auth/login', async (request, reply) => {
     reply.header('Cache-Control', 'private, no-store');
@@ -110,7 +116,7 @@ export function registerIdentityRoutes(
 
     try {
       const session = await identityService.login(body.username, body.password, request.ip);
-      const isHttps = request.protocol === 'https';
+      const isHttps = identityService.authProfile === 'ONLINE' || request.protocol === 'https';
       setSessionCookie(reply, session.token, session.expiresAt, isHttps);
       return reply.send({
         user: session.user,
@@ -141,7 +147,7 @@ export function registerIdentityRoutes(
 
     try {
       const newSession = await identityService.changePassword(auth.actor.userId, body.oldPassword, body.newPassword);
-      const isHttps = request.protocol === 'https';
+      const isHttps = identityService.authProfile === 'ONLINE' || request.protocol === 'https';
       setSessionCookie(reply, newSession.token, newSession.expiresAt, isHttps);
       return reply.send({
         user: newSession.user,
@@ -184,7 +190,7 @@ export function registerIdentityRoutes(
     if (token) {
       await identityService.revokeSession(token);
     }
-    clearSessionCookie(reply);
+    clearSessionCookie(reply, identityService.authProfile === 'ONLINE');
     return reply.send({ ok: true });
   });
 
@@ -282,6 +288,24 @@ export function registerIdentityRoutes(
   // under LAN_OFFLINE, which has no mail transport). Request bodies are read as a
   // plain record and each field is narrowed with typeof before use.
 
+  app.post('/api/v2/auth/resend-verification', async (request, reply) => {
+    if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+    const body=(request.body??{}) as Record<string,unknown>;
+    try {
+      await identityService.resendVerification(typeof body.email==='string'?body.email:'',request.ip);
+      return reply.status(202).send({accepted:true});
+    } catch(err:unknown) { return sendIdentityError(reply,err,'VERIFICATION_RESEND_FAILED'); }
+  });
+  app.post('/api/v2/auth/change-email', async (request, reply) => {
+    if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+    const token=extractToken(request);
+    if(!token) return reply.status(401).send({code:'UNAUTHENTICATED',message:'Authentication required'});
+    const body=(request.body??{}) as Record<string,unknown>;
+    try {
+      await identityService.requestEmailChange(token,typeof body.email==='string'?body.email:'');
+      return reply.status(202).send({accepted:true});
+    } catch(err:unknown) { return sendIdentityError(reply,err,'EMAIL_CHANGE_FAILED'); }
+  });
   // POST /api/v2/auth/register
   app.post('/api/v2/auth/register', async (request, reply) => {
     if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
@@ -321,8 +345,12 @@ export function registerIdentityRoutes(
     if (typeof body.email !== 'string') {
       return reply.status(400).send({ code: 'INVALID_PAYLOAD', message: 'email is required' });
     }
-    await identityService.requestPasswordReset(body.email);
-    return reply.status(202).send({ accepted: true });
+    try {
+      await identityService.requestPasswordReset(body.email, request.ip);
+      return reply.status(202).send({ accepted: true });
+    } catch (err: unknown) {
+      return sendIdentityError(reply, err, 'PASSWORD_RESET_REQUEST_FAILED');
+    }
   });
 
   // POST /api/v2/auth/reset-password

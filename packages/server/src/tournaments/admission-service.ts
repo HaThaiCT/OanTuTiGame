@@ -7,6 +7,7 @@ import { TournamentError } from './lifecycle-service.js';
 import { isEncounterStarted } from './encounter-state.js';
 
 import type { GlobalTeamRatingService } from '../ratings/service.js';
+import { lockRosterAdmission, admissionRosterProblem } from '../teams/roster-policy.js';
 export type TournamentFormat = 'SINGLE_ELIMINATION' | 'SWISS_PLAYOFF' | 'ROUND_ROBIN' | 'ELO_ARENA';
 
 export const TOURNAMENT_FORMATS: readonly TournamentFormat[] = [
@@ -29,6 +30,7 @@ export type BulkEnrollmentStatus =
   | 'UNKNOWN_TEAM'
   | 'INVALID_ID'
   | 'CAPACITY_EXCEEDED'
+  | 'TEAM_CLOSED'
   | 'TEAM_SIZE_INVALID'
   | 'TEAM_MEMBER_ALREADY_ENROLLED';
 
@@ -153,7 +155,8 @@ export class TournamentAdmissionService {
     private readonly onEncounterResolution?: (tournamentId: string) => Promise<unknown>,
     /** Protected-write fence: direct enrollment pauses while the backup heartbeat is stale. */
     private readonly backupFence?: BackupFence,
-    private readonly ratingService?: GlobalTeamRatingService
+    private readonly ratingService?: GlobalTeamRatingService,
+    private readonly profile: 'LAN_OFFLINE'|'ONLINE' = 'LAN_OFFLINE'
   ) {}
 
   /** Creates a course by code when absent and a DRAFT tournament under it. */
@@ -368,12 +371,14 @@ export class TournamentAdmissionService {
     ctx: CommandContext
   ): Promise<DirectEnrollmentSummary> {
     this.requireAdmin(ctx, 'enroll teams into tournaments');
+    if(this.profile!=='LAN_OFFLINE') throw new TournamentError(403,'Direct enrollment is LAN-only');
     if (typeof teamId !== 'string' || !teamId.trim()) {
       throw new TournamentError(400, 'teamId is required');
     }
     const requestId = auditRequestId(ctx.requestId);
 
     return this.db.withTransaction(async (client) => {
+      await lockRosterAdmission(client);
       await this.backupFence?.assertFresh(client);
       const tournament = await this.lockTournament(client, tournamentId);
       if (!ENROLLABLE_STATES.includes(tournament.state)) {
@@ -402,6 +407,8 @@ export class TournamentAdmissionService {
         max_team_size: number;
       }>('SELECT course_id, min_team_size, max_team_size FROM tournaments WHERE id = $1', [tournamentId]);
       const team = teamRes.rows[0];
+      const problem=await admissionRosterProblem(client,tournamentId,teamId);
+      if(problem) throw new TournamentError(409,problem);
       const tournamentLimits = limits.rows[0];
       const memberCount = Number(team.members);
       if (
@@ -492,6 +499,7 @@ export class TournamentAdmissionService {
     ctx: CommandContext
   ): Promise<BulkEnrollmentReport> {
     this.requireAdmin(ctx, 'enroll teams into tournaments');
+    if(this.profile!=='LAN_OFFLINE') throw new TournamentError(403,'Direct enrollment is LAN-only');
     if (!Array.isArray(teamIds) || teamIds.length === 0) {
       throw new TournamentError(400, 'teamIds must be a non-empty array');
     }
@@ -502,6 +510,7 @@ export class TournamentAdmissionService {
     const requestId = auditRequestId(ctx.requestId);
 
     return this.db.withTransaction(async (client) => {
+      await lockRosterAdmission(client);
       await this.backupFence?.assertFresh(client);
       const tournament = await this.lockTournament(client, tournamentId);
       if (!ENROLLABLE_STATES.includes(tournament.state)) {
@@ -534,8 +543,9 @@ export class TournamentAdmissionService {
         id: string;
         course_id: string;
         members: string;
+        closed_at: Date|null;
       }>(
-        `SELECT t.id, t.course_id,
+        `SELECT t.id, t.course_id,t.closed_at,
                 (SELECT count(*)::text FROM team_memberships m WHERE m.team_id = t.id) AS members
            FROM teams t WHERE t.id = ANY($1::uuid[])`,
         [candidateIds]
@@ -573,6 +583,7 @@ export class TournamentAdmissionService {
           statuses[candidate.index] = 'UNKNOWN_TEAM';
           continue;
         }
+        if(team.closed_at) { statuses[candidate.index]='TEAM_CLOSED'; continue; }
         const memberCount = Number(team.members);
         if (
           tournamentLimits &&
@@ -696,6 +707,7 @@ export class TournamentAdmissionService {
     const liveStates = ['RUNNING', 'PAUSED', 'PROVISIONAL'];
 
     return this.db.withTransaction(async (client) => {
+      await lockRosterAdmission(client);
       const tournament = await this.lockTournament(client, tournamentId);
       const preStart = preStartStates.includes(tournament.state);
       if (!preStart && !liveStates.includes(tournament.state)) {
@@ -870,6 +882,7 @@ export class TournamentAdmissionService {
   /** Creates the course by code when absent plus a team captained by an existing user. */
   async createTeam(input: CreateTeamInput, ctx: CommandContext): Promise<TeamSummary> {
     this.requireAdmin(ctx, 'create teams');
+    if(this.profile!=='LAN_OFFLINE') throw new TournamentError(403,'Direct team creation is LAN-only');
 
     const courseCode = normalizeCourseCode(input.courseCode);
     const name = typeof input.name === 'string' ? input.name.trim() : '';
@@ -883,6 +896,7 @@ export class TournamentAdmissionService {
     const requestId = auditRequestId(ctx.requestId);
 
     return this.db.withTransaction(async (client) => {
+      await lockRosterAdmission(client);
       const courseId = await this.ensureCourse(client, courseCode);
 
       const captainRes = await client.query<{ id: string }>('SELECT id FROM users WHERE username = $1', [
@@ -1159,7 +1173,7 @@ export class TournamentAdmissionService {
   }
 
   private requireAdmin(ctx: CommandContext, action: string): void {
-    if (ctx.actor.role !== 'ADMIN') {
+    if (ctx.actor.role !== 'ADMIN' || ctx.actor.scope !== 'FULL') {
       throw new TournamentError(403, `Only administrators can ${action}`);
     }
   }
