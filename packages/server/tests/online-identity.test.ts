@@ -37,6 +37,8 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
   const courseCodes: string[] = [];
   const transport = new RecordingIdentityTransport();
   let mailConsumer: MailConsumer;
+  let priorCapacity: unknown;
+  let hadCapacity = false;
   async function tokenFor(topic: string, recipient: string): Promise<string> {
     const result = await db.query<{outbox_id:string;user_id:string;purpose:string;token_hash:string|null;envelope:MailEnvelope}>(`SELECT d.outbox_id,d.user_id,d.purpose,d.token_hash,d.envelope FROM identity_mail_deliveries d JOIN outbox_events o ON o.id=d.outbox_id WHERE o.topic=$1 AND d.user_id IN (SELECT id FROM users WHERE email=$2) ORDER BY d.created_at DESC LIMIT 1`, [topic,recipient]);
     const row=result.rows[0]; if(!row) throw new Error(`Missing delivery for ${topic}`);
@@ -78,6 +80,10 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
   beforeAll(async () => {
 
     db = new Database();
+    const existingCapacity = await db.query<{ value: unknown }>("SELECT value FROM deployment_settings WHERE key='accountCapacity'");
+    hadCapacity = existingCapacity.rows.length > 0;
+    priorCapacity = existingCapacity.rows[0]?.value;
+    await db.query("INSERT INTO deployment_settings(key,value) VALUES('accountCapacity',$1) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", [JSON.stringify({ limit: Number.MAX_SAFE_INTEGER })]);
     mailConsumer = new MailConsumer(db, mail, transport);
     online = new IdentityService(db, 'ONLINE', { mail });
     lan = new IdentityService(db, 'LAN_OFFLINE');
@@ -208,6 +214,8 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
       await client.query("DELETE FROM outbox_events WHERE payload->>'userId' = ANY($1::text[])", [userIds]);
       await client.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [userIds]);
     });
+    if (hadCapacity) await db.query("INSERT INTO deployment_settings(key,value) VALUES('accountCapacity',$1) ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value", [JSON.stringify(priorCapacity)]);
+    else await db.query("DELETE FROM deployment_settings WHERE key='accountCapacity'");
     await app.close();
     await lanApp.close();
     await db.close();

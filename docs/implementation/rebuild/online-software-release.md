@@ -23,7 +23,7 @@
 | Check | Observed result |
 |---|---|
 | Fresh isolated schema | PostgreSQL database `arena_online_final_publish_test`, migrations 001–029 applied successfully; expected schema version 29. |
-| Workspace JavaScript suite | Final `npm test`: 106 files passed, 4 skipped; 679 tests passed, 42 skipped (fresh isolated test DB), including the email-change supersession and bootstrap-capacity regressions. |
+| Workspace JavaScript suite | Final `npm test` with CI migration-test URL: 110 files passed; 720 tests passed, 1 skipped (721 total) across `arena_online_final_publish_test` and the disposable PostgreSQL migration-test cluster. |
 | Rust workspace | `cargo test --workspace --tests --locked`: 167 tests passed, run with the bundled Rust 1.99.0 and `protoc` 36.2 toolchains. |
 | Server TypeScript | `npx tsc --noEmit -p packages/server/tsconfig.json`: passed. |
 | Production Web build | `npm run build --workspace=@oantuti/web`: Next.js 16.4.2 build and TypeScript succeeded; Online routes were generated. |

@@ -42,7 +42,7 @@ describe('operator CLI secret handoff', () => {
     const root = mkdtempSync(join(tmpdir(), 'oantuti-ops-link-')); fixtures.push(root);
     const secret = join(root, 'secret'); const link = join(root, 'secret-link');
     writeFileSync(secret, 'do-not-follow'); symlinkSync(secret, link);
-    const child = spawnSync(process.execPath, ['--import','tsx','deploy/linux/ops-entrypoint.mts','deploy/linux/online-preflight.mts'], { cwd:process.cwd(), encoding:'utf8', env:{...process.env,PGHOST:'postgres',PGPASSWORD_FILE:link} });
+    const child = spawnSync(process.execPath, ['--import','tsx','deploy/linux/ops-entrypoint.mts','deploy/linux/online-preflight.mts'], { cwd:process.cwd(), encoding:'utf8', env:{...process.env,PGHOST:'postgres',PGPASSWORD:'',PGPASSWORD_FILE:link} });
     expect(child.status).not.toBe(0);
     expect(child.stdout+child.stderr).toContain('Invalid PGPASSWORD_FILE');
     expect(child.stdout+child.stderr).not.toContain('do-not-follow');

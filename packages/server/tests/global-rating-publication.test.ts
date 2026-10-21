@@ -16,6 +16,7 @@ import { registerTeamRoutes } from '../src/teams/routes.js';
 import { TournamentAdmissionService } from '../src/tournaments/admission-service.js';
 import { projectContestPlacements } from '../src/ratings/placements.js';
 import { registerAdmissionRoutes } from '../src/tournaments/routes.js';
+import { EXPECTED_SCHEMA_VERSION } from '../src/persistence/schema-version.js';
 
 const adminUrl = process.env.OANTUTI_MIGRATION_TEST_URL;
 const suite = adminUrl ? describe : describe.skip;
@@ -155,7 +156,7 @@ suite('global rating publication', () => {
     } finally { await app.close(); }
   });
   it('applies migration 027 and registers the live rated configuration route with FULL ADMIN authorization', async () => {
-    expect(Number((await db.query<{ version: number }>('SELECT max(version) AS version FROM schema_migrations')).rows[0].version)).toBe(27);
+    expect(Number((await db.query<{ version: number }>('SELECT max(version) AS version FROM schema_migrations')).rows[0].version)).toBe(EXPECTED_SCHEMA_VERSION);
     expect((await db.query(`SELECT to_regclass('public.global_rating_control') AS name`)).rows[0].name).toBe('global_rating_control');
     expect((await app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${tournamentId}/rated`, payload: { isRated: true, expectedVersion: 1 } })).statusCode).toBe(401);
     const response = await app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${tournamentId}/rated`, headers: { cookie: adminCookie }, payload: { isRated: true, expectedVersion: 1 } });
