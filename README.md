@@ -1,109 +1,113 @@
 # OanTuTi Arena
 
-Nền tảng thi đấu Bot Búa–Kéo–Bao trên bàn cờ: Python, TypeScript và C++20; giải loại trực tiếp, Swiss → playoff, vòng tròn và Elo arena; bảng Rating toàn cầu, live spectator, replay và trang quản trị.
+Nền tảng thi đấu bot Búa–Kéo–Bao trên bàn cờ. Hỗ trợ bot Python, TypeScript và C++20; giải loại trực tiếp, Swiss → playoff, vòng tròn, Elo Arena, bảng Rating, replay và công cụ tổ chức.
 
+## Chọn chế độ chạy
 
-## Online deployment package
+| Mục tiêu | Chế độ | Tự đăng ký | Xác minh email |
+|---|---|---:|---:|
+| Xem dữ liệu mẫu, đăng nhập bằng tài khoản fixture | Docker Compose `LAN_OFFLINE` | Không | Không |
+| Thử luồng đăng ký Online trên máy cá nhân | Docker Compose `ONLINE` local demo | Có | Tắt bằng cờ chỉ dành cho localhost development |
+| Public Internet / production | Deployment Online đã được commissioning | Có | Bắt buộc; cần email/TLS/hạ tầng được phê duyệt |
+| Sửa code, build và đấu bot tin cậy | Local development | Theo profile server | Không tự bật Online |
 
-This branch contains the Online software and Docker image build configuration. It is a controlled software package, **not** production commissioning, G0–G4 release certification, U5 acceptance, or a deployed public service. See the [Online software receipt and exported-image instructions](docs/implementation/rebuild/online-software-release.md) and [Online deployment/runbook](docs/implementation/rebuild/portable-deployment.md#controlled-online-startup-not-public-commissioning). Public commissioning requires human-supplied host, domain/TLS, mail provider/mailbox, backup custody, sandbox, and operator sign-off evidence.
+Nhánh này là gói phần mềm và cấu hình Docker, **không phải** dịch vụ public đã triển khai hoặc production được chứng nhận. Trạng thái G0–G4/U5 và các điều kiện commissioning được ghi trong [Online software receipt](docs/implementation/rebuild/online-software-release.md) và [portable deployment runbook](docs/implementation/rebuild/portable-deployment.md).
 
-## Chọn cách cài
+Demo database chính thức nằm trong `deploy/demo-data/`: 46 giải, 72 đội, kết quả/replay và dữ liệu Rating showcase. Restore chỉ dùng với database và object roots mới, trống; không dùng để ghi đè dữ liệu đang có.
 
-| Nhu cầu | Cách chạy |
-|---|---|
-| Xem dữ liệu demo, đăng nhập, xem giải/bảng xếp hạng/replay | **Docker Compose** bên dưới; không cần cài Node, Rust hoặc PostgreSQL trên host |
-| Chỉnh sửa mã, biên dịch và đấu thử Bot tin cậy | **Local development trên Ubuntu 24.04 / WSL2 Ubuntu** |
-| Nhận mã Bot không tin cậy qua Internet | Không dùng cấu hình demo. Cần cấu hình/certify sandbox và backup theo [tài liệu vận hành](docs/specs/v2/05-SECURITY-OPERATIONS-QUALITY.md) |
+## 1. Chạy demo LAN_OFFLINE bằng Docker Compose
 
-Bộ demo nằm trong Git ở `deploy/demo-data/`, không lấy dữ liệu từ máy tác giả: 46 giải, 72 đội, 616 kết quả/replay và 48 đội showcase có lịch sử Rating. Restore chỉ dành cho **database và object roots mới, trống**; không dùng để ghi đè dữ liệu hiện có.
+Đây là lựa chọn đơn giản nhất để xem giải, bảng xếp hạng, bracket và replay. API/PostgreSQL không được publish ra host; gateway mặc định chỉ bind loopback.
 
-## 1. Docker Compose — khuyến nghị để xem demo
+### Yêu cầu
 
-### Điều kiện
+- Docker Engine hoặc Docker Desktop đang chạy.
+- Docker Compose v2 (`docker compose version`). Docker CLI không đồng nghĩa đã có Compose plugin.
+- Internet để kéo image/package lần đầu. Linux amd64 là môi trường kiểm chứng; Windows dùng Docker Desktop/WSL2, macOS dùng Docker Desktop.
 
-- Git, Docker Engine hoặc Docker Desktop đang chạy, **Docker Compose v2**.
-- Kiểm tra cả hai lệnh: `docker version` và `docker compose version`. Có Docker Engine chưa chắc đã có Compose plugin.
-- Internet để tải dependencies/base images ở lần build đầu. Build lần đầu mất vài phút tùy máy và mạng, không phải cam kết một phút.
-- Linux amd64 là môi trường kiểm chứng. Trên Windows dùng Docker Desktop Linux containers/WSL2; trên macOS dùng Docker Desktop. Chưa chứng nhận native Windows hay Apple Silicon.
-
-### Tải và chạy
-
-Các lệnh dưới đây dùng Bash (Linux/macOS/terminal WSL2):
+### Khởi động database và ứng dụng
 
 ```bash
 git clone https://github.com/HaThaiCT/OanTuTiGame.git
 cd OanTuTiGame
 
-# Mật khẩu database tự sinh, không dùng lại mật khẩu thật của bạn.
+# Tạo hai password riêng, đặt ngoài repository.
 umask 077
 mkdir -p "$HOME/.config/oantuti-demo"
 chmod 700 "$HOME/.config/oantuti-demo"
 openssl rand -hex 24 > "$HOME/.config/oantuti-demo/postgres-owner"
 openssl rand -hex 24 > "$HOME/.config/oantuti-demo/postgres-app"
-# Compose mount từng file vào các container chạy UID khác nhau.
-# Thư mục cha 0700 chặn người dùng host khác; file 0444 cho UID trong container đọc.
 chmod 444 "$HOME/.config/oantuti-demo/postgres-owner" "$HOME/.config/oantuti-demo/postgres-app"
+
 export PG_OWNER_PASSWORD_FILE="$HOME/.config/oantuti-demo/postgres-owner"
 export PG_APP_PASSWORD_FILE="$HOME/.config/oantuti-demo/postgres-app"
 export OANTUTI_BACKUP_FENCE=off
+export WEB_PORT=3000
 export PUBLIC_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 docker compose up --build -d
 docker compose ps
 ```
 
-Mở **http://localhost:3000** sau khi PostgreSQL và API khỏe, web/gateway đang chạy. API/PostgreSQL không công bố cổng ra host; gateway mặc định chỉ bind `127.0.0.1`.
-
-Database mới tự nạp demo; server tự phục hồi các object replay/source vào volume riêng. Named volumes giữ dữ liệu qua restart. Nếu restore thất bại, đọc log và sửa nguyên nhân; không bỏ qua lỗi rồi coi như thành công.
+Mở <http://localhost:3000>. Database mới tự nạp bộ demo và object replay/source vào named volumes. Đọc log nếu service không healthy:
 
 ```bash
 docker compose logs --tail=100 postgres server web gateway
-docker compose restart
-# Dừng nhưng giữ dữ liệu:
-docker compose down
-# Lần sau dùng lại cùng các biến secret-file ở trên:
-docker compose up -d
 ```
 
-**Không chạy `docker compose down -v` để xử lý lỗi thông thường:** lệnh đó xóa database và object volumes. Muốn một demo mới độc lập, dùng project name khác, ví dụ `docker compose -p oantuti-second-demo up --build -d` và cổng khác.
+Các named volumes giữ dữ liệu qua restart. `docker compose down` dừng stack nhưng giữ dữ liệu. **Không dùng `docker compose down -v` để xử lý lỗi thông thường** vì lệnh đó xóa database/object volumes. Muốn demo mới độc lập, dùng Compose project name và cổng khác.
 
-Đổi cổng phải đổi cả origin:
+### Tài khoản fixture
 
-```bash
-export WEB_PORT=3300
-export PUBLIC_ORIGINS=http://localhost:3300,http://127.0.0.1:3300
-docker compose up -d
-```
-
-### Tài khoản demo công khai
+Các tài khoản/mật khẩu dưới đây có trong bundle công khai; chúng **không phải** thông tin xác thực riêng hay an toàn cho public service.
 
 | Vai trò | Username | Password |
 |---|---|---|
 | ADMIN | `system_admin` | `DemoAdmin@2026` |
 | Đội trưởng mẫu | `demo_cap1` | `DemoStudent@2026` |
 | Sinh viên mẫu | `student_alice` | `DemoStudent@2026` |
-| Showcase: đội trưởng / thành viên đội 01–48 | `showcase_01a` … `showcase_48a` / `showcase_01b` … `showcase_48b` | `DemoStudent@2026` |
+| Showcase đội 01–48 | `showcase_01a` … `showcase_48a` / `showcase_01b` … `showcase_48b` | `DemoStudent@2026` |
 
-Đây là mật khẩu fixture **công khai**, không phải mật khẩu của một triển khai đang vận hành. Chỉ dùng demo trên loopback; không đưa cấu hình này lên Internet và không dùng mật khẩu này cho hệ thống thật. Bundle không chứa các phiên đăng nhập/token recovery đang hoạt động.
+Đăng nhập ở `/workspace`; ADMIN mở `/organizer`. Chỉ dùng các fixture này trên loopback cá nhân. Không đưa chúng hoặc cấu hình LAN demo lên Internet. Compose mặc định tắt executor (`OANTUTI_DEV_EXECUTION=0`): dữ liệu/replay lịch sử xem được nhưng trận mới không tự chạy. `OANTUTI_BACKUP_FENCE=off` chỉ dành cho demo cá nhân, không chứng minh backup hoặc khả năng khôi phục.
 
-Đăng nhập tại `/workspace`; ADMIN vào `/organizer`. Khi thao tác nhạy cảm yêu cầu xác thực lại, nhập mật khẩu ADMIN demo ở trên.
+## 2. Thử đăng ký Online trên localhost
 
-### Giới hạn cấu hình Docker mặc định
+Mục này dành cho môi trường development và **database demo riêng**. Nó bật profile `ONLINE`, nhưng cờ local-only làm user mới xác minh ngay và đăng nhập được, không cần mail. Mail/identity code vẫn được khởi tạo; normal Online không dùng cờ thì email verification vẫn bắt buộc.
 
-Docker Compose mặc định **tắt thực thi Bot mới** (`OANTUTI_DEV_EXECUTION=0`). Bạn xem được dữ liệu lịch sử/replay, nhưng submission/private test/trận mới không tự hoàn tất khi chưa có executor. `/api/health` là liveness; `/api/health/ready` có thể trả `503 degraded` vì chưa có sandbox/backup. Đây không phải cấu hình production-ready.
+**Không dùng bypass này cho production/public host.** `OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION=true` chỉ được server chấp nhận khi `NODE_ENV=development` và public URL là HTTPS localhost/loopback. Trên host production hoặc domain công khai, API fail-closed.
 
-`OANTUTI_BACKUP_FENCE=off` chỉ dành cho demo cá nhân; không chứng minh backup hay khả năng khôi phục.
+### Với demo local đã được provision
 
-## 2. Local development — Ubuntu 24.04 / WSL2
+Mở:
+
+- Form đăng ký: <https://localhost:14443/register>
+- Trang đăng nhập: <https://localhost:14443/workspace> → **Đăng ký**
+
+`https://127.0.0.1:14443` cũng được hỗ trợ. Các địa chỉ loopback này là cùng máy; Online origin policy vẫn chặn origin khác. Chứng chỉ demo là private/self-signed nên browser có thể cảnh báo. Chỉ chấp nhận nếu chắc chắn URL là localhost của máy demo; không đưa dịch vụ này ra LAN/Internet.
+
+Đăng ký trong local-demo bypass tạo `STUDENT` đã verified, không gửi/queue email và có thể login ngay. Mật khẩu vẫn cần đạt policy của form. Nếu bật bypass mà mở bằng IP/domain không khớp, API sẽ trả `Cross-origin mutation denied`; hãy dùng đúng URL loopback nêu trên.
+
+### Tự dựng local Online demo
+
+Demo Online ở trên là môi trường loopback đã được provision riêng. Repo không có một lệnh Compose đơn giản tự tạo HTTPS proxy, certificate và mail sink cho cấu hình này. Nếu tự dựng, cần Compose project/database/volume hoàn toàn mới; restore bundle; áp schema tới migration hiện tại bằng service `ops`; tạo TLS localhost và cấu hình SMTP TLS/mail keyring riêng theo [migration runbook](docs/implementation/rebuild/portable-deployment.md#secrets-and-first-start) và [Online startup runbook](docs/implementation/rebuild/portable-deployment.md#controlled-online-startup-not-public-commissioning). Không đổi auth profile hoặc migrate volume dữ liệu hiện có chỉ để thử đăng ký.
+
+Bộ demo dùng credential fixture công khai trong bảng trên; chúng chỉ dành cho loopback. Các tài khoản/email fixtures cũ không tự được xác minh; local bypass chỉ áp dụng cho tài khoản mới đăng ký.
+
+## 3. Deployment Online public (operator-controlled)
+
+Public deployment cần host Linux/amd64 được chọn, domain/HTTPS proxy, SMTP mailbox/provider, PostgreSQL secret/keyring, capacity/bootstrap ADMIN, backup off-host, sandbox/isolation và phê duyệt operator. Xem [Online release receipt](docs/implementation/rebuild/online-software-release.md) và [controlled Online startup](docs/implementation/rebuild/portable-deployment.md#controlled-online-startup-not-public-commissioning).
+
+Không public demo fixture trên. Đặc biệt, **không** dùng `OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION` cho host public; Online production luôn yêu cầu mailbox verification. Không có target/deployment tự động được cấu hình trong repo này; build image không đồng nghĩa đã deploy.
+
+## 4. Local development
 
 ### Prerequisites
 
-- **Node.js 24.7 trở lên thuộc dòng 24**, npm đi kèm Node 24. Node 20/22 không có API Argon2 mà dự án dùng.
-- PostgreSQL **16** server và client (`psql`, `createdb`).
-- Rust toolchain theo `rust-toolchain.toml` (cài qua [rustup](https://rustup.rs/)); Cargo tự chọn phiên bản đã pin khi chạy trong repo.
-- `protoc`, compiler/linker, Python 3.12 và g++ C++20.
+- Node.js 24.x (ít nhất 24.7) và npm đi kèm; Node 20/22 không được hỗ trợ cho API Argon2.
+- PostgreSQL 16 (`psql`, `createdb`).
+- Rust toolchain theo `rust-toolchain.toml`, `protoc`, compiler/linker, Python 3.12 và g++ C++20.
 
-Cài gói hệ thống trên Ubuntu (không thay thế bước cài Node 24/rustup):
+Trên Ubuntu:
 
 ```bash
 sudo apt-get update
@@ -120,9 +124,9 @@ python3 --version
 g++ --version
 ```
 
-Nếu dùng WSL không có systemd, khởi động PostgreSQL bằng cơ chế service của distro. Không hạ/nâng kernel để chạy demo này.
+WSL không có systemd thì khởi động PostgreSQL bằng cơ chế của distro. Không cần đổi kernel để xem demo.
 
-### Cài dependencies và verifier từ source
+### Install and verifier
 
 ```bash
 git clone https://github.com/HaThaiCT/OanTuTiGame.git
@@ -132,32 +136,29 @@ cargo build --release --locked -p arena-runner --bin verify-trace
 export OANTUTI_VERIFIER_BIN="$PWD/target/release/verify-trace"
 ```
 
-Rust verifier là authority kiểm tra luật/kết quả. Không có TypeScript fallback nếu thiếu binary. Trình xem replay đã có WASM được đóng gói trong `packages/web/public/wasm/`; [script build WASM](deploy/linux/build-wasm-verifier.sh) dùng khi cần tái biên dịch nó.
+Rust verifier là authority của luật/kết quả; không có TypeScript fallback. Replay viewer WASM đã nằm trong `packages/web/public/wasm/`; dùng `deploy/linux/build-wasm-verifier.sh` khi cần build lại.
 
-### Database mới và restore demo
+### Restore demo vào database local mới
 
-Chỉ tạo một role/database riêng cho demo. Các tên dưới đây có thể đổi, nhưng phải nhất quán với biến môi trường:
+Chỉ dùng database và object roots riêng, mới, trống:
 
 ```bash
 sudo -u postgres createuser --login --pwprompt arena_local
 sudo -u postgres createdb --owner=arena_local arena_demo
-
 export PGHOST=127.0.0.1 PGPORT=5432 PGUSER=arena_local PGDATABASE=arena_demo
 read -rsp 'Database password: ' PGPASSWORD; export PGPASSWORD; printf '\n'
 npm run demo:restore -- --fresh-empty-database
 ```
 
-Restore yêu cầu đủ bốn biến PG, từ chối database có dữ liệu/schema ứng dụng và object roots không trống. Lỗi restore trả exit code khác 0. Không có mật khẩu/database path hard-code của máy tác giả. Cần kết nối PostgreSQL hoạt động trước khi restore.
+Restore yêu cầu đủ PG variables, từ chối database có schema/data ứng dụng và roots object không trống, trả exit code khác 0 nếu lỗi. Không dùng password/path của máy khác. Mặc định object paths là `<repo>/storage/submissions` và `<repo>/storage/replays`; nếu đổi thư mục ngoài checkout, đặt `OANTUTI_SUBMISSION_DIR`/`OANTUTI_REPLAYS_DIR` giống nhau lúc restore và chạy server.
 
-Mặc định object nằm ở `<repo>/storage/submissions` và `<repo>/storage/replays`. Nếu chọn thư mục ngoài checkout, đặt `OANTUTI_SUBMISSION_DIR` và `OANTUTI_REPLAYS_DIR` **giống nhau khi restore và khi chạy server**. Đường dẫn object được rebase theo thư mục đích.
+### Run API and web in LAN_OFFLINE
 
-### Chạy API và web
-
-Terminal 1, tại gốc repo, với các biến PG và verifier ở trên:
+API (terminal 1, repo root, với biến PG/verifier ở trên):
 
 ```bash
 export PORT=4301 HOST=127.0.0.1
-export PUBLIC_ORIGINS=http://127.0.0.1:4300,http://localhost:4300
+export PUBLIC_ORIGINS=http://localhost:4300,http://127.0.0.1:4300
 export OANTUTI_AUTH_PROFILE=LAN_OFFLINE
 export OANTUTI_BACKUP_FENCE=off
 export OANTUTI_DEV_EXECUTION=1
@@ -165,51 +166,46 @@ export DB_LOCATION="$PWD/storage/legacy.sqlite"
 node --import tsx packages/server/src/index.ts
 ```
 
-**Executor development không sandbox:** chỉ chạy Bot mẫu hoặc mã bạn tin cậy; không mở nhận mã từ người khác. Không đổi `HOST` sang `0.0.0.0` một cách tùy tiện.
-
-Terminal 2, tại gốc repo:
+Web (terminal 2):
 
 ```bash
 API_BASE=http://127.0.0.1:4301 npm run build --workspace=@oantuti/web
 API_BASE=http://127.0.0.1:4301 npm run start --workspace=@oantuti/web -- -H 127.0.0.1
 ```
 
-Mở **http://127.0.0.1:4300**. Đăng nhập bằng tài khoản demo của mục 1. Sửa web phải build và restart `next start`; dùng `npm run dev --workspace=@oantuti/web` nếu muốn hot reload. `API_BASE` cần đúng cả lúc build vì Next rewrites được resolve khi build.
+Mở <http://127.0.0.1:4300>. Portal production build cần build/restart sau khi sửa `packages/web`; `API_BASE` phải đúng lúc build vì Next rewrite được resolve khi build. Chỉ chạy bot mẫu/mã tin cậy: executor local này không sandbox và không được mở ra mạng.
 
-## 3. Tự kiểm tra sau cài đặt
+## 5. Verify installation
 
-1. Trang chủ/`/tournaments`: thấy danh sách 46 giải demo, không có lỗi kết nối API.
-2. `/rankings`: thấy 48 đội `SHOWCASE_Txx` cùng các đội Rated có sẵn.
-3. Mở một đội: có lịch sử Rating, không lộ danh sách thành viên trên trang public.
-4. Mở một giải FINALIZED → chọn một ván → Replay: tải được dữ liệu object và điều khiển playback.
-5. Đăng nhập `system_admin` → `/organizer`: thấy course, đội, giải và phần review Rating.
-6. Đăng nhập `showcase_01a` → `/workspace`: vào đúng đội; không có quyền quản trị.
+1. `/` và `/tournaments`: homepage/danh mục tải được dữ liệu và API.
+2. `/rankings`: có bảng xếp hạng.
+3. Mở trang đội: có rating history, không lộ roster trên trang public.
+4. Mở giải `FINALIZED`, chọn game rồi mở replay.
+5. Với LAN fixtures: đăng nhập `system_admin` → `/organizer`; đăng nhập `showcase_01a` → `/workspace`.
+6. Với local Online: `/api/v2/auth/profile` trả `ONLINE`; `/register` có form. Chỉ khi bật cờ localhost dev thì đăng ký mới không đòi email.
 
-Docker:
+Docker diagnostics:
 
 ```bash
 docker compose ps
 docker compose logs --tail=50 postgres server
-# Kiểm tra API từ trong container (không cần công bố cổng API):
 docker compose exec server node -e "fetch('http://127.0.0.1:3001/api/health').then(async r=>{console.log(await r.text());process.exit(r.ok?0:1)})"
 ```
 
-Local: `curl --fail http://127.0.0.1:4301/api/health`.
+Local API check: `curl --fail http://127.0.0.1:4301/api/health`.
 
-## 4. Viết và đấu thử Bot
+## 6. Write and run a bot
 
-Luật: di chuyển một ô theo 8 hướng trên các ô hợp lệ; Rock thắng Scissors, Scissors thắng Paper, Paper thắng Rock. Thắng bằng cách diệt hết một loại quân đối thủ hoặc chiếm throne đối thủ; chi tiết/tie-break xem [luật v2](docs/specs/v2/02-GAMEPLAY-TOURNAMENT-RULES.md).
+Di chuyển một ô theo 8 hướng trên ô hợp lệ; Rock thắng Scissors, Scissors thắng Paper, Paper thắng Rock. Thắng bằng cách diệt hết một loại quân đối thủ hoặc chiếm throne; chi tiết/tie-break trong [v2 rules](docs/specs/v2/02-GAMEPLAY-TOURNAMENT-RULES.md).
 
-Dùng đúng starter và SDK đi kèm, không chép API giả từ ví dụ cũ:
+- [Python starter](sdk/python/starter_bot.py) + [SDK](sdk/python/oantuti.py)
+- [TypeScript starter](sdk/typescript/starter_bot.ts) + [SDK](sdk/typescript/oantuti.ts)
+- [C++20 starter](sdk/cpp/starter_bot.cpp) + [SDK](sdk/cpp/oantuti.hpp)
+- [STDIO NDJSON protocol](docs/specs/04-BOT-RUNNER-IPC-SPEC.md)
 
-- [Python](sdk/python/starter_bot.py) + [SDK](sdk/python/oantuti.py)
-- [TypeScript](sdk/typescript/starter_bot.ts) + [SDK](sdk/typescript/oantuti.ts)
-- [C++20](sdk/cpp/starter_bot.cpp) + [SDK](sdk/cpp/oantuti.hpp)
-- [Giao thức STDIO NDJSON](docs/specs/04-BOT-RUNNER-IPC-SPEC.md)
+Bot nhận INIT/TURN qua stdin; stdout chỉ chứa protocol JSON, diagnostics dùng stderr. ZIP submission cần entrypoint và SDK/project files.
 
-Bot nhận INIT và TURN qua stdin, chỉ xuất protocol JSON ra stdout; log chẩn đoán dùng stderr. ZIP submission phải có cả entrypoint và SDK/project files.
-
-Đấu thử không cần web/database, sau `npm ci` và cài Python/g++:
+Local match (không ghi rating/kết quả chính thức):
 
 ```bash
 npm run match:play -- \
@@ -218,11 +214,11 @@ npm run match:play -- \
   --black sdk/cpp/starter_bot.cpp
 ```
 
-CLI này là công cụ development, không ghi rating/kết quả chính thức. Replay chính thức hiển thị trên portal phải có accepted evidence trong server, không chỉ một file tùy ý trên máy.
+## 7. Tests
 
-## 5. Tests — dùng database riêng
+PostgreSQL tests tạo/xóa fixture; tuyệt đối không chạy trên demo hoặc dữ liệu thật. Test runner chỉ nhận tên DB dạng `arena_*test*` và xác nhận DB đã kết nối.
 
-Các test PostgreSQL ghi/sửa dữ liệu fixture. **Không trỏ test vào database demo hay dữ liệu thật.**
+Không cần PostgreSQL:
 
 ```bash
 npm run test:engine
@@ -232,42 +228,32 @@ npm run test:specs
 npm run test:proto
 ```
 
-`test:web` hiện không có test files; build web và kiểm tra browser là bước xác minh UI.
-
-Để chạy suite có PostgreSQL, dùng role có quyền tạo fixture và một database mới chứa `test` trong tên:
+Server/web focused tests:
 
 ```bash
-sudo -u postgres createdb --owner=arena_local arena_local_test
-export PGHOST=127.0.0.1 PGPORT=5432 PGUSER=arena_local PGDATABASE=arena_local_test
-read -rsp 'Test database password: ' PGPASSWORD; export PGPASSWORD; printf '\n'
-
-# Migration CLI nhận mật khẩu qua file riêng, không qua raw PGPASSWORD.
-umask 077
-mkdir -p "$HOME/.config/oantuti-demo"
-printf '%s' "$PGPASSWORD" > "$HOME/.config/oantuti-demo/test-db-password"
-PGPASSWORD= PGPASSWORD_FILE="$HOME/.config/oantuti-demo/test-db-password" \
-  node --import tsx deploy/linux/apply-migrations.mts --apply --grant-to arena_local
-
-export OANTUTI_VERIFIER_BIN="$PWD/target/release/verify-trace"
-OANTUTI_DEV_EXECUTION=1 node --import tsx deploy/linux/test-isolated.mts
+npm run test:server
+npm run test:web
+npx tsc --noEmit -p packages/server/tsconfig.json
+npm run build --workspace=@oantuti/web
 ```
 
-Một số test nâng quyền/migration cần URL PostgreSQL admin riêng; các test skip không được tính là đã kiểm chứng. `npx tsc --noEmit` ở root hiện không đồng nghĩa typecheck web/server package: root còn diagnostics của test/NodeNext; dùng build web và package configs tương ứng, đọc output thật thay vì coi exit lỗi là pass.
+Để chạy suite server, tạo database riêng có `test` trong tên, áp dụng migrations và gọi runner có guard (`deploy/linux/test-isolated.mts`). Xem [test/deployment runbook](docs/implementation/rebuild/demo-and-tests.md) để biết PG env/socket của môi trường local. Một số privileged migration tests cần connection test riêng; các test bị skip không được tính là đã xác minh.
 
-## 6. Khắc phục sự cố
+## 8. Troubleshooting
 
-- **Node thiếu `crypto.argon2`**: dùng Node 24.7+, chạy lại `npm ci`; Node20/22 không được hỗ trợ.
-- **`docker: unknown command: compose`**: cài Compose plugin hoặc Docker Desktop; kiểm tra `docker compose version`.
-- **`permission denied` đọc secret file**: đường dẫn phải là file mật khẩu có nội dung, Docker được quyền đọc. Không dùng `/dev/null` để chạy thật.
-- **Restore từ chối database không trống**: dùng database/project volume mới. Không chạy restore lại trên dữ liệu đang dùng và không xóa volume chỉ để né guard.
-- **Không thấy replay / lỗi object root**: restore cả SQL và archive; giữ nguyên thư mục object đã chọn; kiểm tra log. `storage` phải riêng tư với service identity, không `chmod -R 777`.
-- **`RUST_VERIFIER_PROCESS` / thiếu `verify-trace`**: build Rust verifier và đặt `OANTUTI_VERIFIER_BIN` tuyệt đối; Docker image đã mang binary này.
-- **Không có trận mới chạy trong Docker**: mặc định Docker chỉ xem demo, executor tắt. Không phải lỗi nạp dữ liệu.
-- **Login/CSRF khi đổi cổng**: sửa `PUBLIC_ORIGINS` khớp origin trên trình duyệt rồi tạo lại container server bằng `docker compose up -d`.
-- **Mất dữ liệu sau `down -v`**: volume đã bị xóa; không có bảo đảm khôi phục dữ liệu tự tạo nếu chưa backup. Bundle chỉ chứa snapshot demo công khai.
+- **`crypto.argon2` missing:** dùng Node 24.7+ và chạy lại `npm ci`.
+- **`docker: unknown command: compose`:** cài Compose v2/Docker Desktop; kiểm tra `docker compose version`.
+- **Secret `permission denied`:** kiểm tra file ngoài repository, quyền thư mục `0700`, quyền file theo UID service; không dùng `/dev/null` để chạy.
+- **Demo restore từ chối database/root không trống:** tạo database/project volume mới, không bỏ guard và không xóa volume để né lỗi.
+- **Replay thiếu object:** phải có cả SQL demo và `arena_objects.tar.gz`; giữ nguyên các object roots đã chọn, không `chmod -R 777`.
+- **Không có game mới trong Docker:** executor bị tắt mặc định (`OANTUTI_DEV_EXECUTION=0`); lịch sử/replay vẫn xem được.
+- **CSRF/origin khi chạy local Online:** mở đúng `https://localhost:14443` hoặc `https://127.0.0.1:14443`; local demo cho phép chính xác hai HTTPS loopback origin này. Host khác vẫn bị chặn. Nếu giao diện báo nguồn trang không khớp cấu hình, kiểm tra address bar; đây không phải lỗi vai trò ADMIN.
+- **Mất dữ liệu sau `docker compose down -v`:** volume đã bị xóa; chỉ khôi phục được nếu có backup. Bundle trong Git chỉ là snapshot demo công khai.
 
-## 7. Phạm vi và bảo mật
+## 9. Security and scope
 
-Compose/local development không phải chứng nhận production, sandbox, backup hay tải 500 đội. Xem [specs v2](docs/specs/v2/README.md) và [hướng dẫn vận hành](docs/implementation/rebuild/demo-and-tests.md). Các tài khoản/mật khẩu riêng của môi trường tác giả không nằm trong README hoặc bản demo chia sẻ.
+Docker/local development không chứng nhận production, sandbox, backup, capacity hoặc tải 500 đội. Đọc [v2 specs](docs/specs/v2/README.md), [operations runbook](docs/implementation/rebuild/demo-and-tests.md), [Online software receipt](docs/implementation/rebuild/online-software-release.md) và [deployment runbook](docs/implementation/rebuild/portable-deployment.md).
 
-Các thay đổi cục bộ chưa commit/push không xuất hiện khi clone GitHub. Báo cáo kiểm chứng phải nêu đúng revision đã clone và các bản sửa chưa phát hành; không ngầm coi working tree là mã đã có trên GitHub.
+Không commit secrets, local mail/TLS keys hoặc file `.env`. Demo fixture passwords là công khai, chỉ dùng loopback; demo no-email bypass chỉ dành cho `NODE_ENV=development` + HTTPS loopback và tuyệt đối không dùng trên public host.
+
+Working-tree changes chưa commit/push không có trong GitHub. Khi báo kiểm thử/deploy, ghi đúng revision và phân biệt local changes với source đã phát hành.
