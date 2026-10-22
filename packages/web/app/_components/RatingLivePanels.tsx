@@ -256,6 +256,7 @@ export function LiveTeamProfile({ teamId, initial }: { teamId: string; initial: 
 
       <RatingHistoryChart
         points={profile.ratingPoints.map(point => ({ ...point, newRating: point.rating }))}
+        teamName={profile.name}
       />
 
       <div className="overflow-x-auto border border-[var(--border-subtle)] bg-[var(--surface)] rounded-xl overflow-hidden shadow-xs">
