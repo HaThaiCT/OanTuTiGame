@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { errorText } from '../../lib/client';
 import { isProfileDisabled, registerAccount, type RegisterReceipt } from '../../lib/api';
 import { OnlineOnlyNotice, ProfileProbeNotice, useAuthProfile } from '../_components/AuthProfile';
+import UetLogo from '../_components/UetLogo';
 
 /** Client-side mirror of the server rules (`packages/server/src/identity/service.ts`). */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -88,13 +89,16 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 py-4 sm:py-8">
-      <div className="border-b border-[var(--border-subtle)] pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-          Đăng ký tài khoản
-        </h1>
-        <p className="mt-2 text-xs text-[var(--text-secondary)]">
-          Tài khoản sinh viên mới cần xác minh qua email trước khi đăng nhập.
-        </p>
+      <div className="border-b border-[var(--border-subtle)] pb-4 flex items-center gap-3.5">
+        <UetLogo size={48} priority />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            Đăng ký tài khoản
+          </h1>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+            OanTuTi Arena · Trường ĐH Công nghệ, ĐHQGHN
+          </p>
+        </div>
       </div>
 
       {profile === 'LAN_OFFLINE' || profileRefusal ? <OnlineOnlyNotice message={profileRefusal} /> : null}

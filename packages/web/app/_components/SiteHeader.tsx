@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import HeaderSession from './HeaderSession';
 import ThemeToggle from './ThemeToggle';
 import { fetchAuthMe } from '../../lib/api';
+import UetLogo from './UetLogo';
 
 export default function SiteHeader() {
   const [expanded, setExpanded] = useState(false);
@@ -36,10 +37,15 @@ export default function SiteHeader() {
   return (
     <header className="arena-header">
       <div className="arena-header-row">
-        <Link className="arena-wordmark" href="/" onClick={() => setExpanded(false)}>
-          <span className="arena-wordmark-vct-icon" aria-hidden="true" />
-          <span className="tracking-tight">OanTuTi</span>
-          <span className="text-[var(--text-secondary)] font-medium text-sm ml-0.5">Arena</span>
+        <Link className="arena-wordmark group" href="/" onClick={() => setExpanded(false)} title="OanTuTi Arena — Trường Đại học Công nghệ, ĐHQGHN">
+          <UetLogo size={32} priority />
+          <div className="flex flex-col leading-tight">
+            <div className="flex items-baseline gap-1">
+              <span className="tracking-tight text-lg font-black font-heading text-[var(--text-primary)]">OanTuTi</span>
+              <span className="text-[var(--action)] font-bold text-xs uppercase tracking-wider font-mono">Arena</span>
+            </div>
+            <span className="text-[10px] font-mono tracking-tight text-[var(--text-secondary)] font-medium">UET · ĐHQGHN</span>
+          </div>
         </Link>
         <nav className="arena-desktop-nav" aria-label="Điều hướng chính">
           {links.map(link => {

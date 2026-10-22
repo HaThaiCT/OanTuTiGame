@@ -18,6 +18,7 @@ import {
 import { formatLabel, stateLabel } from '../../../lib/labels';
 import type { ReplayMapDescriptor } from '../../../lib/replay';
 import { TournamentRatingProvider } from '../../_components/TournamentRatingContext';
+import UetLogo from '../../_components/UetLogo';
 import ProjectorStage from './ProjectorStage';
 import ProjectorMatchesLive from './ProjectorMatchesLive';
 import ProjectorBracket from './ProjectorBracket';
@@ -179,13 +180,19 @@ export default function ProjectorBoard({
         <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--header-bg)] px-6 py-4 backdrop-blur-md shadow-md">
           {/* Tournament Branding */}
           <div className="flex items-center gap-4">
-            <Link href={`/tournaments/${tournamentId}`} className="flex items-center gap-2 group" title="Quay lại trang giải đấu">
-              <span className="font-heading font-black text-xl text-[var(--action)] group-hover:opacity-80 transition-opacity">
-                OanTuTi
-              </span>
-              <span className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--text-secondary)]">
-                ARENA
-              </span>
+            <Link href={`/tournaments/${tournamentId}`} className="flex items-center gap-3 group" title="Quay lại trang giải đấu">
+              <UetLogo size={36} priority />
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-heading font-black text-xl text-[var(--text-primary)] group-hover:text-[var(--action)] transition-colors">
+                    OanTuTi
+                  </span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--action)]">
+                    ARENA
+                  </span>
+                </div>
+                <p className="text-[10px] font-mono tracking-tight text-[var(--text-secondary)]">UET · ĐHQGHN</p>
+              </div>
             </Link>
             <span className="text-[var(--border-control)]">/</span>
             <div>

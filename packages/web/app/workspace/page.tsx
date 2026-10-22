@@ -8,6 +8,7 @@ import { registrationErrorText, registrationStatusLabel } from '../../lib/tourna
 import { stateLabel } from '../../lib/labels';
 import FirstPasswordChange from './FirstPasswordChange';
 import { TeamRatingName } from '../_components/TeamRatingName';
+import UetLogo from '../_components/UetLogo';
 import { TournamentRatingProvider } from '../_components/TournamentRatingContext';
 
 interface SessionUser {
@@ -359,15 +360,16 @@ export default function WorkspacePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-      <div className="border-b border-[var(--border-subtle)] pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-          Đăng nhập
-        </h1>
-        <p className="mt-2 text-xs text-[var(--text-secondary)]">
-          {authProfile === 'LAN_OFFLINE'
-            ? 'Hệ thống LAN: Sử dụng tài khoản do ban tổ chức cấp.'
-            : 'Đăng nhập bằng tài khoản được cấp hoặc tài khoản đã xác minh email.'}
-        </p>
+      <div className="border-b border-[var(--border-subtle)] pb-4 flex items-center gap-3.5">
+        <UetLogo size={48} priority />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            Đăng nhập
+          </h1>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+            OanTuTi Arena · Trường ĐH Công nghệ, ĐHQGHN
+          </p>
+        </div>
       </div>
 
       <form onSubmit={submit} className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">

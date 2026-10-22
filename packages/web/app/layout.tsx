@@ -1,10 +1,21 @@
 import type { Metadata } from 'next';
 import SiteHeader from './_components/SiteHeader';
+import UetLogo from './_components/UetLogo';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'OanTuTi Arena — Đấu trường thuật toán Búa Kéo Bao',
-  description: 'Đấu trường thi đấu bot thuật toán OanTuTi: giải đấu, bảng xếp hạng, nộp bài và replay.',
+  description: 'Đấu trường thi đấu bot thuật toán OanTuTi: giải đấu, bảng xếp hạng, nộp bài và replay. Trường Đại học Công nghệ - ĐHQGHN (VNU-UET).',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -35,8 +46,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <main className="arena-main">{children}</main>
         <footer className="arena-footer">
-          <div className="arena-footer-brand">
-            OanTuTi Arena
+          <div className="arena-footer-brand flex items-center gap-3">
+            <UetLogo size={36} />
+            <div>
+              <p className="font-heading font-bold text-sm text-[var(--text-primary)]">OanTuTi Arena</p>
+              <p className="text-xs text-[var(--text-secondary)]">Trường Đại học Công nghệ — Đại học Quốc gia Hà Nội (VNU-UET)</p>
+            </div>
           </div>
           <div className="arena-footer-meta">
             <span>Chiến thuật Búa · Kéo · Bao</span>
