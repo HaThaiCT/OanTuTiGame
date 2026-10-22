@@ -481,26 +481,16 @@ body:has([data-projector="true"]) .arena-main {
 .arena-ranking {
   background: var(--surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  border-radius: 16px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.4), 0 0 18px rgba(0, 245, 212, 0.05);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: relative;
 }
-.arena-ranking::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--action), var(--accent-secondary), transparent);
-}
 .arena-ranking-toolbar {
-  padding: 16px 24px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-subtle);
   display: flex;

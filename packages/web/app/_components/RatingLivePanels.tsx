@@ -103,7 +103,7 @@ export function LiveLeaderboard({ initial, featured = false }: { initial: Global
         </div>
       )}
       {board && <Publication publication={board.publication} />}
-      <div className="overflow-x-auto border border-[var(--border-subtle)] bg-[var(--surface)] rounded-xl overflow-hidden shadow-xs">
+      <div className={`overflow-x-auto ${featured ? 'border-0 shadow-none' : 'border border-[var(--border-subtle)] shadow-xs'} bg-[var(--surface)] rounded-xl overflow-hidden`}>
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">Xếp hạng Rating global các đội</caption>
           <thead>
@@ -133,7 +133,7 @@ export function LiveLeaderboard({ initial, featured = false }: { initial: Global
                     ) : row.rank === 2 ? (
                       <span className="font-mono font-black text-[#f5a524]">#{rankText}</span>
                     ) : row.rank === 3 ? (
-                      <span className="font-mono font-black text-[var(--accent-secondary)]">#{rankText}</span>
+                      <span className="font-mono font-bold text-[var(--text-primary)]">#{rankText}</span>
                     ) : (
                       <span className="font-mono text-[var(--text-secondary)]">#{rankText}</span>
                     )}
