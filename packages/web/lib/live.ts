@@ -27,6 +27,13 @@ export function liveSocketBase(): string {
   const configured = process.env.NEXT_PUBLIC_LIVE_WS_BASE?.trim();
   if (configured) return configured.replace(/\/+$/, '');
 
+  if (typeof window !== 'undefined') {
+    const secure = window.location.protocol === 'https:';
+    if (window.location.port === '14443' || window.location.port === '443' || !window.location.port) {
+      return `${secure ? 'wss' : 'ws'}://${window.location.host}`;
+    }
+  }
+
   const secure = typeof window !== 'undefined' && window.location.protocol === 'https:';
   const hostname = typeof window === 'undefined' ? '127.0.0.1' : window.location.hostname;
   const port = process.env.NEXT_PUBLIC_API_PORT?.trim() || LIVE_WS_DEFAULT_PORT;

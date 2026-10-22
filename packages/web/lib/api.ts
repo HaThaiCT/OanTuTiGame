@@ -1,6 +1,7 @@
 import type { BotLanguage, LanBulkUserEntry, LanProvisionedUser, PrivateSourceDto, SubmissionStatus, UserDto } from '@oantuti/protocol';
 import { apiRequest, type ApiResult } from './client';
 import type { GlobalLeaderboardDto, PublicTeamProfileDto, RatingDecisionReceipt, RatingReviewDto, TournamentRatingChangesDto, TournamentTeamRatingsDto } from '@oantuti/protocol';
+import type { ReplayMapDescriptor } from './replay';
 
 export type TournamentState =
   | 'DRAFT' | 'PUBLISHED' | 'REGISTRATION_OPEN' | 'VALIDATING_SUBMISSIONS'
@@ -215,6 +216,26 @@ export async function getMapCommitment(
       version: numberValue(value(row, 'version', 'version')),
       committedAt: String(value(row, 'committed_at', 'committedAt') ?? ''),
     };
+  } catch {
+    return null;
+  }
+}
+
+/** Reads one published or revealed map descriptor from the API. */
+export async function getMap(
+  slug: string,
+  options: ServerFetchOptions = {}
+): Promise<ReplayMapDescriptor | null> {
+  try {
+    const response = await fetch(`${API}/api/v2/maps/${encodeURIComponent(slug)}`, {
+      cache: 'no-store',
+      headers: options.cookie ? { cookie: options.cookie } : undefined,
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as Record<string, unknown>;
+    const map = (payload.map ?? payload) as Record<string, unknown>;
+    const descriptor = (map.descriptor ?? map) as unknown;
+    return descriptor && typeof descriptor === 'object' ? (descriptor as ReplayMapDescriptor) : null;
   } catch {
     return null;
   }

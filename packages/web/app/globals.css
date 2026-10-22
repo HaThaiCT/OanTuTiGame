@@ -482,6 +482,17 @@ button:active, a.vct-btn-primary:active, a.vct-btn-secondary:active {
   font-size: 12px;
   font-family: var(--font-mono);
 }
+
+/* Projector full-bleed venue mode */
+body:has([data-projector="true"]) .arena-header,
+body:has([data-projector="true"]) .arena-footer {
+  display: none !important;
+}
+body:has([data-projector="true"]) .arena-main {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 .arena-footer-brand {
   font-family: var(--font-heading);
   font-size: 15px;

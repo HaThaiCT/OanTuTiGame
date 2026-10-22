@@ -195,7 +195,7 @@ Truy cập web tại: <http://127.0.0.1:4300>.
 | `/workspace` | **Không gian đội thi** | Dành cho sinh viên/đội trưởng: tạo và quản lý đội, gửi đăng ký tham gia giải, theo dõi trạng thái xét duyệt, hủy đăng ký khi cần, nộp gói bot (`.zip`), chạy test riêng tư và đổi mật khẩu. |
 | `/organizer` | **Ban tổ chức (Organizer)** | Dành cho `system_admin`: khởi tạo và quản lý tiến trình giải đấu, **hàng chờ xét duyệt đội đăng ký (Duyệt đội / Từ chối kèm lý do riêng tư)**, can thiệp trọng tài, duyệt Rating global, quản lý phân đội và trình biên tập bản đồ. |
 | `/replays` | **Trình xem Replay** | Trình phát lại ván đấu tương tác tích hợp Rust WASM Verifier, cho phép kiểm tra từng lượt đi (Turn), thanh máu, ô cờ và trạng thái quân cờ. |
-| `/projector/:id` | **Màn hình trình chiếu** | Chế độ hiển thị đặc biệt tối ưu cho máy chiếu hội trường, màn hình LED hoặc luồng livestream khi tổ chức sự kiện trực tiếp. |
+| `/projector/:id` | **Chế độ trình chiếu (Projector)** | Chế độ sân khấu esports tối ưu cho máy chiếu, màn hình LED và livestream: Màn hình chính hiện ván đấu cả bàn cờ đang diễn ra (tự động theo dõi live stream WebSocket), đi kèm bảng điều hành toàn diện gồm live các trận & kết quả, nhánh đấu (Bracket), lịch thi đấu chi tiết và bảng xếp hạng cập nhật thời gian thực. |
 
 ### 4.1. Quy trình Đăng ký, Hủy đăng ký và Xét duyệt đội thi đấu
 

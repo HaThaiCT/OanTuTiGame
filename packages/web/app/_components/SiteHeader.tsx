@@ -22,6 +22,7 @@ export default function SiteHeader() {
     window.addEventListener('oantuti:session-changed', refresh);
     return () => { active = false; window.removeEventListener('oantuti:session-changed', refresh); };
   }, [pathname]);
+  if (pathname?.startsWith('/projector/')) return null;
   const links = [
     { href: '/', label: 'Trang chủ' },
     { href: '/tournaments', label: 'Giải đấu' },

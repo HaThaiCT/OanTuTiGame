@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getBracket, getStandings, getTournament, listAnnouncements } from '../../../lib/api';
+import { getBracket, getMap, getMapCommitment, getStandings, getTournament, listAnnouncements } from '../../../lib/api';
 import ProjectorBoard from './ProjectorBoard';
 
 /** Venue screens must not be indexed by search engines, and the page is public (no auth). */
@@ -18,12 +18,14 @@ export default async function ProjectorPage({ params }: { params: Promise<{ id: 
   const tournament = await getTournament(id);
   if (!tournament) notFound();
 
-  const [bracket, standings, announcements] = await Promise.all([
+  const [bracket, standings, announcements, commitment] = await Promise.all([
     getBracket(id),
     getStandings(id),
     listAnnouncements(id),
+    getMapCommitment(id),
   ]);
 
+  const map = commitment?.slug ? await getMap(commitment.slug) : null;
   return (
     <ProjectorBoard
       tournamentId={id}
@@ -32,6 +34,8 @@ export default async function ProjectorPage({ params }: { params: Promise<{ id: 
       initialRounds={bracket?.rounds ?? []}
       initialStandings={standings}
       initialAnnouncements={announcements}
+      initialCommitment={commitment}
+      initialMap={map}
     />
   );
 }
