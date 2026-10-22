@@ -6,4 +6,4 @@
  * image. `tests/schema-version.test.ts` fails when this constant drifts from the newest
  * `persistence/migrations/*.sql` file, so the pair cannot silently disagree.
  */
-export const EXPECTED_SCHEMA_VERSION = 30;
+export const EXPECTED_SCHEMA_VERSION = 31;

@@ -29,9 +29,13 @@ export default function SiteHeader() {
     { href: '/tournaments', label: 'Giải đấu' },
     { href: '/rankings', label: 'Bảng xếp hạng' },
     ...(role === 'ADMIN'
-      ? [{ href: '/organizer', label: 'Ban tổ chức' }, { href: '/replays', label: 'Replay' }]
-      : role === 'STUDENT'
-      ? [{ href: '/workspace', label: 'Không gian đội' }]
+      ? [
+          { href: '/organizer', label: 'Ban tổ chức' },
+          { href: '/replays', label: 'Replay' },
+          { href: '/account', label: 'Hồ sơ' },
+        ]
+      : role !== null
+      ? [{ href: '/account', label: 'Hồ sơ' }]
       : []),
   ];
   return (

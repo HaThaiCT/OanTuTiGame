@@ -31,8 +31,8 @@ export default async function TournamentsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/workspace" className="vct-btn-secondary !py-2 !px-4 !text-xs !rounded-full">
-              Không gian đội →
+            <Link href="/account" className="vct-btn-secondary !py-2 !px-4 !text-xs !rounded-full">
+              Hồ sơ tài khoản →
             </Link>
           </div>
         </div>

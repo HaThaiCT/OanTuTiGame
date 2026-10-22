@@ -302,7 +302,11 @@ export class ArtifactStore {
       `INSERT INTO submission_sources (digest, storage_path, zip_bytes, expanded_bytes, file_count, manifest)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (digest) DO UPDATE
-       SET manifest = EXCLUDED.manifest`,
+       SET manifest = EXCLUDED.manifest,
+           storage_path = EXCLUDED.storage_path,
+           zip_bytes = EXCLUDED.zip_bytes,
+           expanded_bytes = EXCLUDED.expanded_bytes,
+           file_count = EXCLUDED.file_count`,
       [digest, filePath, storedZipBytes, expandedBytes, files.length, JSON.stringify(manifest)]
     );
 

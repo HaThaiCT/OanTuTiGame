@@ -13,3 +13,4 @@ export * from './contracts/results.js';
 export * from './contracts/ratings.js';
 export * from './rating-ranks.js';
 export * from './execution.js';
+export * from './contracts/content.js';

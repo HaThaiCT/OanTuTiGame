@@ -131,7 +131,7 @@ export function LiveLeaderboard({ initial, featured = false }: { initial: Global
                     {row.rank === 1 ? (
                       <span className="font-mono font-black text-[var(--action)]">#{rankText}</span>
                     ) : row.rank === 2 ? (
-                      <span className="font-mono font-black text-[#f5a524]">#{rankText}</span>
+                      <span className="font-mono font-black text-[var(--warning-text)]">#{rankText}</span>
                     ) : row.rank === 3 ? (
                       <span className="font-mono font-bold text-[var(--text-primary)]">#{rankText}</span>
                     ) : (
@@ -239,14 +239,14 @@ export function LiveTeamProfile({ teamId, initial }: { teamId: string; initial: 
           <span>
             RATING GLOBAL:{' '}
             <strong className="text-[var(--text-primary)] font-bold">
-              {profile.rating.rating ?? 'UNRATED'}
+              {profile.rating.ratedContests === 0 ? 0 : profile.rating.rating ?? 0}
             </strong>
           </span>
           <span>·</span>
           <span>
             CAO NHẤT:{' '}
             <strong className="text-[var(--text-primary)] font-bold">
-              {profile.rating.maxRating ?? '—'}
+              {profile.rating.ratedContests === 0 ? 0 : profile.rating.maxRating ?? 0}
             </strong>
           </span>
           <span>·</span>
@@ -296,7 +296,7 @@ export function LiveTeamProfile({ teamId, initial }: { teamId: string; initial: 
                   {row.rankEnd > row.rank ? `–#${row.rankEnd}` : ''}
                 </td>
                 <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono text-[var(--text-secondary)]">
-                  {row.oldPublicRating === null ? 'UNRATED' : row.oldRating}
+                  {row.oldPublicRating === null ? 0 : row.oldRating}
                 </td>
                 <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono font-bold">
                   {row.delta > 0 ? (

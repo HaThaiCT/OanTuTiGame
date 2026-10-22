@@ -5,12 +5,15 @@ import ReplayViewer from '../replays/ReplayViewer';
 import {
   createPrivateTest,
   listPrivateTests,
+  normalizePrivateTestReceipt,
   privateTestReplayUrl,
   type PrivateTestReceipt,
   type PrivateTestSummary,
 } from '../../lib/api';
 import { errorText } from '../../lib/client';
 import { languageLabel, privateTestStatusLabel, privateTestWinnerLabel } from '../../lib/labels';
+
+import SourceIde from './SourceIde';
 
 /** Mirror of the server artifact limit (packages/server/src/submissions/artifact-store.ts MAX_ZIP_BYTES). */
 const MAX_ZIP_BYTES = 2 * 1024 * 1024;
@@ -151,6 +154,7 @@ export default function PrivateTestPanel({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [inputMode, setInputMode] = useState<'zip' | 'ide'>('zip');
   const [language, setLanguage] = useState<string>(LANGUAGES[0]);
   const [entrypoint, setEntrypoint] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -287,8 +291,33 @@ export default function PrivateTestPanel({
         </span>{' '}
         (không tính điểm, không xếp hạng, không tạo receipt chính thức).
       </p>
+      <div className="mt-3 flex items-center gap-2 border-b border-[var(--border-subtle)] pb-2">
+        <button
+          type="button"
+          onClick={() => setInputMode('zip')}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+            inputMode === 'zip'
+              ? 'bg-[var(--surface-subtle)] text-[var(--action)]'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Tải file .zip
+        </button>
+        <button
+          type="button"
+          onClick={() => setInputMode('ide')}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+            inputMode === 'ide'
+              ? 'bg-[var(--surface-subtle)] text-[var(--action)]'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Soạn mã trực tiếp (IDE)
+        </button>
+      </div>
 
-      <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-3">
+      {inputMode === 'zip' ? (
+        <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
             <span className="font-medium text-[var(--text-primary)]">Tệp .zip (tối đa {MAX_ZIP_LABEL})</span>
@@ -342,6 +371,27 @@ export default function PrivateTestPanel({
           </button>
         </div>
       </form>
+      ) : (
+        <SourceIde
+          tournamentId={tournamentId}
+          teamId={teamId}
+          mode="test"
+          submitButtonText="Chạy test từ trình soạn thảo"
+          onSubmitArchive={async (archive) => {
+            const res = await createPrivateTest(tournamentId, {
+              teamId,
+              language: archive.language,
+              entrypoint: archive.entrypoint,
+              zipBase64: archive.zipBase64,
+            });
+            return { ok: res.ok, message: res.message ?? undefined, data: res.data };
+          }}
+          onSubmitted={(data) => {
+            setReceipt(normalizePrivateTestReceipt(data));
+            void loadTests();
+          }}
+        />
+      )}
 
       {receipt ? (
         <div className="mt-3 rounded-md border border-[var(--border-subtle)] bg-[var(--canvas)] p-3 text-xs">

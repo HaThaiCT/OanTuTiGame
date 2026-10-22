@@ -4,11 +4,11 @@ import { notFound, redirect } from 'next/navigation';
 import { getAuthProfile, getOrganizerSession, listMaps, listTournaments } from '../../lib/api';
 import { formatLabel, stateLabel } from '../../lib/labels';
 import OrganizerConsole from './OrganizerConsole';
-
+import NewsManager from './NewsManager';
 export const dynamic = 'force-dynamic';
 
 const sections = [
-  ['tournaments', 'Giải đấu'], ['create', 'Tạo giải mới'], ['teams', 'Chiến đội'], ['maps', 'Bản đồ'],
+  ['tournaments', 'Giải đấu'], ['create', 'Tạo giải mới'], ['teams', 'Chiến đội'], ['maps', 'Bản đồ'], ['news', 'Bản tin'],
 ] as const;
 
 export default async function OrganizerPage({ searchParams }: {
@@ -47,9 +47,10 @@ export default async function OrganizerPage({ searchParams }: {
           </Link>
         ))}
       </nav>
-      {section === 'tournaments' ? (
+      {section === 'news' ? (
+        <NewsManager />
+      ) : section === 'tournaments' ? (
         <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden shadow-sm">
-          <h2 className="border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-3.5 font-bold text-sm">Giải đấu</h2>
           <ul className="divide-y divide-[var(--border-subtle)]">
             {tournaments.length === 0 ? <li className="p-6 text-sm text-[var(--text-secondary)]">Chưa có giải đấu.</li> : tournaments.map((tournament) => (
               <li key={tournament.id} className="flex flex-wrap items-center justify-between gap-4 px-4 py-4">

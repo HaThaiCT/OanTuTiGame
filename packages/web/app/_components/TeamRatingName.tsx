@@ -6,7 +6,7 @@ import { useContext } from 'react';
 import { RatingContext } from './rating-context';
 
 export function RatingBadge({ rating }: { readonly rating: TeamRatingSummary }) {
-  if (!rating || rating.rank === 'UNRATED' || rating.rating === null || rating.rating === undefined) return null;
+  if (!rating || rating.rank === 'UNRATED' || rating.rating === null || rating.rating === undefined || rating.ratedContests === 0) return null;
   return (
     <span
       className={`rating-badge rating-${rating.rank.toLowerCase()} font-mono font-bold text-[10px] px-2 py-0.5 rounded-full border border-current shadow-xs`}
@@ -20,9 +20,11 @@ export function TeamRatingName({ teamId, name, rating, compact = false }: { read
   const publishedTeam = useContext(RatingContext)?.teams.find(team => team.teamId === teamId);
   rating = publishedTeam?.rating ?? rating;
   name = publishedTeam?.name ?? name;
-  const label = rating && rating.rating !== null ? `${name} (Rating: ${rating.rating})` : name;
+  const isUnrated = !rating || rating.rank === 'UNRATED' || rating.rating === null || rating.rating === undefined || rating.ratedContests === 0;
+  const ratingValue = isUnrated || !rating ? 0 : rating.rating;
+  const label = `${name} (Rating: ${ratingValue})`;
   return (
-    <span className={`rating-name${rating ? ` rating-${rating.rank.toLowerCase()}` : ''}`}>
+    <span className={`rating-name${!isUnrated && rating ? ` rating-${rating.rank.toLowerCase()}` : ' rating-unrated'}`}>
       <Link href={`/teams/${encodeURIComponent(teamId)}`} title={label} aria-label={label}>
         {name}
       </Link>

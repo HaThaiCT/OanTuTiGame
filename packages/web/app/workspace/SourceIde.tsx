@@ -362,11 +362,17 @@ export default function SourceIde({
   tournamentId,
   teamId,
   onSubmitted,
+  mode = 'submission',
+  submitButtonText,
+  onSubmitArchive,
 }: {
   tournamentId: string;
   teamId: string;
-  /** Nhận nguyên payload của receipt để `SubmissionPanel` chuẩn hoá và hiện bằng khối có sẵn. */
+  /** Nhận nguyên payload của receipt để parent component chuẩn hoá và hiện bằng khối có sẵn. */
   onSubmitted: (payload: unknown) => void;
+  mode?: 'submission' | 'test';
+  submitButtonText?: string;
+  onSubmitArchive?: (archive: { language: string; entrypoint: string; zipBase64: string }) => Promise<{ ok: boolean; message?: string; data?: unknown }>;
 }) {
   const [files, setFiles] = useState<SourceFile[]>(() => [
     makeFile('f1', DEFAULT_FILE_NAME.PYTHON ?? 'main.py', PYTHON_TEMPLATE),
@@ -379,7 +385,7 @@ export default function SourceIde({
   const [sending, setSending] = useState(false);
   const nextFileId = useRef(2);
   const lastEntrypoint = useRef(entrypointChoice);
-  const draftKey = `oantuti:source-draft:${tournamentId}:${teamId}`;
+  const draftKey = `oantuti:source-draft:${tournamentId}:${teamId}:${mode}`;
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   useEffect(() => {
@@ -533,21 +539,31 @@ export default function SourceIde({
         });
         return;
       }
-      const result = await apiRequest<unknown>(`/api/v2/tournaments/${tournamentId}/submissions`, {
-        method: 'POST',
-        body: {
-          teamId,
-          language,
-          entrypoint,
-          zipBase64: toBase64(archive),
-        },
-      });
-      if (!result.ok) {
-        setStatus({ tone: 'error', text: errorText(result, 'Nộp mã nguồn thất bại.') });
-        return;
+      if (onSubmitArchive) {
+        const res = await onSubmitArchive({ language, entrypoint, zipBase64: toBase64(archive) });
+        if (!res.ok) {
+          setStatus({ tone: 'error', text: res.message ?? 'Thao tác thất bại.' });
+          return;
+        }
+        setStatus({ tone: 'info', text: 'Server đã nhận bài.' });
+        onSubmitted(res.data);
+      } else {
+        const result = await apiRequest<unknown>(`/api/v2/tournaments/${tournamentId}/submissions`, {
+          method: 'POST',
+          body: {
+            teamId,
+            language,
+            entrypoint,
+            zipBase64: toBase64(archive),
+          },
+        });
+        if (!result.ok) {
+          setStatus({ tone: 'error', text: errorText(result, 'Nộp mã nguồn thất bại.') });
+          return;
+        }
+        setStatus({ tone: 'info', text: 'Server đã nhận bài — receipt và kết quả dựng thật ở khối bên dưới.' });
+        onSubmitted(result.data);
       }
-      setStatus({ tone: 'info', text: 'Server đã nhận bài — receipt và kết quả dựng thật ở khối bên dưới.' });
-      onSubmitted(result.data);
     } catch {
       setStatus({ tone: 'error', text: 'Không dựng được gói ZIP trong trình duyệt.' });
     } finally {
@@ -758,7 +774,7 @@ export default function SourceIde({
           disabled={sending || blockingReason !== null}
           className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-xl disabled:opacity-60 cursor-pointer"
         >
-          {sending ? 'Đang nộp bài...' : 'Nộp bài từ trình soạn thảo'}
+          {sending ? 'Đang gửi...' : (submitButtonText ?? (mode === 'test' ? 'Chạy test từ trình soạn thảo' : 'Nộp bài từ trình soạn thảo'))}
         </button>
       </div>
     </form>

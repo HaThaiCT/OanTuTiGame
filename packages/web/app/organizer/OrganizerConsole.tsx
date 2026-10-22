@@ -29,6 +29,7 @@ import MapEditor from './MapEditor';
 import TournamentAdjudication from './TournamentAdjudication';
 import AccountsInspectionPanel from './AccountsInspectionPanel';
 import LanRosterAssignment from './LanRosterAssignment';
+import StarterBotsPanel from './StarterBotsPanel';
 import { TeamRatingName } from '../_components/TeamRatingName';
 import { TournamentRatingProvider } from '../_components/TournamentRatingContext';
 import { useRatingRefresh } from '../_components/RatingLivePanels';
@@ -52,6 +53,13 @@ interface ReauthRetry {
 
 const TOURNAMENT_FORMATS = ['SINGLE_ELIMINATION', 'SWISS_PLAYOFF', 'ROUND_ROBIN', 'ELO_ARENA'] as const;
 
+const SECTIONS = [
+  { id: 'overview', label: '1. Tổng quan & Vòng đời' },
+  { id: 'configuration', label: '2. Bản đồ & Xếp hạng' },
+  { id: 'entries', label: '3. Đội tham dự & Xét duyệt' },
+  { id: 'adjudication', label: '4. Kết quả & Kháng nghị' },
+  { id: 'starter-bots', label: '5. Thư viện Bot mẫu' },
+] as const;
 /**
  * States where a team can still be withdrawn. Before the start this only shrinks the field; while
  * the tournament runs the server turns every not-yet-started encounter into an unplayed result
@@ -229,7 +237,17 @@ function EntriesList({ entries, state }: { entries?: TournamentEntry[] | null; s
 }
 
 interface OrganizerConsoleProps {
-  section: 'create' | 'teams' | 'maps' | 'overview' | 'operations' | 'entries' | 'configuration' | 'adjudication';
+  section:
+    | 'create'
+    | 'teams'
+    | 'maps'
+    | 'tournament'
+    | 'overview'
+    | 'operations'
+    | 'entries'
+    | 'configuration'
+    | 'adjudication'
+    | 'starter-bots';
   tournaments: TournamentSummary[];
   /** Deployment auth profile: ONLINE reviews registrations; LAN keeps ADMIN direct enrollment. */
   authProfile: 'ONLINE' | 'LAN_OFFLINE' | null;
@@ -431,6 +449,35 @@ export default function OrganizerConsole({
   const [reauthRetries, setReauthRetries] = useState<Record<string, ReauthRetry>>({});
   const [reauthPasswords, setReauthPasswords] = useState<Record<string, string>>({});
   const archiveRequests = useRef<Record<string, { key: string; expectedVersion?: number }>>({});
+  const [activeAnchor, setActiveAnchor] = useState<string>('overview');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && SECTIONS.some((s) => s.id === initialHash)) {
+      setActiveAnchor(initialHash);
+      const el = document.getElementById(initialHash);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveAnchor(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-10% 0px -70% 0px' }
+    );
+
+    for (const sec of SECTIONS) {
+      const el = document.getElementById(sec.id);
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   function setCardNotice(tournamentId: string, notice: Notice | null) {
     setCardNotices((current) => {
@@ -932,12 +979,7 @@ export default function OrganizerConsole({
       {section === 'maps' ? <MapEditor initialMaps={maps} /> : null}
 
       {!['create', 'teams', 'maps'].includes(section) ? (
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="text-lg font-semibold">Console giải</h2>
-          <span className="text-sm text-[var(--text-secondary)]">{tournaments.length} giải</span>
-        </div>
-
+      <div className="flex flex-col gap-6">
         {tournaments.length === 0 ? (
           <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-6 text-sm text-[var(--text-secondary)]">
             Chưa có giải nào. Tạo giải đầu tiên bằng biểu mẫu phía trên.
@@ -951,209 +993,145 @@ export default function OrganizerConsole({
             const notice = cardNotices[tournament.id];
             const runOutcome = runOutcomes[tournament.id];
             const reauthRetry = reauthRetries[tournament.id];
+
             return (
-              <article key={tournament.id} className="min-w-0 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)]">
-                <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-[var(--accent-secondary)]">
-                      {formatLabel[tournament.format] ?? tournament.format}
-                    </p>
-                    <h3 className="mt-1 break-words text-base font-semibold">{tournament.name}</h3>
-                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                      Tối đa {tournament.maxTeams} đội · đóng đăng ký:{' '}
-                      {tournament.registrationClosesAt
-                        ? `${tournament.registrationClosesAt.slice(0, 16).replace('T', ' ')} UTC`
-                        : '—'}
-                    </p>
+              <div key={tournament.id} className="flex flex-col gap-6">
+                {/* Sticky Anchor Navigation */}
+                <nav
+                  aria-label="Điều hướng nhanh các mục giải đấu"
+                  className="sticky top-0 z-30 -mx-1 px-1 py-2.5 bg-[var(--canvas)]/95 backdrop-blur border-b border-[var(--border-subtle)] shadow-xs"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {SECTIONS.map((sec) => (
+                      <a
+                        key={sec.id}
+                        href={`#${sec.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const el = document.getElementById(sec.id);
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth' });
+                            history.replaceState(null, '', `#${sec.id}`);
+                            setActiveAnchor(sec.id);
+                          }
+                        }}
+                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                          activeAnchor === sec.id
+                            ? 'vct-btn-primary !py-1 !px-3.5 shadow-sm'
+                            : 'vct-btn-secondary !py-1 !px-3.5 hover:border-[var(--action)]'
+                        }`}
+                      >
+                        {sec.label}
+                      </a>
+                    ))}
                   </div>
-                  <span className="whitespace-nowrap rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold text-[var(--live-accent)]">
-                    {stateLabel[tournament.state] ?? tournament.state}
-                  </span>
-                  <span className="whitespace-nowrap rounded-full border border-[var(--border-subtle)] px-3 py-1 text-xs font-semibold">
-                    {tournament.isRated ? 'Rated' : 'Unrated'}
-                  </span>
-                </header>
+                </nav>
 
-                <div className="flex min-w-0 flex-col gap-4 p-3 sm:p-4">
-                  {section === 'overview' ? (
-                    <p className="text-sm text-[var(--text-secondary)]">{entriesByTournament[tournament.id] ? `${entriesByTournament[tournament.id]?.length} đội` : tournament.state === 'DRAFT' ? 'Bản nháp' : 'Chưa tải được danh sách đội'} · {commitment ? `Bản đồ: ${commitment.displayName}` : 'Chưa chốt bản đồ'}. Chọn mục để quản lý giải.</p>
-                  ) : null}
-                  {section === 'operations' || section === 'entries' ? (actions.length > 0 || canEnroll || WITHDRAWABLE_STATES.includes(tournament.state) ? (
-                    <div className="flex flex-wrap items-end gap-3">
-                      {section === 'operations' && tournament.state === 'PUBLISHED' ? (
-                        <label className={`${LABEL_CLASS} text-xs`}>
-                          <span className="text-[var(--text-secondary)]">Hạn đăng ký (tùy chọn)</span>
-                          <input
-                            type="datetime-local"
-                            value={closesAtDraft[tournament.id] ?? ''}
-                            onChange={(event) =>
-                              setClosesAtDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
-                            }
-                            className="h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
-                          />
-                        </label>
-                      ) : null}
-
-                      {section === 'operations' && tournament.state === 'READY_TO_START' && !commitment ? (
-                        <label className={`${LABEL_CLASS} text-xs`}>
-                          <span className="text-[var(--text-secondary)]">Bản đồ vòng 1</span>
-                          <select
-                            value={mapSlugDraft[tournament.id] ?? maps[0]?.slug ?? ''}
-                            onChange={(event) =>
-                              setMapSlugDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
-                            }
-                            disabled={maps.length === 0}
-                            className="h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
-                          >
-                            {maps.length === 0 ? <option value="">Chưa có bản đồ</option> : null}
-                            {maps.map((map) => (
-                              <option key={map.slug} value={map.slug}>
-                                {map.displayName ? `${map.displayName} (${map.slug})` : map.slug}
-                                {map.currentVersion !== undefined ? ` · v${map.currentVersion}` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      ) : null}
-
-                      {(section === 'operations' ? actions : []).map(({ action, label }) => (
-                        <button
-                          key={action}
-                          type="button"
-                          disabled={pending !== null}
-                          onClick={() => void runAction(tournament, action, label)}
-                          className={SECONDARY_BUTTON_CLASS}
-                        >
-                          {pending === `${tournament.id}:${action}`
-                            ? 'Đang xử lý…'
-                            : action === 'start' && commitment
-                              ? `Bắt đầu với ${commitment.displayName} (v${commitment.version})`
-                              : label}
-                        </button>
-                      ))}
-
-                      {section === 'operations' && (tournament.state === 'RUNNING' || tournament.state === 'PAUSED') ? (
-                        <button
-                          type="button"
-                          disabled={pending !== null}
-                          onClick={() => void runPendingGames(tournament)}
-                          className={SECONDARY_BUTTON_CLASS}
-                        >
-                          {pending === `${tournament.id}:run-pending-games` ? 'Đang chạy…' : 'Chạy các ván đang chờ (8)'}
-                        </button>
-                      ) : null}
-
-                      {section === 'entries' && canEnroll ? (
-                        <div className="flex flex-1 flex-wrap items-end gap-3">
-                          <label className={`${LABEL_CLASS} min-w-[200px] flex-1 text-xs`}>
-                            <span className="text-[var(--text-secondary)]">Thêm đội trực tiếp (teamId)</span>
-                            <input
-                              value={enrollDraft[tournament.id] ?? ''}
-                              onChange={(event) =>
-                                setEnrollDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
-                              }
-                              placeholder="team_…"
-                              className="h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            disabled={pending !== null}
-                            onClick={() => void enrollTeam(tournament)}
-                            className={SECONDARY_BUTTON_CLASS}
-                          >
-                            {pending === `${tournament.id}:enroll` ? 'Đang thêm…' : 'Thêm đội'}
-                          </button>
-                        </div>
-                      ) : null}
-
-                      {section === 'entries' && canEnroll ? (
-                        <div className="flex min-w-0 basis-64 flex-1 flex-col gap-2">
-                          <label className={`${LABEL_CLASS} text-xs`}>
-                            <span className="text-[var(--text-secondary)]">Nhập hàng loạt teamId (mỗi dòng một đội)</span>
-                            <textarea
-                              rows={3}
-                              value={bulkDraft[tournament.id] ?? ''}
-                              onChange={(event) =>
-                                setBulkDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
-                              }
-                              placeholder={'team_… \n(hoặc team_id_1, team_id_2, …)'}
-                              className="w-full rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 py-2 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
-                            />
-                          </label>
-                          <TeamSearchPicker disabled={pending !== null} onSelect={(teamId) => setBulkDraft((current) => {
-                            const existing = parseBulkIds(current[tournament.id] ?? '');
-                            return { ...current, [tournament.id]: existing.includes(teamId) ? (current[tournament.id] ?? '') : [...existing, teamId].join('\n') };
-                          })} />
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={pending !== null}
-                              onClick={() => void submitBulkEnroll(tournament, true)}
-                              className={SECONDARY_BUTTON_CLASS}
-                            >
-                              {pending === `${tournament.id}:bulk-preview` ? 'Đang kiểm…' : 'Xem trước'}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={pending !== null}
-                              onClick={() => void submitBulkEnroll(tournament, false)}
-                              className={SECONDARY_BUTTON_CLASS}
-                            >
-                              {pending === `${tournament.id}:bulk-commit` ? 'Đang thêm…' : 'Thêm các đội hợp lệ'}
-                            </button>
-                          </div>
-                          {bulkReport[tournament.id] ? (
-                            <p className="text-xs text-[var(--text-secondary)]">{bulkSummary(bulkReport[tournament.id]!)}</p>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      {section === 'entries' && WITHDRAWABLE_STATES.includes(tournament.state) ? (
-                        <div className="flex flex-1 flex-wrap items-end gap-3">
-                          <label className={`${LABEL_CLASS} min-w-[200px] flex-1 text-xs`}>
-                            <span className="text-[var(--text-secondary)]">Rút đội (teamId)</span>
-                            <input
-                              value={withdrawDraft[tournament.id] ?? ''}
-                              onChange={(event) =>
-                                setWithdrawDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
-                              }
-                              placeholder="team_…"
-                              className="h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            disabled={pending !== null}
-                            onClick={() => void withdrawTeam(tournament)}
-                            className={SECONDARY_BUTTON_CLASS}
-                          >
-                            {pending === `${tournament.id}:withdraw` ? 'Đang rút…' : 'Rút đội'}
-                          </button>
-                        </div>
-                      ) : null}
+                {/* Section 1: Overview & Lifecycle */}
+                <section
+                  id="overview"
+                  className="scroll-mt-14 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden shadow-sm"
+                >
+                  <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)]">1. Tổng quan & Vòng đời giải đấu</h3>
+                      <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                        Trạng thái hiện tại và các thao tác chuyển đổi vòng đời theo quy tắc máy chủ
+                      </p>
                     </div>
-                  ) : (
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      Không có thao tác nào cho trạng thái này.
-                    </p>
-                  )) : null}
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-0.5 text-xs font-semibold text-[var(--live-accent)]">
+                        {stateLabel[tournament.state] ?? tournament.state}
+                      </span>
+                      <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 py-0.5 text-xs font-semibold">
+                        {tournament.isRated ? 'Rated' : 'Unrated'}
+                      </span>
+                    </div>
+                  </div>
 
-                  {section === 'configuration' ? (
-                  <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-4 py-3">
-                    <p className="text-xs font-semibold text-[var(--text-secondary)]">Bản đồ</p>
-                    {canCommitMap ? (
-                      <>
-                        <div className="mt-2 flex flex-wrap items-end gap-3">
+                  <div className="p-5 flex flex-col gap-5">
+                    {/* Facts Grid */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-subtle)] p-4 text-xs">
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Thể thức</span>
+                        <strong className="text-[var(--text-primary)] text-sm font-semibold">
+                          {formatLabel[tournament.format] ?? tournament.format}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Sức chứa tối đa</span>
+                        <strong className="text-[var(--text-primary)] text-sm font-semibold">{tournament.maxTeams} đội</strong>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Số đội trong giải</span>
+                        <strong className="text-[var(--text-primary)] text-sm font-semibold">
+                          {entriesByTournament[tournament.id] ? `${entriesByTournament[tournament.id]?.length} đội` : tournament.state === 'DRAFT' ? 'Bản nháp' : '—'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Bản đồ cam kết</span>
+                        <strong className="text-[var(--text-primary)] text-sm font-semibold">
+                          {commitment ? `${commitment.displayName} (v${commitment.version})` : 'Chưa chốt'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Hạn đóng đăng ký</span>
+                        <span className="font-mono text-[11px] text-[var(--text-primary)]">
+                          {tournament.registrationClosesAt ? `${tournament.registrationClosesAt.slice(0, 16).replace('T', ' ')} UTC` : 'Không giới hạn'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Thời gian bắt đầu</span>
+                        <span className="font-mono text-[11px] text-[var(--text-primary)]">
+                          {tournament.startedAt ? `${tournament.startedAt.slice(0, 16).replace('T', ' ')} UTC` : 'Chưa bắt đầu'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">Phiên bản / Quy tắc</span>
+                        <span className="font-mono text-[11px] text-[var(--text-primary)]">
+                          v{tournament.version} · {tournament.rulesRevision || 'ArenaRules/v1'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-secondary)] block">ID Giải đấu</span>
+                        <span className="font-mono text-[11px] text-[var(--text-primary)] truncate block" title={tournament.id}>
+                          {tournament.id}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Notice Line */}
+                    <NoticeLine notice={notice} />
+
+                    {/* Lifecycle Actions */}
+                    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 flex flex-col gap-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Thao tác vòng đời khả dụng</h4>
+
+                      <div className="flex flex-wrap items-end gap-3">
+                        {tournament.state === 'PUBLISHED' && (
                           <label className={`${LABEL_CLASS} text-xs`}>
-                            <span className="text-[var(--text-secondary)]">Bản đồ (chốt trước khi mở đăng ký)</span>
+                            <span className="text-[var(--text-secondary)]">Hạn đăng ký (tùy chọn)</span>
+                            <input
+                              type="datetime-local"
+                              value={closesAtDraft[tournament.id] ?? ''}
+                              onChange={(event) =>
+                                setClosesAtDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
+                              }
+                              className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+                            />
+                          </label>
+                        )}
+
+                        {tournament.state === 'READY_TO_START' && !commitment && (
+                          <label className={`${LABEL_CLASS} text-xs`}>
+                            <span className="text-[var(--text-secondary)]">Bản đồ vòng 1</span>
                             <select
                               value={mapSlugDraft[tournament.id] ?? maps[0]?.slug ?? ''}
                               onChange={(event) =>
                                 setMapSlugDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
                               }
                               disabled={maps.length === 0}
-                              className="h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
+                              className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
                             >
                               {maps.length === 0 ? <option value="">Chưa có bản đồ</option> : null}
                               {maps.map((map) => (
@@ -1164,187 +1142,466 @@ export default function OrganizerConsole({
                               ))}
                             </select>
                           </label>
+                        )}
+
+                        {actions.map(({ action, label }) => (
+                          <button
+                            key={action}
+                            type="button"
+                            disabled={pending !== null}
+                            onClick={() => void runAction(tournament, action, label)}
+                            className={PRIMARY_BUTTON_CLASS + ' !h-10'}
+                          >
+                            {pending === `${tournament.id}:${action}`
+                              ? 'Đang xử lý…'
+                              : action === 'start' && commitment
+                                ? `Bắt đầu với ${commitment.displayName} (v${commitment.version})`
+                                : label}
+                          </button>
+                        ))}
+
+                        {(tournament.state === 'RUNNING' || tournament.state === 'PAUSED') && (
                           <button
                             type="button"
-                            disabled={pending !== null || maps.length === 0}
-                            onClick={() => void commitMapForTournament(tournament)}
-                            className={SECONDARY_BUTTON_CLASS}
+                            disabled={pending !== null}
+                            onClick={() => void runPendingGames(tournament)}
+                            className="vct-btn-secondary !h-10 !px-4 !text-xs font-semibold border-[var(--action)] text-[var(--action)] hover:bg-[rgba(0,245,212,0.06)] disabled:opacity-60 transition-colors"
                           >
-                            {pending === `${tournament.id}:commit-map` ? 'Đang chốt…' : 'Chốt bản đồ'}
+                            {pending === `${tournament.id}:run-pending-games` ? 'Đang chạy…' : 'Chạy các ván đang chờ (8)'}
                           </button>
+                        )}
+
+                        {actions.length === 0 && tournament.state !== 'RUNNING' && tournament.state !== 'PAUSED' && (
+                          <p className="text-xs text-[var(--text-secondary)] italic">
+                            Không có thao tác chuyển đổi trạng thái nào cho trạng thái {stateLabel[tournament.state] ?? tournament.state}.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Reauth prompt */}
+                      {reauthRetry && (
+                        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-[var(--warning-text)] bg-[rgba(245,165,36,0.06)] p-3">
+                          <label className={`${LABEL_CLASS} text-xs flex-1 min-w-[200px]`}>
+                            <span className="font-semibold text-[var(--warning-text)]">{REAUTH_PROMPT_TEXT}</span>
+                            <input
+                              type="password"
+                              autoComplete="current-password"
+                              value={reauthPasswords[tournament.id] ?? ''}
+                              onChange={(event) =>
+                                setReauthPasswords((current) => ({ ...current, [tournament.id]: event.target.value }))
+                              }
+                              placeholder="Nhập mật khẩu quản trị viên"
+                              className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={pending !== null}
+                            onClick={() => void confirmReauth(tournament)}
+                            className={PRIMARY_BUTTON_CLASS + ' !h-10'}
+                          >
+                            {pending === `${tournament.id}:reauth` ? 'Đang xác nhận…' : 'Xác nhận lại'}
+                          </button>
+                          <span className="w-full text-[11px] text-[var(--text-secondary)]">
+                            Thao tác “{reauthRetry.label}” sẽ được tự động thực hiện lại sau khi xác nhận mật khẩu.
+                          </span>
                         </div>
-                        <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                          {commitment
-                            ? `Bản đồ đã chốt: ${commitment.displayName} (v${commitment.version})`
-                            : 'Chưa chốt bản đồ. Bản đồ phải được chốt trước khi mở đăng ký.'}
-                        </p>
-                        {(() => {
-                          const poolView = poolsByTournament[tournament.id];
-                          const pool = poolView?.pool ?? [];
-                          const candidates = maps.filter((map) => !pool.some((entry) => entry.slug === map.slug));
-                          return (
-                            <div className="mt-3 rounded-md border border-[var(--border-subtle)] px-3 py-2">
-                              <p className="text-xs font-semibold text-[var(--text-secondary)]">
-                                Pool bản đồ ({pool.length})
-                              </p>
-                              {pool.length === 0 ? (
-                                <p className="mt-1 text-xs text-[var(--text-secondary)]">Pool đang trống.</p>
-                              ) : (
-                                <ul className="mt-1 flex flex-col gap-1 text-xs">
-                                  {pool.map((entry) => (
-                                    <li key={entry.id} className="flex flex-wrap items-center gap-2">
-                                      <span className="font-mono">{entry.slug}</span>
-                                      {entry.displayName ? (
-                                        <span className="text-[var(--text-secondary)]">· {entry.displayName}</span>
-                                      ) : null}
-                                      <span className="text-[var(--text-secondary)]">v{entry.currentVersion}</span>
-                                      {entry.visibility !== 'PUBLIC' ? (
-                                        <span className="rounded border border-[var(--warning-text)] px-1 text-[var(--warning-text)]">
-                                          {entry.visibility}
-                                        </span>
-                                      ) : null}
-                                      <button
-                                        type="button"
-                                        disabled={pending !== null}
-                                        onClick={() => void removeMapFromPool(tournament, entry.slug)}
-                                        className="rounded border border-[var(--border-control)] px-2 py-0.5 text-[11px]"
-                                      >
-                                        {pending === `${tournament.id}:pool-remove:${entry.slug}`
-                                          ? 'Đang bỏ…'
-                                          : 'Bỏ'}
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                              {poolView && poolView.warnings.length > 0 ? (
-                                <p className="mt-2 text-xs text-[var(--warning-text)]">
-                                  Cảnh báo: pool dưới 4 bản đồ — loạt knockout cần ít nhất bốn bản đồ.
-                                </p>
-                              ) : null}
-                              <div className="mt-2 flex flex-wrap items-end gap-2">
-                                <select
-                                  value={poolSlugDraft[tournament.id] ?? candidates[0]?.slug ?? ''}
-                                  onChange={(event) =>
-                                    setPoolSlugDraft((current) => ({
-                                      ...current,
-                                      [tournament.id]: event.target.value,
-                                    }))
-                                  }
-                                  disabled={candidates.length === 0}
-                                  className="h-9 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-2 text-xs text-[var(--text-primary)]"
-                                >
-                                  {candidates.length === 0 ? <option value="">Hết bản đồ để thêm</option> : null}
-                                  {candidates.map((map) => (
-                                    <option key={map.slug} value={map.slug}>
-                                      {map.displayName ? `${map.displayName} (${map.slug})` : map.slug}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  type="button"
-                                  disabled={pending !== null || candidates.length === 0}
-                                  onClick={() => void addMapToPool(tournament)}
-                                  className={SECONDARY_BUTTON_CLASS}
-                                >
-                                  {pending === `${tournament.id}:pool-add` ? 'Đang thêm…' : 'Thêm vào pool'}
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })()}
+                      )}
 
-                      </>
-                    ) : (
-                      <p className="mt-2 text-sm">
-                        {commitment
-                          ? `Bản đồ đã chốt: ${commitment.displayName} (v${commitment.version}). `
-                          : 'Giải chưa chốt bản đồ nào. '}
-                        <span className="text-[var(--text-secondary)]">
-                          Đăng ký đã mở nên server khóa cứng bản đồ — không thể chốt hoặc đổi bản đồ nữa.
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                  ) : null}
+                      {/* Run Pending Outcome */}
+                      {runOutcome?.kind === 'error' && (
+                        <NoticeLine notice={{ kind: 'error', text: runOutcome.text }} />
+                      )}
+                      {runOutcome?.kind === 'result' && (
+                        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-4 py-3 text-xs text-[var(--text-primary)]">
+                          <p>
+                            Đã chạy <span className="font-bold text-[var(--success-text)]">{runOutcome.ran}</span> ván · bỏ qua{' '}
+                            <span className="font-semibold">{runOutcome.skipped}</span> ván còn lại
+                            {runOutcome.failed.length > 0 ? ` · ${runOutcome.failed.length} ván lỗi` : ''}.
+                          </p>
+                          {runOutcome.failed.length > 0 && (
+                            <ul className="mt-2 list-disc pl-5 text-xs text-[var(--danger-text)]">
+                              {runOutcome.failed.map((failure) => (
+                                 <li key={failure.gameId}>
+                                   <span className="font-mono">{failure.gameId}</span>: {failure.error}
+                                 </li>
+                               ))}
+                             </ul>
+                           )}
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 </section>
 
-                  {section === 'configuration' && (tournament.state === 'DRAFT' || tournament.state === 'PUBLISHED') ? (
-                    <RatedControl tournament={tournament} />
-                  ) : null}
-                  {reauthRetry ? (
-                    <div className="flex flex-wrap items-end gap-3 rounded-md border border-[var(--warning-text)] px-3 py-2">
-                      <label className={`${LABEL_CLASS} text-xs`}>
-                        <span className="text-[var(--warning-text)]">{REAUTH_PROMPT_TEXT}</span>
-                        <input
-                          type="password"
-                          autoComplete="current-password"
-                          value={reauthPasswords[tournament.id] ?? ''}
-                          onChange={(event) =>
-                            setReauthPasswords((current) => ({ ...current, [tournament.id]: event.target.value }))
-                          }
-                          className="h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        disabled={pending !== null}
-                        onClick={() => void confirmReauth(tournament)}
-                        className={SECONDARY_BUTTON_CLASS}
-                      >
-                        {pending === `${tournament.id}:reauth` ? 'Đang xác nhận…' : 'Xác nhận'}
-                      </button>
-                      <span className="text-xs text-[var(--text-secondary)]">
-                        Thao tác “{reauthRetry.label}” sẽ được chạy lại một lần sau khi xác nhận.
-                      </span>
-                    </div>
-                  ) : null}
-                  {section === 'operations' && runOutcome?.kind === 'error' ? <NoticeLine notice={{ kind: 'error', text: runOutcome.text }} /> : null}
-                  {section === 'operations' && runOutcome?.kind === 'result' ? (
-                    <div className="rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-primary)]">
-                      <p>
-                        Đã chạy <span className="font-semibold">{runOutcome.ran}</span> ván · bỏ qua{' '}
-                        <span className="font-semibold">{runOutcome.skipped}</span> ván còn lại
-                        {runOutcome.failed.length > 0 ? ` · ${runOutcome.failed.length} ván lỗi` : ''}.
-                      </p>
-                      {runOutcome.failed.length > 0 ? (
-                        <ul className="mt-2 list-disc pl-5 text-xs text-[var(--danger-text)]">
-                          {runOutcome.failed.map((failure) => (
-                            <li key={failure.gameId}>
-                              <span className="font-mono">{failure.gameId}</span>: {failure.error}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  {section === 'entries' && authProfile === null ? (
-                    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border border-[var(--warning-text)] px-4 py-3 text-sm text-[var(--warning-text)]">
-                      <p className="min-w-0 flex-1">Không tải được chế độ đăng ký. Chưa thể hiển thị xét duyệt hoặc thêm đội trực tiếp.</p>
-                      <button type="button" onClick={() => router.refresh()} className={SECONDARY_BUTTON_CLASS}>Thử lại</button>
-                    </div>
-                  ) : null}
-                  {section === 'entries' && authProfile === 'ONLINE' ? (
-                    <RegistrationReviewPanel tournamentId={tournament.id} state={tournament.state} />
-                  ) : null}
-                  {section === 'entries' && authProfile === 'ONLINE' &&
-                  ['REGISTRATION_OPEN', 'VALIDATING_SUBMISSIONS'].includes(tournament.state) ? (
-                    <EntryCodesPanel tournamentId={tournament.id} />
-                  ) : null}
-                  {section === 'entries' ? <TournamentRatingProvider tournamentId={tournament.id}><EntriesList entries={entriesByTournament[tournament.id]} state={tournament.state} /></TournamentRatingProvider> : null}
-                  {section === 'adjudication' && ADJUDICABLE_STATES[tournament.state] === true ? (
-                    <>
-                      <TournamentAdjudication tournamentId={tournament.id} state={tournament.state} />
-                      <TournamentRatingProvider tournamentId={tournament.id}><RatingReviewPanel tournament={tournament} /></TournamentRatingProvider>
-                    </>
-                  ) : null}
-                  {section === 'adjudication' && tournament.state === 'ARCHIVED' ? <TournamentRatingProvider tournamentId={tournament.id}><RatingReviewPanel tournament={tournament} /></TournamentRatingProvider> : null}
-                </div>
-              </article>
-            );
-          })
-        )}
-      </section>
-      ) : null}
+                 {/* Section 2: Map & Rating Configuration */}
+                 <section
+                   id="configuration"
+                   className="scroll-mt-14 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden shadow-sm"
+                 >
+                   <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-3.5">
+                     <h3 className="text-sm font-bold text-[var(--text-primary)]">2. Cấu hình Bản đồ & Xếp hạng</h3>
+                     <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                       Cam kết bản đồ thi đấu, thiết lập pool bản đồ cho loạt knockout và chính sách tính Rating global
+                     </p>
+                   </div>
+
+                   <div className="p-5 flex flex-col gap-5">
+                     {/* Map Commitment Box */}
+                     <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 flex flex-col gap-3">
+                       <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Bản đồ cam kết (Commit Map)</h4>
+                       {canCommitMap ? (
+                         <>
+                           <div className="flex flex-wrap items-end gap-3">
+                             <label className={`${LABEL_CLASS} text-xs flex-1 min-w-[200px]`}>
+                               <span className="text-[var(--text-secondary)]">Chọn bản đồ chốt (trước khi mở đăng ký)</span>
+                               <select
+                                 value={mapSlugDraft[tournament.id] ?? maps[0]?.slug ?? ''}
+                                 onChange={(event) =>
+                                   setMapSlugDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
+                                 }
+                                 disabled={maps.length === 0}
+                                 className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+                               >
+                                 {maps.length === 0 ? <option value="">Chưa có bản đồ trên hệ thống</option> : null}
+                                 {maps.map((map) => (
+                                   <option key={map.slug} value={map.slug}>
+                                     {map.displayName ? `${map.displayName} (${map.slug})` : map.slug}
+                                     {map.currentVersion !== undefined ? ` · v${map.currentVersion}` : ''}
+                                   </option>
+                                 ))}
+                               </select>
+                             </label>
+                             <button
+                               type="button"
+                               disabled={pending !== null || maps.length === 0}
+                               onClick={() => void commitMapForTournament(tournament)}
+                               className={PRIMARY_BUTTON_CLASS + ' !h-10'}
+                             >
+                               {pending === `${tournament.id}:commit-map` ? 'Đang chốt…' : 'Chốt bản đồ cam kết'}
+                             </button>
+                           </div>
+                           <p className="text-xs text-[var(--text-secondary)]">
+                             {commitment
+                               ? `Bản đồ hiện tại đã chốt: ${commitment.displayName} (v${commitment.version}).`
+                               : 'Chưa chốt bản đồ. Bản đồ phải được chốt trước khi mở đăng ký thi đấu.'}
+                           </p>
+                         </>
+                       ) : (
+                         <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] p-3 text-xs">
+                           <p className="text-[var(--text-primary)]">
+                             {commitment
+                               ? `Bản đồ đã chốt cứng: ${commitment.displayName} (v${commitment.version}). `
+                               : 'Giải chưa chốt bản đồ nào. '}
+                             <span className="text-[var(--text-secondary)]">
+                               Đăng ký đã mở hoặc giải đã qua bước chuẩn bị nên server đã khóa cứng bản đồ — không thể thay đổi nữa.
+                             </span>
+                           </p>
+                         </div>
+                       )}
+                     </div>
+
+                     {/* Map Pool for Knockout */}
+                     <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 flex flex-col gap-3">
+                       <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                         Pool bản đồ thi đấu ({poolsByTournament[tournament.id]?.pool?.length ?? 0} bản đồ)
+                       </h4>
+                       {(() => {
+                         const poolView = poolsByTournament[tournament.id];
+                         const pool = poolView?.pool ?? [];
+                         const candidates = maps.filter((map) => !pool.some((entry) => entry.slug === map.slug));
+                         return (
+                           <div className="flex flex-col gap-3">
+                             {pool.length === 0 ? (
+                               <p className="text-xs text-[var(--text-secondary)] italic">Pool bản đồ hiện đang trống.</p>
+                             ) : (
+                               <ul className="divide-y divide-[var(--border-subtle)] rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] overflow-hidden">
+                                 {pool.map((entry) => (
+                                   <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-xs">
+                                     <div className="flex flex-wrap items-center gap-2">
+                                       <span className="font-mono font-semibold text-[var(--text-primary)]">{entry.slug}</span>
+                                       {entry.displayName ? (
+                                         <span className="text-[var(--text-secondary)]">· {entry.displayName}</span>
+                                       ) : null}
+                                       <span className="text-[var(--text-secondary)] font-mono text-[11px]">v{entry.currentVersion}</span>
+                                       {entry.visibility !== 'PUBLIC' ? (
+                                         <span className="rounded border border-[var(--warning-text)] px-1.5 py-0.5 text-[10px] text-[var(--warning-text)]">
+                                           {entry.visibility}
+                                         </span>
+                                       ) : null}
+                                     </div>
+                                     {canCommitMap && (
+                                       <button
+                                         type="button"
+                                         disabled={pending !== null}
+                                         onClick={() => void removeMapFromPool(tournament, entry.slug)}
+                                         className="rounded border border-[var(--danger-text)] px-2 py-0.5 text-[11px] text-[var(--danger-text)] hover:bg-[rgba(239,68,68,0.06)]"
+                                       >
+                                         {pending === `${tournament.id}:pool-remove:${entry.slug}` ? 'Đang bỏ…' : 'Bỏ khỏi pool'}
+                                       </button>
+                                     )}
+                                   </li>
+                                 ))}
+                               </ul>
+                             )}
+
+                             {poolView && poolView.warnings.length > 0 && (
+                               <div role="alert" className="rounded-lg border border-[var(--warning-text)] bg-[rgba(245,165,36,0.06)] p-3 text-xs text-[var(--warning-text)]">
+                                 Cảnh báo: Pool có dưới 4 bản đồ — loạt thi đấu knockout yêu cầu ít nhất bốn bản đồ khác nhau.
+                               </div>
+                             )}
+
+                             {canCommitMap && (
+                               <div className="flex flex-wrap items-end gap-2 pt-1">
+                                 <select
+                                   value={poolSlugDraft[tournament.id] ?? candidates[0]?.slug ?? ''}
+                                   onChange={(event) =>
+                                     setPoolSlugDraft((current) => ({
+                                       ...current,
+                                       [tournament.id]: event.target.value,
+                                     }))
+                                   }
+                                   disabled={candidates.length === 0}
+                                   className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 text-xs text-[var(--text-primary)]"
+                                 >
+                                   {candidates.length === 0 ? <option value="">Hết bản đồ để thêm</option> : null}
+                                   {candidates.map((map) => (
+                                     <option key={map.slug} value={map.slug}>
+                                       {map.displayName ? `${map.displayName} (${map.slug})` : map.slug}
+                                     </option>
+                                   ))}
+                                 </select>
+                                 <button
+                                   type="button"
+                                   disabled={pending !== null || candidates.length === 0}
+                                   onClick={() => void addMapToPool(tournament)}
+                                   className={SECONDARY_BUTTON_CLASS + ' !h-10'}
+                                 >
+                                   {pending === `${tournament.id}:pool-add` ? 'Đang thêm…' : 'Thêm vào pool'}
+                                 </button>
+                               </div>
+                             )}
+                           </div>
+                         );
+                       })()}
+                     </div>
+
+                     {/* Rated/Unrated Policy */}
+                     <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                       <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Xếp hạng Global (Elo/Glicko)</h4>
+                       <RatedControl tournament={tournament} />
+                     </div>
+                   </div>
+                 </section>
+
+                 {/* Section 3: Teams & Registration */}
+                 <section
+                   id="entries"
+                   className="scroll-mt-14 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden shadow-sm"
+                 >
+                   <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-3.5">
+                     <h3 className="text-sm font-bold text-[var(--text-primary)]">3. Đội tham dự & Xét duyệt đăng ký</h3>
+                     <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                       Duyệt hồ sơ đăng ký, quản lý mã mời, thêm đội trực tiếp và danh sách đội tham gia
+                     </p>
+                   </div>
+
+                   <div className="p-5 flex flex-col gap-6">
+                     {authProfile === null && (
+                       <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--warning-text)] bg-[rgba(245,165,36,0.06)] px-4 py-3 text-xs text-[var(--warning-text)]">
+                         <p className="min-w-0 flex-1">Không tải được chế độ đăng ký. Chưa thể hiển thị xét duyệt hoặc thêm đội trực tiếp.</p>
+                         <button type="button" onClick={() => router.refresh()} className={SECONDARY_BUTTON_CLASS}>Thử lại</button>
+                       </div>
+                     )}
+
+                     {/* Online Registration Review */}
+                     {authProfile === 'ONLINE' && (
+                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 flex flex-col gap-4">
+                         <RegistrationReviewPanel tournamentId={tournament.id} state={tournament.state} />
+                       </div>
+                     )}
+
+                     {/* Online Entry Codes */}
+                     {authProfile === 'ONLINE' && ['REGISTRATION_OPEN', 'VALIDATING_SUBMISSIONS'].includes(tournament.state) && (
+                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                         <EntryCodesPanel tournamentId={tournament.id} />
+                       </div>
+                     )}
+
+                     {/* LAN Direct Enrollment */}
+                     {canEnroll && (
+                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 flex flex-col gap-4">
+                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Ghi danh trực tiếp (LAN)</h4>
+                         <div className="flex flex-wrap items-end gap-3">
+                           <label className={`${LABEL_CLASS} min-w-[200px] flex-1 text-xs`}>
+                             <span className="text-[var(--text-secondary)]">Thêm một đội trực tiếp (teamId)</span>
+                             <input
+                               value={enrollDraft[tournament.id] ?? ''}
+                               onChange={(event) =>
+                                 setEnrollDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
+                               }
+                               placeholder="team_…"
+                               className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+                             />
+                           </label>
+                           <button
+                             type="button"
+                             disabled={pending !== null}
+                             onClick={() => void enrollTeam(tournament)}
+                             className={SECONDARY_BUTTON_CLASS + ' !h-10'}
+                           >
+                             {pending === `${tournament.id}:enroll` ? 'Đang thêm…' : 'Thêm đội'}
+                           </button>
+                         </div>
+
+                         {/* Bulk Enrollment */}
+                         <div className="flex flex-col gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                           <label className={`${LABEL_CLASS} text-xs`}>
+                             <span className="text-[var(--text-secondary)]">Nhập hàng loạt teamId (mỗi dòng một đội)</span>
+                             <textarea
+                               rows={3}
+                               value={bulkDraft[tournament.id] ?? ''}
+                               onChange={(event) =>
+                                 setBulkDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
+                               }
+                               placeholder={'team_… \n(hoặc team_id_1, team_id_2, …)'}
+                               className="w-full rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 py-2 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+                             />
+                           </label>
+                           <TeamSearchPicker disabled={pending !== null} onSelect={(teamId) => setBulkDraft((current) => {
+                             const existing = parseBulkIds(current[tournament.id] ?? '');
+                             return { ...current, [tournament.id]: existing.includes(teamId) ? (current[tournament.id] ?? '') : [...existing, teamId].join('\n') };
+                           })} />
+                           <div className="flex flex-wrap items-center gap-2">
+                             <button
+                               type="button"
+                               disabled={pending !== null}
+                               onClick={() => void submitBulkEnroll(tournament, true)}
+                               className={SECONDARY_BUTTON_CLASS}
+                             >
+                               {pending === `${tournament.id}:bulk-preview` ? 'Đang kiểm…' : 'Xem trước'}
+                             </button>
+                             <button
+                               type="button"
+                               disabled={pending !== null}
+                               onClick={() => void submitBulkEnroll(tournament, false)}
+                               className={PRIMARY_BUTTON_CLASS + ' !h-9'}
+                             >
+                               {pending === `${tournament.id}:bulk-commit` ? 'Đang thêm…' : 'Thêm các đội hợp lệ'}
+                             </button>
+                           </div>
+                           {bulkReport[tournament.id] && (
+                             <p className="text-xs text-[var(--text-secondary)]">{bulkSummary(bulkReport[tournament.id]!)}</p>
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Team Withdrawal */}
+                     {WITHDRAWABLE_STATES.includes(tournament.state) && (
+                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4 flex flex-col gap-3">
+                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Rút đội khỏi giải</h4>
+                         <div className="flex flex-wrap items-end gap-3">
+                           <label className={`${LABEL_CLASS} min-w-[200px] flex-1 text-xs`}>
+                             <span className="text-[var(--text-secondary)]">Nhập teamId cần rút</span>
+                             <input
+                               value={withdrawDraft[tournament.id] ?? ''}
+                               onChange={(event) =>
+                                 setWithdrawDraft((current) => ({ ...current, [tournament.id]: event.target.value }))
+                               }
+                               placeholder="team_…"
+                               className="h-10 rounded-lg border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+                             />
+                           </label>
+                           <button
+                             type="button"
+                             disabled={pending !== null}
+                             onClick={() => void withdrawTeam(tournament)}
+                             className="h-10 rounded-lg border border-[var(--danger-text)] px-4 text-xs font-semibold text-[var(--danger-text)] hover:bg-[rgba(239,68,68,0.06)] disabled:opacity-60 transition-colors"
+                           >
+                             {pending === `${tournament.id}:withdraw` ? 'Đang rút…' : 'Rút đội'}
+                           </button>
+                         </div>
+                         <p className="text-[11px] text-[var(--text-secondary)]">
+                           Trước khi bắt đầu: chỉ xóa khỏi danh sách. Khi giải đang chạy: các ván chưa đấu sẽ được xử walkover.
+                         </p>
+                       </div>
+                     )}
+
+                     {/* Current Enrolled Teams */}
+                     <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                       <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-3">Danh sách đội trong giải</h4>
+                       <TournamentRatingProvider tournamentId={tournament.id}>
+                         <EntriesList entries={entriesByTournament[tournament.id]} state={tournament.state} />
+                       </TournamentRatingProvider>
+                     </div>
+                   </div>
+                 </section>
+
+                 {/* Section 4: Adjudication & Disputes */}
+                 <section
+                   id="adjudication"
+                   className="scroll-mt-14 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden shadow-sm"
+                 >
+                   <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-3.5">
+                     <h3 className="text-sm font-bold text-[var(--text-primary)]">4. Kết quả & Kháng nghị</h3>
+                     <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                       Xử lý khiếu nại thí sinh, điều chỉnh kết quả trận đấu và phê duyệt công bố Rating sau giải
+                     </p>
+                   </div>
+
+                   <div className="p-5 flex flex-col gap-6">
+                     {ADJUDICABLE_STATES[tournament.state] === true ? (
+                       <>
+                         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                           <TournamentAdjudication tournamentId={tournament.id} state={tournament.state} />
+                         </div>
+                         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                           <TournamentRatingProvider tournamentId={tournament.id}>
+                             <RatingReviewPanel tournament={tournament} />
+                           </TournamentRatingProvider>
+                         </div>
+                       </>
+                     ) : tournament.state === 'ARCHIVED' ? (
+                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
+                         <TournamentRatingProvider tournamentId={tournament.id}>
+                           <RatingReviewPanel tournament={tournament} />
+                         </TournamentRatingProvider>
+                       </div>
+                     ) : (
+                       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-subtle)] p-6 text-center text-xs text-[var(--text-secondary)]">
+                         <p className="font-semibold text-[var(--text-primary)]">Chưa mở xử lý kết quả & kháng nghị</p>
+                         <p className="mt-1">
+                           Khu vực này sẽ khả dụng sau khi giải đấu bắt đầu (từ trạng thái RUNNING). Hiện tại giải đang ở trạng thái{' '}
+                           <strong className="text-[var(--text-primary)]">{stateLabel[tournament.state] ?? tournament.state}</strong>.
+                         </p>
+                       </div>
+                     )}
+                   </div>
+                 </section>
+
+                 {/* Section 5: Starter Bots */}
+                 <section
+                   id="starter-bots"
+                   className="scroll-mt-14 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden shadow-sm"
+                 >
+                   <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-5 py-3.5">
+                     <h3 className="text-sm font-bold text-[var(--text-primary)]">5. Thư viện Bot mẫu cho thí sinh</h3>
+                     <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                       Tải lên gói mã nguồn bot mẫu định dạng ZIP (Python, TypeScript, C++20) và quản lý thư viện bot
+                     </p>
+                   </div>
+
+                   <div className="p-5">
+                     <StarterBotsPanel />
+                   </div>
+                 </section>
+               </div>
+             );
+           })
+         )}
+       </div>
+       ) : null}
     </div>
   );
 }

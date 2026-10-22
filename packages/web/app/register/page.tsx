@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { errorText } from '../../lib/client';
 import { isProfileDisabled, registerAccount, type RegisterReceipt } from '../../lib/api';
 import { OnlineOnlyNotice, ProfileProbeNotice, useAuthProfile } from '../_components/AuthProfile';
@@ -52,6 +52,13 @@ export default function RegisterPage() {
   const [receipt, setReceipt] = useState<RegisterReceipt | null>(null);
   /** Raw `PROFILE_DISABLED` message from the API: evidence that this deployment is LAN_OFFLINE. */
   const [profileRefusal, setProfileRefusal] = useState<string | null>(null);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('returnTo');
+    if (target) setReturnTo(target);
+  }, []);
 
   function update(field: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -117,7 +124,7 @@ export default function RegisterPage() {
               : ' Tài khoản đã sẵn sàng đăng nhập.'}
           </p>
           <Link
-            href="/workspace"
+            href={returnTo ? `/workspace?returnTo=${encodeURIComponent(returnTo)}` : '/workspace'}
             className="mt-4 inline-block rounded-md bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[var(--action-text)]"
           >
             Tới trang đăng nhập →
@@ -212,7 +219,10 @@ export default function RegisterPage() {
           </button>
           <p className="text-xs text-[var(--text-secondary)]">
             Đã có tài khoản?{' '}
-            <Link href="/workspace" className="text-[var(--action)] font-medium hover:underline ml-1">
+            <Link
+              href={returnTo ? `/workspace?returnTo=${encodeURIComponent(returnTo)}` : '/workspace'}
+              className="text-[var(--action)] font-medium hover:underline ml-1"
+            >
               Đăng nhập →
             </Link>
           </p>

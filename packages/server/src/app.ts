@@ -38,6 +38,8 @@ import { LiveMatchHub } from './live/live-match-hub.js';
 import { registerLiveRoutes } from './live/live-routes.js';
 import { TournamentAutoRunner } from './tournaments/auto-runner.js';
 import { TournamentControlPlane } from './tournaments/control-plane.js';
+import { ContentService } from './content/service.js';
+import { registerContentRoutes } from './content/routes.js';
 import { JobBroker } from './jobs/broker.js';
 import { JobReconciler } from './jobs/reconciler.js';
 import { LocalJobBrokerTransport, type LocalJobBrokerOptions } from './jobs/local-transport.js';
@@ -275,6 +277,11 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       : undefined;
     const liveMatchHub = new LiveMatchHub();
     registerLiveRoutes(app, liveMatchHub);
+    const contentService = new ContentService(options.pgDb, artifactStore);
+    registerContentRoutes(app, contentService, identityService);
+    app.addHook('onReady', async () => {
+      await contentService.seedBuiltinStarterBots().catch(() => {});
+    });
     // The native gateway is built last so it can hand the supervisor a server-built immutable
     // assignment and accept completions only through the same service that validates them.
     if (options.localJobBroker) {

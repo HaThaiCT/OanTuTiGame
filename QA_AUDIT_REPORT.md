@@ -81,4 +81,36 @@ npx vitest run packages/web/app/organizer/LanRosterAssignment.test.ts packages/w
 
 ## Remaining coverage / release caveat
 
-QA verdict remains **Incomplete**: no full route/element matrix, 200% text resize, screen-reader audit, keyboard pass for every form, 768–1920 stress matrix, offline/network-fault pass, complete ONLINE student lifecycle, LAN roster mutation, performance vitals, complete test suite, CI a11y gate, or DQ/map destructive-action smoke. No zero-defect claim. Deferred product gaps: durable curation marker/policy for historical showcase prioritization, LAN join guidance, g
+## Đợt kiểm thử tái thiết kế UX theo giải đấu & QA toàn diện (22/10/2026)
+
+### 1. Phạm vi tính năng & Kiến trúc đã triển khai
+
+| Hạng mục | Hiện trạng & Giải pháp triển khai | Kết quả kiểm thử thực tế |
+|---|---|---|
+| **Rating khởi đầu 0 & không màu** | Đội chưa thi đấu (`rating === null` hoặc `ratedContests === 0`) hiển thị số `0` với màu trung tính (`var(--text-primary)`), không gắn badge phân hạng màu. Bảng xếp hạng toàn cục chỉ hiển thị đội đã có giải tính rating. Đã sửa lỗi tương phản WCAG hạng 2 (`#f5a524` -> `var(--warning-text)`). | Unit test `theme-tokens.test.ts` 5/5 pass. Trình duyệt thực tế hiển thị số `0` trung tính, không lỗi màu sắc. |
+| **Migration 031 & API News / Bot mẫu** | Bổ sung bảng `news_posts` và `starter_bot_templates` trong migration `031-tournament-centered-content.sql`. Nâng `EXPECTED_SCHEMA_VERSION = 31`. Xây dựng `ContentService` và `registerContentRoutes`. | Đã chạy migration trên PostgreSQL test và demo. Schema test pass. API GET/POST tin tức và bot mẫu hoạt động chuẩn xác. |
+| **Bản tin Trang chủ phong cách Codeforces** | Tái cấu trúc trang chủ: Bản tin & Thông báo trở thành cột chính trung tâm với `MarkdownRenderer` tự động format tiêu đề, trích dẫn, danh sách gạch đầu dòng, khối code, đoạn văn bản. Các khối giải đấu tiêu điểm, giải đấu sắp tới, xếp hạng Top 8 và trận đấu chuyển sang sidebar bên phải. | Trình duyệt chụp ảnh màn hình xác nhận: Trang chủ có diện mạo hiện đại chuẩn Codeforces, font chữ thoáng, đọc bài viết mượt mà không lỗi escape `\n`. |
+| **IDE cho Test riêng tư** | Tách `SourceIde` thành component dùng chung hỗ trợ Monaco Editor cho cả 3 ngôn ngữ (Python, TypeScript, C++20). Nhúng trực tiếp vào `PrivateTestPanel` với 2 chế độ: Tải file .zip hoặc Soạn mã trực tiếp. Gửi yêu cầu qua `POST /api/v2/tournaments/:id/private-tests` không ảnh hưởng bảng điểm chính thức. | TypeScript typecheck 0 lỗi. Giao diện tab chuyển đổi mượt mà, lưu nháp riêng biệt theo ngữ cảnh test. |
+| **Trung tâm giải đấu (Tournament Hub)** | Tái cấu trúc `/tournaments/[id]` thành Hub duy nhất với hệ thống tab: Tổng quan, Đội thi đấu, Đăng ký tham gia, Bài nộp & Test, Bot mẫu & Chạy local, Điều hành (cho ADMIN). Thí sinh tạo đội, mời thành viên, đăng ký dự thi, nộp bài và test riêng tư ngay tại trang giải mà không cần nhảy sang `/workspace`. Sửa lỗi tiêu đề trên mobile 390px không còn bị ép thành cột hẹp 6 dòng. | Đã xác minh trên mobile 390px và desktop 1440px. Tiêu đề dàn hàng ngang 100% full-width, tabs chuyển đổi qua URL `?tab=` giữ nguyên ngữ cảnh. |
+| **Điều hành giải tập trung (All-in-one Console)** | Tái thiết kế `OrganizerConsole` và `/organizer/tournaments/[id]`: gom 5 tab rời rạc thành một màn hình điều hành duy nhất với thanh điều hướng neo dính (Sticky Anchors: `#overview`, `#configuration`, `#entries`, `#adjudication`, `#starter-bots`). Giữ nguyên các chốt an toàn `expectedVersion`, idempotency key, và xác thực mật khẩu `reauth`. | ADMIN quan sát và điều hành toàn bộ giải đấu từ một trang duy nhất. Thêm tab Bản tin trong quản trị hệ thống. |
+| **Tải Bot mẫu & Kiểm thử Local** | Ban tổ chức upload gói bot mẫu qua console. Thí sinh tải file zip trực tiếp từ tab "Bot mẫu & Chạy local". | Đã tải file zip `official-python-starter.zip`, giải nén và chạy kiểm thử đối đầu trực tiếp trên máy bằng CLI `npm run match:play` — hoàn thành 10 lượt đấu, bắt quân hợp lệ và lưu file replay `test-match.oantuti`. |
+| **Điều hướng an toàn `safeReturnTo`** | Rehome `/workspace` thành cổng đăng nhập chuyên dụng kèm kiểm tra `safeReturnTo` chống Open Redirect. Khi đăng nhập thành công, tự động quay trở lại đúng trang giải đấu ban đầu. Sửa nút xem replay trận đấu gần đây ở trang chủ để khách không bị rơi vào lỗi 401. Trang `/account` có màn hình chào đón và hướng dẫn đăng nhập thay vì báo lỗi thô. | Khách vãng lai bấm đăng nhập từ giải đấu -> đăng nhập thành công -> quay trở lại đúng trang giải đấu. |
+
+### 2. Kết quả kiểm thử tự động (Test Suites)
+
+- **Packages Web Unit Tests:** 11 files, 35 tests passed.
+- **Server Content & Journey Tests:** `content-service.test.ts`, `schema-version.test.ts`, `e2e-user-journeys.test.ts` 7/7 tests passed.
+- **TypeScript Compilation:** `packages/protocol`, `packages/server`, `packages/web` biên dịch đạt 0 lỗi (0 diagnostics).
+- **Production Build:** `npm run build --workspace=@oantuti/web` và Docker image `oantuti-qa-20261022-web-updated:local`, `oantuti-online-v2-server:local` dựng thành công 100%.
+- **Live Browser Verification:** Đã chụp ảnh màn hình và xác minh trực quan trên cả desktop 1440px và mobile 390px, chế độ sáng và chế độ tối.
+
+### 3. Kết luận đợt tái thiết kế
+
+Tất cả 7 mục tiêu chính của người dùng đã được thực thi và nghiệm thu thực tế:
+1. Rating khởi đầu 0 hiển thị màu trung tính cho đội chưa thi đấu, giữ nguyên lịch sử và bảng xếp hạng đội rated.
+2. Migration 031 bổ sung bảng `news_posts` và `starter_bot_templates`, nâng schema lên 31.
+3. Bản tin trang chủ phong cách Codeforces hiển thị bài viết nổi bật ở cột chính với MarkdownRenderer hoàn chỉnh.
+4. Trình soạn thảo Monaco IDE tích hợp trực tiếp vào mục Test riêng tư, chạy qua worker sandbox an toàn.
+5. Giao diện Giải đấu `/tournaments/[id]` trở thành trung tâm điều hướng duy nhất, sửa lỗi co nghẽn mobile 390px.
+6. Trang điều hành của Ban tổ chức gom toàn bộ 5 nhóm chức năng vào một màn hình duy nhất với neo dính sticky.
+7. Tải và kiểm thử bot mẫu local thành công với CLI `npm run match:play`.

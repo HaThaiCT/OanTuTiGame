@@ -1,4 +1,4 @@
-import type { BotLanguage, LanBulkUserEntry, LanProvisionedUser, PrivateSourceDto, SubmissionStatus, UserDto } from '@oantuti/protocol';
+import type { BotLanguage, LanBulkUserEntry, LanProvisionedUser, PrivateSourceDto, SubmissionStatus, UserDto, NewsPostDto, AdminNewsPostDto, StarterBotTemplateDto } from '@oantuti/protocol';
 import { apiRequest, type ApiResult } from './client';
 import type { GlobalLeaderboardDto, PublicTeamProfileDto, RatingDecisionReceipt, RatingReviewDto, TournamentRatingChangesDto, TournamentTeamRatingsDto } from '@oantuti/protocol';
 import type { ReplayMapDescriptor } from './replay';
@@ -717,7 +717,7 @@ function normalizePrivateTest(row: unknown): PrivateTestSummary | null {
 }
 
 /** The receipt has been observed both flat and nested under `data`; accept either shape. */
-function normalizePrivateTestReceipt(payload: unknown): PrivateTestReceipt {
+export function normalizePrivateTestReceipt(payload: unknown): PrivateTestReceipt {
   const top = asRecord(payload);
   const sources = [top, asRecord(top ? top.data : null)];
   return {
@@ -1629,3 +1629,53 @@ export const onlineTeams = {
   rotateCode(tournamentId: string, codeId: string, input: { maxUses?: number; expiresAt?: string }): Promise<ApiResult<CreatedEntryCode>> { return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/entry-codes/${encodeURIComponent(codeId)}/rotate`, { method: 'POST', body: input }); },
   revokeCode(tournamentId: string, codeId: string): Promise<ApiResult<{ id: string; revision: number; revoked: true }>> { return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/entry-codes/${encodeURIComponent(codeId)}/revoke`, { method: 'POST', body: {} }); },
 };
+
+export type { NewsPostDto, AdminNewsPostDto, StarterBotTemplateDto } from '@oantuti/protocol';
+
+export async function listNews(options: { limit?: number } = {}): Promise<ApiResult<{ posts: NewsPostDto[] }>> {
+  const query = options.limit ? `?limit=${options.limit}` : '';
+  return apiRequest(`${API}/api/v2/news${query}`);
+}
+
+export async function getNewsPost(slug: string): Promise<ApiResult<{ post: NewsPostDto }>> {
+  return apiRequest(`${API}/api/v2/news/${encodeURIComponent(slug)}`);
+}
+
+export const organizerNews = {
+  list(): Promise<ApiResult<{ posts: AdminNewsPostDto[] }>> {
+    return apiRequest('/api/v2/organizer/news');
+  },
+  create(payload: { title: string; slug?: string; summary: string; content: string; publishNow?: boolean }): Promise<ApiResult<{ post: AdminNewsPostDto }>> {
+    return apiRequest('/api/v2/organizer/news', { method: 'POST', body: payload });
+  },
+  update(id: string, payload: { title?: string; summary?: string; content?: string }): Promise<ApiResult<{ post: AdminNewsPostDto }>> {
+    return apiRequest(`/api/v2/organizer/news/${encodeURIComponent(id)}`, { method: 'PUT', body: payload });
+  },
+  publish(id: string): Promise<ApiResult<{ post: AdminNewsPostDto }>> {
+    return apiRequest(`/api/v2/organizer/news/${encodeURIComponent(id)}/publish`, { method: 'POST' });
+  },
+  archive(id: string): Promise<ApiResult<{ post: AdminNewsPostDto }>> {
+    return apiRequest(`/api/v2/organizer/news/${encodeURIComponent(id)}/archive`, { method: 'POST' });
+  },
+};
+
+export async function listStarterBots(): Promise<ApiResult<{ templates: StarterBotTemplateDto[] }>> {
+  return apiRequest(`${API}/api/v2/starter-bots`);
+}
+
+export function starterBotDownloadUrl(idOrSlug: string): string {
+  return `/api/v2/starter-bots/${encodeURIComponent(idOrSlug)}/download`;
+}
+
+export const organizerStarterBots = {
+  list(): Promise<ApiResult<{ templates: StarterBotTemplateDto[] }>> {
+    return apiRequest('/api/v2/organizer/starter-bots');
+  },
+  create(payload: { name: string; slug?: string; language: BotLanguage; entrypoint: string; description?: string; zipBase64: string }): Promise<ApiResult<{ template: StarterBotTemplateDto }>> {
+    return apiRequest('/api/v2/organizer/starter-bots', { method: 'POST', body: payload });
+  },
+  archive(id: string): Promise<ApiResult<{ archived: boolean }>> {
+    return apiRequest(`/api/v2/organizer/starter-bots/${encodeURIComponent(id)}/archive`, { method: 'POST' });
+  },
+};
+

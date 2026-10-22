@@ -17,7 +17,7 @@ export default function HeaderSession() {
   const [user, setUser] = useState<{ displayName: string; role: string; scope: string } | null>(null);
   const [known, setKnown] = useState(false);
   const [pending, setPending] = useState(false);
-
+  const [currentPath, setCurrentPath] = useState(pathname ?? '');
   async function refresh() {
     const result = await fetchAuthMe();
     if (result.ok && result.data) {
@@ -29,6 +29,12 @@ export default function HeaderSession() {
   }
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const full = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      setCurrentPath(full);
+    } else if (pathname) {
+      setCurrentPath(pathname);
+    }
     void refresh();
   }, [pathname]);
 
@@ -38,7 +44,6 @@ export default function HeaderSession() {
     window.addEventListener('oantuti:session-changed', handler);
     return () => window.removeEventListener('oantuti:session-changed', handler);
   }, []);
-
   async function signOut() {
     setPending(true);
     await logout();
@@ -54,9 +59,12 @@ export default function HeaderSession() {
   }
 
   if (user === null) {
+    const loginHref = currentPath && !currentPath.startsWith('/workspace')
+      ? `/workspace?returnTo=${encodeURIComponent(currentPath)}`
+      : '/workspace';
     return (
       <Link
-        href="/workspace"
+        href={loginHref}
         className="vct-btn-primary !py-2.5 !px-5 !text-sm !rounded-full"
       >
         Đăng nhập
@@ -67,9 +75,9 @@ export default function HeaderSession() {
   return (
     <div className="flex items-center gap-2">
       <Link
-        href={user.scope === 'FULL' && user.role === 'ADMIN' ? '/organizer' : '/workspace'}
+        href={user.scope === 'FULL' && user.role === 'ADMIN' ? '/organizer' : '/account'}
         className="inline-flex items-center gap-2 border border-[var(--border-control)] bg-[var(--surface-subtle)] px-4 py-2 text-sm font-bold uppercase tracking-wider rounded-full hover:border-[var(--action)] transition-all shadow-sm"
-        title={user.role === 'ADMIN' ? 'Ban tổ chức' : 'Không gian đội'}
+        title={user.role === 'ADMIN' ? 'Ban tổ chức' : 'Hồ sơ tài khoản'}
       >
         <span className="text-[var(--action)] text-xs">●</span>
         {user.displayName}

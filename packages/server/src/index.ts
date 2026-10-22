@@ -44,6 +44,8 @@ export * from './tournaments/scheduler-service.js';
 export * from './adjudication/dispute-service.js';
 export * from './adjudication/correction-service.js';
 export * from './adjudication/routes.js';
+export * from './content/service.js';
+export * from './content/routes.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
