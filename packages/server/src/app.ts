@@ -31,7 +31,8 @@ import { MapService } from './tournaments/map-service.js';
 import { TournamentLifecycleService } from './tournaments/lifecycle-service.js';
 import { TournamentAdmissionService } from './tournaments/admission-service.js';
 import { TournamentEntryCodeService } from './tournaments/entry-code-service.js';
-import { registerTournamentRoutes, registerAdmissionRoutes, registerExecutionRoutes, registerEntryCodeRoutes } from './tournaments/routes.js';
+import { TournamentRegistrationService } from './tournaments/registration-service.js';
+import { registerTournamentRoutes, registerAdmissionRoutes, registerExecutionRoutes, registerEntryCodeRoutes, registerRegistrationRoutes } from './tournaments/routes.js';
 import { MatchExecutionService } from './tournaments/execution-service.js';
 import { LiveMatchHub } from './live/live-match-hub.js';
 import { registerLiveRoutes } from './live/live-routes.js';
@@ -231,7 +232,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     };
     const acceptanceFence = backupFence;
     jobBroker.setAcceptanceFence((client) => acceptanceFence.assertFresh(client));
-    const submissionService = new SubmissionService(options.pgDb, artifactStore, jobBroker, backupFence);
+    const submissionService = new SubmissionService(options.pgDb, artifactStore, jobBroker, backupFence, authProfile);
     // Replays must live under this workspace's storage, never a neighbouring install's default.
     const replayObjectsDir = options.replaysDir ?? path.resolve(process.cwd(), 'storage/replays');
     const replayStagingDir = path.resolve(process.cwd(), 'storage/replay-staging');
@@ -265,6 +266,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       ratingService,
       authProfile
     );
+    const tournamentRegistrationService = new TournamentRegistrationService(options.pgDb, authProfile, backupFence);
     const schedulerService = new TournamentSchedulerService(options.pgDb, jobBroker);
     // Immutable completion capsules live outside the attempt spool so a restarted process can still
     // accept a pinned completion; the operator may place them explicitly.
@@ -299,6 +301,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       app.addHook('onReady', async () => { await transport.start(); });
       app.addHook('onClose', async () => { await transport.stop(); });
     }
+    registerRegistrationRoutes(app, tournamentRegistrationService, identityService);
     registerTournamentRoutes(
       app,
       options.pgDb,
@@ -308,7 +311,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
       identityService
     );
     registerAdmissionRoutes(app, tournamentAdmissionService, identityService);
-    registerEntryCodeRoutes(app, new TournamentEntryCodeService(options.pgDb, authProfile), identityService);
+    registerEntryCodeRoutes(app, new TournamentEntryCodeService(options.pgDb, authProfile, tournamentRegistrationService), identityService);
     registerGlobalRatingRoutes(app, ratingService, identityService);
     // Compile + smoke-test gate: a receipt only becomes READY here.
     const buildPipeline = new BuildPipeline(options.pgDb, artifactStore, {

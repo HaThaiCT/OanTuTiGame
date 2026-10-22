@@ -6,7 +6,7 @@ import { runIdempotent } from '../commands/idempotency.js';
 import { lockRosterAdmission } from '../teams/roster-policy.js';
 
 export class TournamentError extends Error {
-  constructor(readonly statusCode: number, message: string) {
+  constructor(readonly statusCode: number, message: string, readonly code?: string) {
     super(message);
     this.name = 'TournamentError';
   }
@@ -97,6 +97,9 @@ export class TournamentLifecycleService {
         throw new TournamentError(409, `Cannot lock tournament in state '${tourney.state}'`);
       }
 
+      const unresolved = await client.query("SELECT 1 FROM tournament_registrations WHERE tournament_id=$1 AND status='PENDING' LIMIT 1", [tournamentId]);
+      if (unresolved.rows.length) throw new TournamentError(409, 'REGISTRATIONS_PENDING: Review every pending team registration before locking intake', 'REGISTRATIONS_PENDING');
+
       // Check if any official submissions are currently in PENDING compile
       const pendingCheck = await client.query<{ count: string }>(
         `SELECT COUNT(*) as count FROM submissions
@@ -117,7 +120,11 @@ export class TournamentLifecycleService {
 
       // Fetch all admitted teams
       const admissions = await client.query<{ team_id: string }>(
-        `SELECT team_id FROM tournament_admissions WHERE tournament_id = $1 ORDER BY created_at ASC`,
+        `SELECT admission.team_id FROM tournament_admissions admission
+         LEFT JOIN tournament_entries entry ON entry.tournament_id=admission.tournament_id AND entry.team_id=admission.team_id
+         LEFT JOIN tournament_registrations registration ON registration.tournament_id=admission.tournament_id AND registration.team_id=admission.team_id
+         WHERE admission.tournament_id=$1 AND (entry.id IS NULL OR entry.status<>'EXCLUDED')
+           AND (registration.id IS NULL OR registration.status='APPROVED') ORDER BY admission.created_at ASC`,
         [tournamentId]
       );
 

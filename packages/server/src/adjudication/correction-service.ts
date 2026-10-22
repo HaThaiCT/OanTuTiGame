@@ -347,6 +347,12 @@ export class CorrectionService {
           WHERE tournament_id = $1 AND team_id = $2`,
         [tournamentId, teamId]
       );
+      await client.query(
+        `UPDATE tournament_registrations SET status='CANCELLED',version=version+1,cancelled_entry_id=NULL,
+           reason=$3,reviewed_by_user_id=$4,reviewed_at=clock_timestamp(),updated_at=clock_timestamp()
+         WHERE tournament_id=$1 AND team_id=$2 AND status='APPROVED'`,
+        [tournamentId, teamId, reason, ctx.actor.userId],
+      );
 
       const paused = tournament.state === 'RUNNING';
       if (paused) {

@@ -7,7 +7,9 @@ import { registerIdentityRoutes } from '../src/identity/routes.js';
 import { hashPassword, hashToken } from '../src/identity/crypto.js';
 import { TournamentAdmissionService } from '../src/tournaments/admission-service.js';
 import { TournamentEntryCodeService } from '../src/tournaments/entry-code-service.js';
-import { registerAdmissionRoutes, registerEntryCodeRoutes } from '../src/tournaments/routes.js';
+import { registerAdmissionRoutes, registerEntryCodeRoutes, registerRegistrationRoutes } from '../src/tournaments/routes.js';
+import { TournamentRegistrationService } from '../src/tournaments/registration-service.js';
+import { TeamService } from '../src/teams/service.js';
 import { openMailMaterial, type MailEnvelope } from '../src/identity/mail-crypto.js';
 import { mailAad, type IdentityMailOptions } from '../src/identity/mail-outbox.js';
 import { MailConsumer, type MailMessage, type MailTransport } from '../src/identity/mail-consumer.js';
@@ -55,9 +57,10 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
   let daveId = '';
   let adminCookie = '';
   let aliceCookie = '';
+  let carolCookie = '';
   let teamA = '';
   let teamB = '';
-  let teamC = '';
+  let carolId = '';
   let teamD = '';
   let teamE = '';
   let t1 = '';
@@ -91,8 +94,10 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
 
     app = Fastify();
     registerIdentityRoutes(app, online, [ORIGIN]);
-    registerAdmissionRoutes(app, new TournamentAdmissionService(db), online);
-    registerEntryCodeRoutes(app, new TournamentEntryCodeService(db), online);
+    const registrations = new TournamentRegistrationService(db, 'ONLINE');
+    registerAdmissionRoutes(app, new TournamentAdmissionService(db, undefined, undefined, undefined, 'ONLINE'), online);
+    registerRegistrationRoutes(app, registrations, online);
+    registerEntryCodeRoutes(app, new TournamentEntryCodeService(db, 'ONLINE', registrations), online);
     await app.ready();
 
     lanApp = Fastify();
@@ -139,30 +144,15 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     daveId = daveRegistration.json().user.id;
     const carolRegistration = await register(carol.username, carol.email);
     expect(carolRegistration.statusCode).toBe(201);
-    const carolId: string = carolRegistration.json().user.id;
+    carolId = carolRegistration.json().user.id;
     userIds.push(carolId);
     const carolVerification = await app.inject({ method: 'POST', url: '/api/v2/auth/verify-email', headers: { origin: ORIGIN }, payload: { token: await tokenFor('EMAIL_VERIFICATION_REQUESTED', carol.email) } });
     expect(carolVerification.statusCode).toBe(200);
 
 
-    async function createTeam(name: string, captainUsername: string): Promise<string> {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/v2/organizer/teams',
-        headers: { cookie: adminCookie, origin: ORIGIN },
-        payload: { courseCode, name, captainUsername },
-      });
-      expect(res.statusCode).toBe(201);
-      const id: string = res.json().team.id;
-      teamIds.push(id);
-      return id;
-    }
-
-    teamA = await createTeam(`Team A ${RUN}`, alice.username);
-    teamB = await createTeam(`Team B ${RUN}`, dave.username);
-    teamC = await createTeam(`Team C ${RUN}`, carol.username);
-    teamD = await createTeam(`Team D ${RUN}`, dave.username);
-    teamE = await createTeam(`Team E ${RUN}`, dave.username);
+    const carolLogin = await login(app, carol.username, PASSWORD);
+    expect(carolLogin.statusCode).toBe(200);
+    carolCookie = cookieOf(carolLogin);
 
     async function createTournament(name: string, maxTeams: number, open: boolean): Promise<string> {
       const created = await app.inject({
@@ -193,20 +183,27 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
       return id;
     }
 
-    t1 = await createTournament(`Entry Code Cup ${RUN}`, 2, true);
+    t1 = await createTournament(`Entry Code Cup ${RUN}`, 1, true);
     t2 = await createTournament(`Single Use Cup ${RUN}`, 10, true);
     t3 = await createTournament(`Draft Cup ${RUN}`, 10, false);
+    const ownTeams = new TeamService(db, 'ONLINE');
+    teamA = (await ownTeams.createOwnTeam(t1, `Team A ${RUN}`, (await online.authenticateToken(aliceCookie.split('=')[1]))!.actor)).id;
+    teamB = (await ownTeams.createOwnTeam(t1, `Team B ${RUN}`, (await online.authenticateToken(carolCookie.split('=')[1]))!.actor)).id;
+    teamD = (await ownTeams.createOwnTeam(t2, `Team D ${RUN}`, (await online.authenticateToken(aliceCookie.split('=')[1]))!.actor)).id;
+    teamE = (await ownTeams.createOwnTeam(t2, `Team E ${RUN}`, (await online.authenticateToken(carolCookie.split('=')[1]))!.actor)).id;
+    teamIds.push(teamA, teamB, teamD, teamE);
   });
 
   afterAll(async () => {
     await db.withTransaction(async (client) => {
+      await client.query('DELETE FROM tournament_registrations WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_admissions WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_entry_codes WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_entries WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM tournament_admissions WHERE tournament_id = ANY($1::uuid[])', [tournamentIds]);
-      await client.query('DELETE FROM tournaments WHERE id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM team_memberships WHERE team_id = ANY($1::uuid[])', [teamIds]);
       await client.query('DELETE FROM teams WHERE id = ANY($1::uuid[])', [teamIds]);
+      await client.query('DELETE FROM tournaments WHERE id = ANY($1::uuid[])', [tournamentIds]);
       await client.query('DELETE FROM courses WHERE code = ANY($1::text[])', [courseCodes]);
       await client.query('DELETE FROM email_verification_tokens WHERE user_id = ANY($1::uuid[])', [userIds]);
       await client.query('DELETE FROM password_reset_tokens WHERE user_id = ANY($1::uuid[])', [userIds]);
@@ -462,170 +459,57 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     aliceCookie = cookieOf(relogin);
   });
 
-  it('admits a captain with a shared code and refuses bad, expired, exhausted or non-captain attempts', async () => {
-    const codeHashOf = (code: string) => hashToken(code.toUpperCase().replace(/[^A-Z0-9]/g, ''));
-
-    // Only ADMIN may mint or list codes.
-    const nonAdminMint = await app.inject({
-      method: 'POST',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-code`,
-      headers: { cookie: aliceCookie, origin: ORIGIN },
-      payload: { maxUses: 5 },
-    });
-    expect(nonAdminMint.statusCode).toBe(403);
-    const nonAdminList = await app.inject({
-      method: 'GET',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-codes`,
-      headers: { cookie: aliceCookie },
-    });
-    expect(nonAdminList.statusCode).toBe(403);
-
-    const created = await app.inject({
-      method: 'POST',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-code`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { maxUses: 5 },
-    });
+  it('queues shared-code captain requests and requires ADMIN approval without bypassing capacity', async () => {
+    const issue = (tournamentId: string, payload: Record<string, unknown>) => app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${tournamentId}/entry-code`, headers: { cookie: adminCookie, origin: ORIGIN }, payload });
+    const join = (tournamentId: string, teamId: string, code: string, cookie: string) => app.inject({ method: 'POST', url: `/api/v2/tournaments/${tournamentId}/join`, headers: { cookie, origin: ORIGIN }, payload: { code, teamId } });
+    const review = (registrationId: string) => app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${t1}/registrations/${registrationId}/review`, headers: { cookie: adminCookie, origin: ORIGIN }, payload: { decision: 'APPROVE', expectedVersion: 1 } });
+    const nonAdmin = await app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${t1}/entry-code`, headers: { cookie: aliceCookie, origin: ORIGIN }, payload: {} });
+    expect(nonAdmin.statusCode).toBe(403);
+    const created = await issue(t1, { maxUses: 5 });
     expect(created.statusCode).toBe(201);
+    const codeId: string = created.json().id;
     let code: string = created.json().code;
     expect(code).toMatch(/^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/);
-    expect([created.json().maxUses, created.json().expiresAt]).toEqual([5, null]);
-
-    const listed = await app.inject({
-      method: 'GET',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-codes`,
-      headers: { cookie: adminCookie },
-    });
-    expect(listed.statusCode).toBe(200);
-    expect(listed.json().codes).toHaveLength(1);
-    expect(listed.json().codes[0]).toMatchObject({ maxUses: 5, uses: 0, expiresAt: null });
+    const listed = await app.inject({ method: 'GET', url: `/api/v2/organizer/tournaments/${t1}/entry-codes`, headers: { cookie: adminCookie } });
+    expect(listed.json().codes).toEqual([expect.objectContaining({ uses: 0, maxUses: 5 })]);
     expect(listed.json().codes[0].code).toBeUndefined();
-
-    // A DRAFT tournament refuses joins regardless of the code.
-    const draft = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t3}/join`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { code, teamId: teamA },
-    });
+    const draft = await join(t3, teamA, code, aliceCookie);
     expect([draft.statusCode, draft.json().code]).toEqual([409, 'TOURNAMENT_NOT_OPEN']);
-
-    const badCode = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie, origin: ORIGIN },
-      payload: { code: 'ZZZZ-ZZZZ-ZZZZ-ZZZZ', teamId: teamA },
-    });
-    expect([badCode.statusCode, badCode.json().code]).toEqual([403, 'ENTRY_CODE_INVALID']);
-
-    // alice captains team A only.
-    const notCaptain = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie, origin: ORIGIN },
-      payload: { code, teamId: teamB },
-    });
-    expect([notCaptain.statusCode, notCaptain.json().code]).toEqual([403, 'NOT_TEAM_CAPTAIN']);
-
-    const expiredCreated = await app.inject({
-      method: 'POST',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-codes/${created.json().id}/rotate`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { maxUses: 1, expiresAt: new Date(Date.now() - 60_000).toISOString() },
-    });
-    expect(expiredCreated.statusCode).toBe(201);
-    const expired = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie, origin: ORIGIN },
-      payload: { code: expiredCreated.json().code, teamId: teamA },
-    });
+    const invalid = await join(t1, teamA, 'ZZZZ-ZZZZ-ZZZZ-ZZZZ', aliceCookie);
+    expect([invalid.statusCode, invalid.json().code]).toEqual([403, 'ENTRY_CODE_INVALID']);
+    const notCaptain = await join(t1, teamB, code, aliceCookie);
+    expect([notCaptain.statusCode, notCaptain.json().code]).toEqual([403, 'TEAM_CAPTAIN_REQUIRED']);
+    const rotate = (payload: Record<string, unknown>) => app.inject({ method: 'POST', url: `/api/v2/organizer/tournaments/${t1}/entry-codes/${codeId}/rotate`, headers: { cookie: adminCookie, origin: ORIGIN }, payload });
+    const expiredCode = await rotate({ maxUses: 1, expiresAt: new Date(Date.now() - 60_000).toISOString() });
+    expect(expiredCode.statusCode).toBe(201);
+    const expired = await join(t1, teamA, expiredCode.json().code, aliceCookie);
     expect([expired.statusCode, expired.json().code]).toEqual([403, 'ENTRY_CODE_EXPIRED']);
-    const renewed = await app.inject({
-      method: 'POST',
-      url: `/api/v2/organizer/tournaments/${t1}/entry-codes/${created.json().id}/rotate`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { maxUses: 5 },
-    });
+    const renewed = await rotate({ maxUses: 5 });
     expect(renewed.statusCode).toBe(201);
     code = renewed.json().code;
-
-    // The captain redeems the shared code; one use is burned in the same transaction.
-    const joined = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie, origin: ORIGIN },
-      payload: { code, teamId: teamA },
-    });
-    expect(joined.statusCode).toBe(201);
-    expect(joined.json().entry).toMatchObject({ teamId: teamA, status: 'ELIGIBLE' });
-    const admission = await db.query<{ admission_type: string }>(
-      'SELECT admission_type FROM tournament_admissions WHERE tournament_id = $1 AND team_id = $2',
-      [t1, teamA]
-    );
-    expect(admission.rows[0].admission_type).toBe('INVITE_CODE');
-    const usesRow = await db.query<{ uses: number }>(
-      'SELECT uses FROM tournament_entry_codes WHERE tournament_id = $1 AND code_hash = $2',
-      [t1, codeHashOf(code)]
-    );
-    expect(usesRow.rows[0].uses).toBe(1);
-
-    const duplicate = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: aliceCookie, origin: ORIGIN },
-      payload: { code, teamId: teamA },
-    });
-    expect([duplicate.statusCode, duplicate.json().code]).toEqual([409, 'ALREADY_ENROLLED']);
-
-    // An ADMIN may admit a team it does not captain — filling t1's 2-team capacity.
-    const adminJoin = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { code, teamId: teamB },
-    });
-    expect(adminJoin.statusCode).toBe(201);
-    const capacity = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t1}/join`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { code, teamId: teamC },
-    });
-    expect([capacity.statusCode, capacity.json().code]).toEqual([409, 'CAPACITY_EXCEEDED']);
-
-    // maxUses: 1 is single-use, and the burn happens inside the join transaction.
-    const single = await app.inject({
-      method: 'POST',
-      url: `/api/v2/organizer/tournaments/${t2}/entry-code`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { maxUses: 1 },
-    });
+    const requested = await join(t1, teamA, code, aliceCookie);
+    expect(requested.statusCode).toBe(201);
+    expect(requested.json().entry).toMatchObject({ teamId: teamA, status: 'PENDING', version: 1 });
+    expect((await db.query('SELECT id FROM tournament_entries WHERE tournament_id=$1', [t1])).rows).toEqual([]);
+    expect((await db.query('SELECT id FROM tournament_admissions WHERE tournament_id=$1', [t1])).rows).toEqual([]);
+    const duplicate = await join(t1, teamA, code, aliceCookie);
+    expect([duplicate.statusCode, duplicate.json().code]).toEqual([409, 'ALREADY_REGISTERED']);
+    const adminBypass = await join(t1, teamB, code, adminCookie);
+    expect([adminBypass.statusCode, adminBypass.json().code]).toEqual([403, 'FORBIDDEN']);
+    const other = await join(t1, teamB, code, carolCookie);
+    expect(other.statusCode).toBe(201);
+    expect((await review(requested.json().entry.id)).statusCode).toBe(200);
+    const full = await review(other.json().entry.id);
+    expect([full.statusCode, full.json().code]).toEqual([409, 'CAPACITY_EXCEEDED']);
+    expect((await db.query('SELECT admission_type,entry_code_id,entry_code_revision FROM tournament_admissions WHERE tournament_id=$1 AND team_id=$2', [t1, teamA])).rows).toEqual([{ admission_type: 'REGISTRATION_APPROVAL', entry_code_id: codeId, entry_code_revision: 3 }]);
+    expect((await db.query('SELECT uses FROM tournament_entry_codes WHERE id=$1', [codeId])).rows[0].uses).toBe(2);
+    const single = await issue(t2, { maxUses: 1 });
     expect(single.statusCode).toBe(201);
-    const singleCode: string = single.json().code;
-    const firstUse = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t2}/join`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { code: singleCode, teamId: teamD },
-    });
-    expect(firstUse.statusCode).toBe(201);
-    const secondUse = await app.inject({
-      method: 'POST',
-      url: `/api/v2/tournaments/${t2}/join`,
-      headers: { cookie: adminCookie, origin: ORIGIN },
-      payload: { code: singleCode, teamId: teamE },
-    });
-    expect([secondUse.statusCode, secondUse.json().code]).toEqual([403, 'ENTRY_CODE_EXHAUSTED']);
-    const singleRow = await db.query<{ uses: number }>(
-      'SELECT uses FROM tournament_entry_codes WHERE tournament_id = $1 AND code_hash = $2',
-      [t2, codeHashOf(singleCode)]
-    );
-    expect(singleRow.rows[0].uses).toBe(1);
-    const deniedEntry = await db.query(
-      'SELECT id FROM tournament_entries WHERE tournament_id = $1 AND team_id = $2',
-      [t2, teamE]
-    );
-    expect(deniedEntry.rows).toHaveLength(0);
+    const first = await join(t2, teamD, single.json().code, aliceCookie);
+    expect(first.statusCode).toBe(201);
+    expect(first.json().entry.status).toBe('PENDING');
+    const second = await join(t2, teamE, single.json().code, carolCookie);
+    expect([second.statusCode, second.json().code]).toEqual([403, 'ENTRY_CODE_EXHAUSTED']);
+    expect((await db.query('SELECT id FROM tournament_entries WHERE tournament_id=$1', [t2])).rows).toEqual([]);
   });
 });

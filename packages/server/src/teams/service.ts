@@ -62,7 +62,7 @@ export class TeamService {
     await client.query('SELECT id FROM teams WHERE id=$1 FOR UPDATE',[teamId]);
     await client.query('SELECT id FROM users WHERE id IN (SELECT user_id FROM team_memberships WHERE team_id=$1) OR id=$2 ORDER BY id FOR UPDATE',[teamId,actor.userId]);
     const team=await this.getTeam(teamId,client);
-    if(team.closedAt || await rosterIsLocked(client,teamId)) throw new TeamError(409,'ROSTER_LOCKED: enrollment permanently freezes the roster');
+    if(team.closedAt || await rosterIsLocked(client,teamId)) throw new TeamError(409,'ROSTER_LOCKED: pending registration or enrollment freezes the roster');
     if(captain===true && team.captainUserId!==actor.userId) throw new TeamError(403,'Captain required');
     if(captain===false && !team.members.some(m=>m.userId===actor.userId)) throw new TeamError(403,'Membership required');
     return team;
@@ -91,7 +91,7 @@ export class TeamService {
   }
 
   async listOwnTeams(actor: Actor): Promise<TeamDto[]> {
-    await this.requireStudent(actor);
+    if (this.profile !== 'ONLINE' || actor.role !== 'STUDENT' || actor.scope !== 'FULL') throw new TeamError(403, 'ONLINE FULL student required');
     const rows=await this.db.query<{id:string}>('SELECT team.id FROM teams team JOIN team_memberships m ON m.team_id=team.id WHERE m.user_id=$1 AND team.closed_at IS NULL ORDER BY team.created_at',[actor.userId]);
     return Promise.all(rows.rows.map(row=>this.getTeam(row.id)));
   }
@@ -413,7 +413,8 @@ export class TeamService {
       captainUserId: team.captain_user_id,
       tournamentId: (team as TeamRow & {tournament_id?:string}).tournament_id ?? undefined,
       closedAt: (team as TeamRow & {closed_at?:Date}).closed_at?.toISOString(),
-      rosterLocked: (await q('SELECT 1 FROM tournament_entries WHERE team_id=$1 LIMIT 1',[teamId])).rows.length>0,
+      rosterLocked: (await q(`SELECT 1 FROM tournament_entries WHERE team_id=$1
+        UNION ALL SELECT 1 FROM tournament_registrations WHERE team_id=$1 AND status='PENDING' LIMIT 1`, [teamId])).rows.length>0,
       members: membersRes.rows.map((m) => ({
         userId: m.user_id,
         username: m.username,
@@ -534,7 +535,9 @@ export class TeamService {
     }
 
     const countRes = await this.db.query<{ count: string }>(
-      'SELECT count(*)::text AS count FROM tournament_admissions WHERE tournament_id = $1',
+      `SELECT count(*)::text AS count FROM tournament_admissions admission
+       LEFT JOIN tournament_entries entry ON entry.tournament_id=admission.tournament_id AND entry.team_id=admission.team_id
+       WHERE admission.tournament_id=$1 AND (entry.id IS NULL OR entry.status<>'EXCLUDED')`,
       [tournamentId]
     );
 

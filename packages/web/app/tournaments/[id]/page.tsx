@@ -8,6 +8,7 @@ import BracketSection from './BracketSection';
 import { TeamRatingName } from '../../_components/TeamRatingName';
 import { TournamentRatingProvider } from '../../_components/TournamentRatingContext';
 import RatingStatus from './RatingStatus';
+import TournamentRegistrationPanel from './TournamentRegistrationPanel';
 
 export const dynamic = 'force-dynamic';
 export default async function TournamentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -107,6 +108,10 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
             <span className="font-semibold">Kết quả chính thức:</span> Mọi điều chỉnh sau khi chốt sẽ được ghi nhận trong Thông báo.
           </div>
         ) : null}
+
+        <div id="registration" className="scroll-mt-24">
+          <TournamentRegistrationPanel tournamentId={id} state={tournament.state} registrationClosesAt={tournament.registrationClosesAt} />
+        </div>
 
         <BracketSection encounters={bracket?.encounters ?? null} rounds={bracket?.rounds ?? []} canViewReplay={isAdmin} format={tournament.format} />
         <RatingStatus tournamentId={id} isRated={tournament.isRated} />

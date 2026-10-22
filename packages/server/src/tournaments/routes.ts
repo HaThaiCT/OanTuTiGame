@@ -7,6 +7,7 @@ import type { TournamentLifecycleService } from './lifecycle-service.js';
 import type { TournamentAdmissionService, TournamentFormat } from './admission-service.js';
 import { TOURNAMENT_FORMATS } from './admission-service.js';
 import type { TournamentEntryCodeService } from './entry-code-service.js';
+import type { TournamentRegistrationService } from './registration-service.js';
 import type { TournamentSchedulerService } from './scheduler-service.js';
 import type { MatchExecutionService } from './execution-service.js';
 import type { TournamentAutoRunner } from './auto-runner.js';
@@ -123,19 +124,19 @@ function extractToken(request: FastifyRequest): string | undefined {
 }
 
 /** Cookie-session guards shared by the tournament and admission route registrars. */
-function sessionGuard(identityService: IdentityService) {
+function sessionGuard(identityService: IdentityService, structuredErrors = false) {
   async function requireActor(req: FastifyRequest, reply: FastifyReply) {
     const token = extractToken(req);
     if (!token) {
-      reply.code(401).send({ error: 'UNAUTHENTICATED' });
+      reply.code(401).send(structuredErrors ? { code: 'UNAUTHENTICATED', message: 'Sign in to continue' } : { error: 'UNAUTHENTICATED' });
       return null;
     }
     const auth = await identityService.authenticateToken(token);
     if (!auth) {
-      reply.code(401).send({ error: 'SESSION_EXPIRED' });
+      reply.code(401).send(structuredErrors ? { code: 'SESSION_EXPIRED', message: 'Session expired; sign in again' } : { error: 'SESSION_EXPIRED' });
       return null;
     }
-    if(auth.actor.scope!=='FULL') { reply.code(403).send({error:'FULL_SESSION_REQUIRED'}); return null; }
+    if(auth.actor.scope!=='FULL') { reply.code(403).send(structuredErrors ? { code:'FULL_SESSION_REQUIRED',message:'Full session required' } : {error:'FULL_SESSION_REQUIRED'}); return null; }
     return auth.actor;
   }
 
@@ -1053,11 +1054,59 @@ export function registerExecutionRoutes(
   );
 }
 
+/** Private ONLINE registration commands share the same service with entry-code redemption. */
+export function registerRegistrationRoutes(
+  app: FastifyInstance,
+  registrationService: TournamentRegistrationService,
+  identityService: IdentityService,
+): void {
+  const { requireActor } = sessionGuard(identityService, true);
+
+  app.get<{ Params: { id: string } }>('/api/v2/tournaments/:id/registrations', async (req, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
+    if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+    const actor = await requireActor(req, reply);
+    if (!actor) return;
+    try { return { registrations: await registrationService.list(req.params.id, { actor, requestId: req.id }) }; }
+    catch (err: unknown) { return sendEntryCodeError(reply, err); }
+  });
+
+  app.post<{ Params: { id: string }; Body: { teamId: string } }>('/api/v2/tournaments/:id/registrations', async (req, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
+    if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+    const actor = await requireActor(req, reply);
+    if (!actor) return;
+    try { return reply.code(201).send(await registrationService.request(req.params.id, req.body, { actor, requestId: req.id })); }
+    catch (err: unknown) { return sendEntryCodeError(reply, err); }
+  });
+
+  app.post<{ Params: { id: string; registrationId: string }; Body: { expectedVersion: number } }>(
+    '/api/v2/tournaments/:id/registrations/:registrationId/cancel', async (req, reply) => {
+      reply.header('Cache-Control', 'private, no-store');
+      if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      try { return await registrationService.cancel(req.params.id, req.params.registrationId, req.body, { actor, requestId: req.id }); }
+      catch (err: unknown) { return sendEntryCodeError(reply, err); }
+    },
+  );
+
+  app.post<{ Params: { id: string; registrationId: string }; Body: { decision: 'APPROVE' | 'REJECT'; reason?: string; expectedVersion: number } }>(
+    '/api/v2/organizer/tournaments/:id/registrations/:registrationId/review', async (req, reply) => {
+      reply.header('Cache-Control', 'private, no-store');
+      if (identityService.authProfile !== 'ONLINE') return sendProfileDisabled(reply);
+      const actor = await requireActor(req, reply);
+      if (!actor) return;
+      try { return await registrationService.review(req.params.id, req.params.registrationId, req.body, { actor, requestId: req.id }); }
+      catch (err: unknown) { return sendEntryCodeError(reply, err); }
+    },
+  );
+}
+
 /**
- * ONLINE shared tournament entry codes (migration 013). An organizer mints a
- * code once — the plaintext is shown only in the 201 response — and a team
- * captain (or an ADMIN) redeems it to be admitted. LAN_OFFLINE enrolls teams
- * directly and has no invite codes, so every route here is hidden there.
+ * ONLINE shared tournament entry codes. Only a verified student captain redeems
+ * one, queuing the same PENDING request as ordinary signup, never bypassing ADMIN
+ * approval. LAN_OFFLINE enrollment remains on the direct administrator surface.
  */
 export function registerEntryCodeRoutes(
   app: FastifyInstance,

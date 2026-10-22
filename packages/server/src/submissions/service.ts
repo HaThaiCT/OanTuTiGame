@@ -116,7 +116,8 @@ export class SubmissionService {
     /** Durable queue the BUILD/TEST_BUILD job for every accepted receipt is enqueued on. */
     private readonly jobBroker: JobBroker,
     /** Protected-write fence: refuses a new receipt while the backup heartbeat is stale. */
-    private readonly backupFence?: BackupFence
+    private readonly backupFence?: BackupFence,
+    private readonly profile: 'LAN_OFFLINE' | 'ONLINE' = 'LAN_OFFLINE',
   ) {}
 
   private checkActorTeam(teamId: UUID, actor: Actor): void {
@@ -127,6 +128,21 @@ export class SubmissionService {
     if (!actor.teamIds.includes(teamId)) {
       throw new SubmissionError(403, 'Forbidden: You do not belong to this team');
     }
+  }
+
+  /** The admission is historical evidence; an inactive entry or unapproved request grants no intake. */
+  private async assertOnlineApproval(client: PoolClient, tournamentId: UUID, teamId: UUID, actor: Actor): Promise<void> {
+    if (this.profile !== 'ONLINE') return;
+    const admitted = await client.query(
+      `SELECT 1 FROM tournament_admissions admission
+       JOIN tournament_entries entry ON entry.tournament_id=admission.tournament_id AND entry.team_id=admission.team_id
+       JOIN team_memberships member ON member.team_id=admission.team_id AND member.user_id=$3
+       LEFT JOIN tournament_registrations registration ON registration.tournament_id=admission.tournament_id AND registration.team_id=admission.team_id
+       WHERE admission.tournament_id=$1 AND admission.team_id=$2 AND entry.status='ELIGIBLE'
+         AND (registration.id IS NULL OR registration.status='APPROVED')`,
+      [tournamentId, teamId, actor.userId],
+    );
+    if (!admitted.rows.length) throw new SubmissionError(403, 'Team must have an active approved tournament registration', 'TEAM_NOT_APPROVED');
   }
 
   /**
@@ -241,6 +257,10 @@ export class SubmissionService {
     }
 
     const attemptsInWindow = await this.db.withTransaction(async (client) => {
+      if (this.profile === 'ONLINE') {
+        await client.query('SELECT id FROM tournaments WHERE id=$1 FOR UPDATE', [tournamentId]);
+        await this.assertOnlineApproval(client, tournamentId, teamId, actor);
+      }
       await client.query(
         `DELETE FROM test_create_attempts
          WHERE tournament_id = $1 AND team_id = $2 AND created_at < clock_timestamp() - interval '1 day'`,
@@ -301,6 +321,8 @@ export class SubmissionService {
       if (tournament.registration_closes_at && new Date() > tournament.registration_closes_at) {
         throw new SubmissionError(409, 'Submissions closed: registration deadline has passed');
       }
+
+      await this.assertOnlineApproval(client, tournamentId, teamId, actor);
 
       // 2. Check team admission
       const admRes = await client.query(
@@ -376,6 +398,11 @@ export class SubmissionService {
     if (actor.role === 'ADMIN') throw new SubmissionError(403, 'Private tests belong to the owning team only');
 
     const receipt = await this.db.withTransaction(async (client): Promise<TestReceipt> => {
+      if (this.profile === 'ONLINE') {
+        const tournament = await client.query('SELECT id FROM tournaments WHERE id=$1 FOR UPDATE', [tournamentId]);
+        if (!tournament.rows.length) throw new SubmissionError(404, 'Tournament not found');
+        await this.assertOnlineApproval(client, tournamentId, teamId, actor);
+      }
       // 1. Quotas (private TEST requests, per tournament+team) — see assertTestQuota
       await this.assertTestQuota(client, tournamentId, teamId);
 

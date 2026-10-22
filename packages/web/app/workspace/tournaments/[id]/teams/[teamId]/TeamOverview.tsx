@@ -4,11 +4,12 @@ import { submissionStatusLabel } from '../../../../../../lib/labels';
 import AnnouncementsSection from '../../../../../tournaments/[id]/AnnouncementsSection';
 import { TeamRatingName } from '../../../../../_components/TeamRatingName';
 
-export default async function TeamOverview({ tournament, entry, cookie, base }: {
+export default async function TeamOverview({ tournament, entry, cookie, base, canSubmit }: {
   tournament: TournamentSummary;
   entry: TournamentEntry;
   cookie: string;
   base: string;
+  canSubmit: boolean;
 }) {
   const [bracket, standings, announcements, candidateResponse] = await Promise.all([
     getBracket(tournament.id),
@@ -22,15 +23,15 @@ export default async function TeamOverview({ tournament, entry, cookie, base }: 
   const next = own.find((match) => !['COMPLETED', 'FINALIZED', 'CANCELLED', 'BYE'].includes(match.status) && !match.winnerTeamId);
   const recent = own.filter((match) => match.status === 'COMPLETED' || match.winnerTeamId !== null).slice(-3).reverse();
   const standing = standings.rows.find((row) => row.teamId === entry.teamId);
-  const intakeOpen = tournament.state === 'REGISTRATION_OPEN';
+  const intakeOpen = tournament.state === 'REGISTRATION_OPEN' || tournament.state === 'VALIDATING_SUBMISSIONS';
   const frozen = ['LOCKED', 'READY_TO_START', 'RUNNING', 'PAUSED', 'PROVISIONAL', 'FINALIZED', 'ARCHIVED'].includes(tournament.state);
   return (
     <div className="flex flex-col gap-5">
       <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
         <h2 className="font-semibold">Bài nộp của đội</h2>
-        <p className="mt-2 text-sm">{candidatePayload === null ? 'Chưa tải được trạng thái bài nộp. Mở Bài nộp để thử lại.' : candidate ? `Bài #${candidate.receiptOrdinal ?? candidate.receipt_ordinal ?? '—'} · ${submissionStatusLabel[candidate.status ?? ''] ?? candidate.status ?? 'Đã nhận'}` : 'Chưa có bài sẵn sàng thi đấu.'}</p>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">{intakeOpen ? 'Nộp bản mới trước khi giải khóa bài.' : frozen ? entry.status === 'ELIGIBLE' ? 'Bài thi đấu đã được chốt theo danh sách của ban tổ chức. Test riêng tư vẫn dùng được.' : 'Đợt nhận bài đã đóng. Xem trạng thái tham dự của đội; test riêng tư vẫn dùng được.' : 'Đợt nhận bài chưa mở. Bạn vẫn có thể xem lịch sử và chạy test riêng tư.'}</p>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm text-[var(--action)]"><Link href={`${base}?tab=submission`} className="underline">{intakeOpen ? 'Chuẩn bị bài nộp →' : 'Xem bài nộp →'}</Link><Link href={`${base}?tab=tests`} className="underline">Chạy test riêng tư →</Link></div>
+        <p className="mt-2 text-sm">{candidatePayload === null ? canSubmit ? 'Chưa tải được trạng thái bài nộp. Mở Bài nộp để thử lại.' : 'Không tải được trạng thái bài nộp hiện tại; lịch sử được giữ trên máy chủ.' : candidate ? `Bài #${candidate.receiptOrdinal ?? candidate.receipt_ordinal ?? '—'} · ${submissionStatusLabel[candidate.status ?? ''] ?? candidate.status ?? 'Đã nhận'}` : 'Chưa có bài sẵn sàng thi đấu.'}</p>
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">{!canSubmit ? 'Đội chưa có đăng ký được duyệt hoặc không còn đủ điều kiện tham dự. Lịch sử bài nộp được giữ; không thể nộp bài thi đấu mới.' : intakeOpen ? 'Nộp bản mới trước khi giải khóa bài.' : frozen ? entry.status === 'ELIGIBLE' ? 'Bài thi đấu đã được chốt theo danh sách của ban tổ chức. Test riêng tư vẫn dùng được.' : 'Đợt nhận bài đã đóng. Xem trạng thái tham dự của đội; test riêng tư vẫn dùng được.' : 'Đợt nhận bài chưa mở. Bạn vẫn có thể xem lịch sử và chạy test riêng tư.'}</p>
+        <div className="mt-3 flex flex-wrap gap-4 text-sm text-[var(--action)]">{canSubmit ? <><Link href={`${base}?tab=submission`} className="underline">{intakeOpen ? 'Chuẩn bị bài nộp →' : 'Xem bài nộp →'}</Link><Link href={`${base}?tab=tests`} className="underline">Chạy test riêng tư →</Link></> : null}</div>
       </section>
       <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
         <h2 className="font-semibold">Thi đấu và kết quả</h2>

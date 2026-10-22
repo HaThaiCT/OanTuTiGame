@@ -6,7 +6,9 @@ export async function lockRosterAdmission(client: PoolClient): Promise<void> {
 }
 
 export async function rosterIsLocked(client: PoolClient, teamId: string): Promise<boolean> {
-  const result = await client.query('SELECT 1 FROM tournament_entries WHERE team_id=$1 LIMIT 1',[teamId]);
+  const result = await client.query(
+    `SELECT 1 FROM tournament_entries WHERE team_id=$1
+     UNION ALL SELECT 1 FROM tournament_registrations WHERE team_id=$1 AND status='PENDING' LIMIT 1`, [teamId]);
   return result.rows.length > 0;
 }
 /** Checks the active roster invariant while the caller holds `lockRosterAdmission`. */

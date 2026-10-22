@@ -5,12 +5,14 @@ import { PostgresDatabase } from '../src/persistence/db.js';
 import { TeamService } from '../src/teams/service.js';
 import { TournamentEntryCodeService } from '../src/tournaments/entry-code-service.js';
 import { TournamentAdmissionService } from '../src/tournaments/admission-service.js';
+import { TournamentRegistrationService } from '../src/tournaments/registration-service.js';
 import { hashToken } from '../src/identity/crypto.js';
 
 describe('ONLINE team lifecycle', () => {
   const db = new PostgresDatabase();
   const teams = new TeamService(db, 'ONLINE');
-  const codes = new TournamentEntryCodeService(db, 'ONLINE');
+  const registrations = new TournamentRegistrationService(db, 'ONLINE');
+  const codes = new TournamentEntryCodeService(db, 'ONLINE', registrations);
   const course = randomUUID(), tournament = randomUUID(), otherTournament = randomUUID();
   const students = Array.from({length: 17}, () => randomUUID());
   const actor = (index: number): Actor => ({userId: students[index], username: `ot_${students[index]}`, role:'STUDENT', scope:'FULL', teamIds:[]});
@@ -25,6 +27,7 @@ describe('ONLINE team lifecycle', () => {
     await db.query('DELETE FROM entry_code_attempts WHERE key_hash=ANY($1::text[])',[students.flatMap(id=>[hashToken('entry-code:actor:'+id),hashToken('entry-code:ip:'+id)]).concat(hashToken('entry-code:ip:unknown'))]);
     await db.query('DELETE FROM audit_events WHERE actor_user_id=ANY($1::uuid[])',[students]);
     await db.query('DELETE FROM team_invitations WHERE tournament_id=ANY($1::uuid[])',[[tournament,otherTournament]]);
+    await db.query('DELETE FROM tournament_registrations WHERE tournament_id=ANY($1::uuid[])',[[tournament,otherTournament]]);
     await db.query('DELETE FROM tournament_entries WHERE tournament_id=ANY($1::uuid[])',[[tournament,otherTournament]]);
     await db.query('DELETE FROM tournament_admissions WHERE tournament_id=ANY($1::uuid[])',[[tournament,otherTournament]]);
     await db.query('DELETE FROM tournament_entry_codes WHERE tournament_id=ANY($1::uuid[])',[[tournament,otherTournament]]);
@@ -112,7 +115,7 @@ describe('ONLINE team lifecycle', () => {
     await expect(teams.addMember(teamId,students[10],ctx.actor)).rejects.toMatchObject({statusCode:403});
     await expect(new TournamentAdmissionService(db,undefined,undefined,undefined,'ONLINE').enrollTeam(tournament,teamId,ctx)).rejects.toMatchObject({statusCode:403});
   });
-  it('enforces code rotation, window, provenance and revocation without removing entries',async()=>{
+  it('enforces code rotation and queues approval with durable code provenance',async()=>{
     const captain=actor(11), ctx:CommandContext={actor:{...actor(0),role:'ADMIN'},requestId:randomUUID()};
     const team=await teams.createOwnTeam(tournament,'Code admission',captain);
     const first=await codes.createCode(tournament,{},ctx);
@@ -121,11 +124,14 @@ describe('ONLINE team lifecycle', () => {
     await db.query("UPDATE tournaments SET registration_closes_at=clock_timestamp()-interval '1 second' WHERE id=$1",[tournament]);
     await expect(codes.joinWithCode(tournament,{code:second.code,teamId:team.id},{actor:captain})).rejects.toMatchObject({code:'TOURNAMENT_NOT_OPEN'});
     await db.query('UPDATE tournaments SET registration_closes_at=NULL WHERE id=$1',[tournament]);
-    await codes.joinWithCode(tournament,{code:second.code,teamId:team.id},{actor:captain});
+    const requested=await codes.joinWithCode(tournament,{code:second.code,teamId:team.id},{actor:captain});
+    expect(requested.status).toBe('PENDING');
+    expect((await db.query('SELECT id FROM tournament_admissions WHERE tournament_id=$1 AND team_id=$2',[tournament,team.id])).rows).toEqual([]);
+    expect((await db.query('SELECT id FROM tournament_entries WHERE tournament_id=$1 AND team_id=$2',[tournament,team.id])).rows).toEqual([]);
+    await codes.revokeCode(tournament,second.id,ctx);
+    await registrations.review(tournament,requested.id,{decision:'APPROVE',expectedVersion:1},ctx);
     const provenance=await db.query('SELECT entry_code_id,entry_code_revision FROM tournament_admissions WHERE tournament_id=$1 AND team_id=$2',[tournament,team.id]);
     expect(provenance.rows[0]).toEqual({entry_code_id:second.id,entry_code_revision:2});
-    await codes.revokeCode(tournament,second.id,ctx);
-    expect((await db.query('SELECT 1 FROM tournament_entries WHERE tournament_id=$1 AND team_id=$2',[tournament,team.id])).rows).toHaveLength(1);
     await expect(teams.leaveTeam(team.id,captain)).rejects.toMatchObject({statusCode:409});
   });
   it('persists invalid-code throttles independently of failed redemption transactions',async()=>{

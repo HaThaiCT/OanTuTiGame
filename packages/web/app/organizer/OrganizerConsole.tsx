@@ -24,6 +24,7 @@ import {
 } from '../../lib/api';
 import TeamSearchPicker from './TeamSearchPicker';
 import EntryCodesPanel from './EntryCodesPanel';
+import RegistrationReviewPanel from './RegistrationReviewPanel';
 import MapEditor from './MapEditor';
 import TournamentAdjudication from './TournamentAdjudication';
 import AccountsInspectionPanel from './AccountsInspectionPanel';
@@ -230,7 +231,7 @@ function EntriesList({ entries, state }: { entries?: TournamentEntry[] | null; s
 interface OrganizerConsoleProps {
   section: 'create' | 'teams' | 'maps' | 'overview' | 'operations' | 'entries' | 'configuration' | 'adjudication';
   tournaments: TournamentSummary[];
-  /** Deployment auth profile: shared entry codes only exist on ONLINE (LAN has no self-service). */
+  /** Deployment auth profile: ONLINE reviews registrations; LAN keeps ADMIN direct enrollment. */
   authProfile: 'ONLINE' | 'LAN_OFFLINE' | null;
   entriesByTournament: Record<string, TournamentEntry[] | null>;
   /** Committed map per tournament; a missing/DRAFT entry means “no commitment”. */
@@ -944,7 +945,7 @@ export default function OrganizerConsole({
         ) : (
           tournaments.map((tournament) => {
             const actions = STATE_ACTIONS[tournament.state] ?? [];
-            const canEnroll = ENROLLABLE_STATES[tournament.state] === true;
+            const canEnroll = authProfile === 'LAN_OFFLINE' && ENROLLABLE_STATES[tournament.state] === true;
             const commitment = commitmentsByTournament[tournament.id] ?? null;
             const canCommitMap = COMMITTABLE_STATES[tournament.state] === true;
             const notice = cardNotices[tournament.id];
@@ -1315,6 +1316,15 @@ export default function OrganizerConsole({
                         </ul>
                       ) : null}
                     </div>
+                  ) : null}
+                  {section === 'entries' && authProfile === null ? (
+                    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border border-[var(--warning-text)] px-4 py-3 text-sm text-[var(--warning-text)]">
+                      <p className="min-w-0 flex-1">Không tải được chế độ đăng ký. Chưa thể hiển thị xét duyệt hoặc thêm đội trực tiếp.</p>
+                      <button type="button" onClick={() => router.refresh()} className={SECONDARY_BUTTON_CLASS}>Thử lại</button>
+                    </div>
+                  ) : null}
+                  {section === 'entries' && authProfile === 'ONLINE' ? (
+                    <RegistrationReviewPanel tournamentId={tournament.id} state={tournament.state} />
                   ) : null}
                   {section === 'entries' && authProfile === 'ONLINE' &&
                   ['REGISTRATION_OPEN', 'VALIDATING_SUBMISSIONS'].includes(tournament.state) ? (

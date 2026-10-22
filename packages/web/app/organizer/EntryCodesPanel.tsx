@@ -31,8 +31,8 @@ function isCodeExpired(entry: EntryCodeSummary): boolean {
 
 /**
  * Shared entry codes (ONLINE profile only): a lecturer hands one code to many students, each captain
- * admits their own team with it. The plaintext code exists only in the creation response, so it is
- * shown once with an explicit copy action; the list keeps counts and expiry, never the code.
+ * sends a pending registration for ADMIN review; a code never grants admission on its own. The
+ * plaintext code is shown once with a copy action; the list keeps counts and expiry, never the code.
  */
 export default function EntryCodesPanel({ tournamentId }: { readonly tournamentId: string }) {
   const [open, setOpen] = useState(false);
@@ -106,7 +106,7 @@ export default function EntryCodesPanel({ tournamentId }: { readonly tournamentI
         <div>
           <p className="text-xs font-semibold text-[var(--text-secondary)]">Mã vào giải dùng chung (ONLINE)</p>
           <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
-            Mỗi đội trưởng tự thêm đội của mình bằng mã này; mã chỉ hiển thị một lần khi tạo.
+            Đội trưởng dùng mã để gửi yêu cầu chờ ADMIN duyệt, không tự ghi danh. Mã chỉ hiển thị một lần khi tạo.
           </p>
         </div>
         <button type="button" onClick={() => setOpen((current) => !current)} className={BUTTON_CLASS}>
@@ -188,8 +188,8 @@ export default function EntryCodesPanel({ tournamentId }: { readonly tournamentI
                   <span>tạo {formatInstant(entry.createdAt)}</span>
                   {isCodeExhausted(entry) ? <span className="text-[var(--warning-text)]">đã hết lượt</span> : null}
                   {isCodeExpired(entry) ? <span className="text-[var(--warning-text)]">đã hết hạn</span> : null}
-                  <button type="button" disabled={pending !== null} onClick={() => { if (!window.confirm('Xoay mã này? Mã cũ sẽ ngừng nhận lượt mới; các lượt đã ghi danh vẫn giữ nguyên.')) return; setPending(entry.id); void onlineTeams.rotateCode(tournamentId, entry.id, { maxUses: entry.maxUses }).then(result => { setPending(null); if (!result.ok || !result.data) { setNotice({ kind: 'error', text: errorText(result, 'Không thể xoay mã.') }); return; } setCreated(result.data); setCopied(false); setNotice({ kind: 'success', text: 'Mã đã xoay; mã mới chỉ hiển thị lần này.' }); setCodes(null); void load(); }); }} className={BUTTON_CLASS}>Xoay mã</button>
-                  <button type="button" disabled={pending !== null} onClick={() => { if (!window.confirm('Thu hồi mã này? Các lượt ghi danh hiện có vẫn được giữ.')) return; setPending(entry.id); void onlineTeams.revokeCode(tournamentId, entry.id).then(result => { setPending(null); if (!result.ok) { setNotice({ kind: 'error', text: errorText(result, 'Không thể thu hồi mã.') }); return; } setNotice({ kind: 'success', text: 'Đã thu hồi mã; các lượt ghi danh hiện có vẫn được giữ.' }); setCodes(null); void load(); }); }} className={BUTTON_CLASS}>Thu hồi</button>
+                  <button type="button" disabled={pending !== null} onClick={() => { if (!window.confirm('Xoay mã này? Mã cũ sẽ ngừng nhận yêu cầu mới; yêu cầu đã gửi và đội đã duyệt vẫn được giữ nguyên.')) return; setPending(entry.id); void onlineTeams.rotateCode(tournamentId, entry.id, { maxUses: entry.maxUses }).then(result => { setPending(null); if (!result.ok || !result.data) { setNotice({ kind: 'error', text: errorText(result, 'Không thể xoay mã.') }); return; } setCreated(result.data); setCopied(false); setNotice({ kind: 'success', text: 'Mã đã xoay; mã mới chỉ hiển thị lần này và vẫn cần ADMIN duyệt yêu cầu.' }); setCodes(null); void load(); }); }} className={BUTTON_CLASS}>Xoay mã</button>
+                  <button type="button" disabled={pending !== null} onClick={() => { if (!window.confirm('Thu hồi mã này? Yêu cầu đã gửi và đội đã duyệt vẫn được giữ nguyên.')) return; setPending(entry.id); void onlineTeams.revokeCode(tournamentId, entry.id).then(result => { setPending(null); if (!result.ok) { setNotice({ kind: 'error', text: errorText(result, 'Không thể thu hồi mã.') }); return; } setNotice({ kind: 'success', text: 'Đã thu hồi mã; yêu cầu đã gửi và đội đã duyệt vẫn được giữ nguyên.' }); setCodes(null); void load(); }); }} className={BUTTON_CLASS}>Thu hồi</button>
                 </li>
               ))}
             </ul>

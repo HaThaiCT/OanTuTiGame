@@ -44,6 +44,44 @@ export interface TournamentEntry {
   seedOrdinal: number | null;
 }
 
+export interface TournamentRegistration {
+  readonly id: string;
+  readonly tournamentId: string;
+  readonly teamId: string;
+  readonly teamName: string;
+  readonly status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  readonly version: number;
+  readonly reason: string | null;
+  readonly requestedAt: string;
+  readonly reviewedAt: string | null;
+  readonly canCancel: boolean;
+  readonly canRequest: boolean;
+  readonly members: readonly {
+    readonly userId: string;
+    readonly username: string;
+    readonly displayName: string;
+    readonly role: string;
+  }[];
+}
+
+export function listTournamentRegistrations(tournamentId: string, options: ServerFetchOptions = {}): Promise<ApiResult<{ registrations: TournamentRegistration[] }>> {
+  return apiRequest(`${API}/api/v2/tournaments/${encodeURIComponent(tournamentId)}/registrations`, {
+    headers: options.cookie ? { cookie: options.cookie } : undefined,
+  });
+}
+
+export function requestTournamentRegistration(tournamentId: string, input: { readonly teamId: string }): Promise<ApiResult<TournamentRegistration>> {
+  return apiRequest(`/api/v2/tournaments/${encodeURIComponent(tournamentId)}/registrations`, { method: 'POST', body: input });
+}
+
+export function cancelTournamentRegistration(tournamentId: string, registrationId: string, input: { readonly expectedVersion: number }): Promise<ApiResult<TournamentRegistration>> {
+  return apiRequest(`/api/v2/tournaments/${encodeURIComponent(tournamentId)}/registrations/${encodeURIComponent(registrationId)}/cancel`, { method: 'POST', body: input });
+}
+
+export function reviewTournamentRegistration(tournamentId: string, registrationId: string, input: { readonly decision: 'APPROVE' | 'REJECT'; readonly reason?: string; readonly expectedVersion: number }): Promise<ApiResult<TournamentRegistration>> {
+  return apiRequest(`/api/v2/organizer/tournaments/${encodeURIComponent(tournamentId)}/registrations/${encodeURIComponent(registrationId)}/review`, { method: 'POST', body: input });
+}
+
 export interface MapSummary {
   slug: string;
   displayName: string;
@@ -1238,7 +1276,7 @@ export async function logout(): Promise<ApiResult<null>> {
   return { ok: true, status: result.status, data: null, message: result.message, code: result.code };
 }
 
-/** `POST /api/v2/tournaments/:id/join` — a captain admits their own team with a shared code. */
+/** `POST /api/v2/tournaments/:id/join` — ONLINE code redemption queues a request for organizer review. */
 export async function joinTournamentWithCode(
   tournamentId: string,
   input: { readonly code: string; readonly teamId: string }
@@ -1557,7 +1595,7 @@ export function addOrganizerTeamMember(teamId: string, userId: string): Promise<
 export interface TeamDto { readonly id: string; readonly name: string; readonly captainUserId: string; readonly tournamentId?: string | null; readonly closedAt?: string | null; readonly rosterLocked?: boolean; readonly members?: readonly { readonly userId: string; readonly username: string; readonly displayName: string; readonly role: string }[] }
 export interface TeamInvitationDto { readonly id: string; readonly teamId: string; readonly teamName: string; readonly tournamentId: string; readonly recipientUserId: string; readonly status: 'PENDING'|'ACCEPTED'|'DECLINED'|'REVOKED'; readonly expiresAt: string; readonly createdAt: string }
 export const onlineTeams = {
-  list(): Promise<ApiResult<{ teams: TeamDto[] }>> { return apiRequest('/api/v2/me/teams'); },
+  list(options: ServerFetchOptions = {}): Promise<ApiResult<{ teams: TeamDto[] }>> { return apiRequest(`${API}/api/v2/me/teams`, { headers: options.cookie ? { cookie: options.cookie } : undefined }); },
   create(input: { tournamentId: string; name: string }): Promise<ApiResult<TeamDto>> { return apiRequest('/api/v2/me/teams', { method: 'POST', body: input }); },
   invitations(): Promise<ApiResult<{ invitations: TeamInvitationDto[] }>> { return apiRequest('/api/v2/me/team-invitations'); },
   invite(teamId: string, username: string): Promise<ApiResult<TeamInvitationDto>> { return apiRequest(`/api/v2/teams/${encodeURIComponent(teamId)}/invitations`, { method: 'POST', body: { username } }); },

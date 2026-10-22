@@ -192,10 +192,32 @@ Truy cập web tại: <http://127.0.0.1:4300>.
 | `/tournaments/:id` | **Chi tiết giải đấu** | Xem sơ đồ nhánh đấu trực quan (Bracket), lịch thi đấu chi tiết từng cặp đấu, kết quả từng ván đấu, và bảng thay đổi Rating chính thức. |
 | `/rankings` | **Bảng xếp hạng toàn cầu** | Xếp hạng chiến đội theo điểm Rating toàn cầu, phân cấp màu sắc theo từng bậc rating (không dùng nhãn chữ rườm rà), hỗ trợ xem số giải đã tham gia. |
 | `/teams/:id` | **Hồ sơ chiến đội** | Xem biểu đồ lịch sử biến động Rating qua từng giải đấu, điểm số cao nhất đạt được, và danh sách các giải đấu đã tham dự. |
-| `/workspace` | **Không gian đội thi** | Dành cho sinh viên/đội trưởng: nộp gói bot (`.zip`), kiểm tra mã nguồn, xem mã gia nhập giải, và đổi mật khẩu lần đầu. |
-| `/organizer` | **Ban tổ chức (Organizer)** | Dành cho `system_admin`: khởi tạo và quản lý tiến trình giải đấu, can thiệp xử lý sự cố trận đấu, duyệt Rating global, quản lý phân đội và trình biên tập bản đồ. |
+| `/workspace` | **Không gian đội thi** | Dành cho sinh viên/đội trưởng: tạo và quản lý đội, gửi đăng ký tham gia giải, theo dõi trạng thái xét duyệt, hủy đăng ký khi cần, nộp gói bot (`.zip`), chạy test riêng tư và đổi mật khẩu. |
+| `/organizer` | **Ban tổ chức (Organizer)** | Dành cho `system_admin`: khởi tạo và quản lý tiến trình giải đấu, **hàng chờ xét duyệt đội đăng ký (Duyệt đội / Từ chối kèm lý do riêng tư)**, can thiệp trọng tài, duyệt Rating global, quản lý phân đội và trình biên tập bản đồ. |
 | `/replays` | **Trình xem Replay** | Trình phát lại ván đấu tương tác tích hợp Rust WASM Verifier, cho phép kiểm tra từng lượt đi (Turn), thanh máu, ô cờ và trạng thái quân cờ. |
 | `/projector/:id` | **Màn hình trình chiếu** | Chế độ hiển thị đặc biệt tối ưu cho máy chiếu hội trường, màn hình LED hoặc luồng livestream khi tổ chức sự kiện trực tiếp. |
+
+### 4.1. Quy trình Đăng ký, Hủy đăng ký và Xét duyệt đội thi đấu
+
+Hệ thống triển khai cơ chế xét duyệt chặt chẽ, đảm bảo tính công bằng và minh bạch:
+
+1. **Đội trưởng gửi yêu cầu đăng ký**:
+   * Khi giải đấu ở trạng thái **Đang mở đăng ký** (`REGISTRATION_OPEN`), Đội trưởng chọn chiến đội của mình và bấm **“Gửi đăng ký”** trực tiếp tại trang giải (`/tournaments/:id#registration`) hoặc trong Không gian đội (`/workspace`). Không bắt buộc phải có mã mời.
+   * Trạng thái đăng ký chuyển sang **Chờ ban tổ chức duyệt** (`PENDING`). Lúc này đội **chưa** được cấp quyền nộp bài thi đấu.
+
+2. **Hủy đăng ký (Cancellation)**:
+   * Trước khi hết hạn đóng đăng ký, Đội trưởng có thể chủ động bấm **“Hủy đăng ký”**.
+   * Yêu cầu đang chờ sẽ được rút khỏi hàng đợi xét duyệt, hoặc suất thi đấu đã duyệt sẽ được giải phóng cho đội khác.
+   * Nếu giải vẫn còn trong thời gian mở đăng ký, Đội trưởng có thể bấm **“Gửi đăng ký lại”**.
+
+3. **Ban tổ chức xét duyệt (Organizer Review)**:
+   * Tài khoản `system_admin` truy cập mục Quản lý giải đấu → tab **Đội tham dự** (`/organizer/tournaments/:id?tab=entries`).
+   * Ban tổ chức xem đầy đủ danh sách đội đăng ký, thời gian gửi, danh sách thành viên và vai trò trong đội.
+   * **Phê duyệt (`Duyệt đội`)**: Hệ thống kiểm tra sức chứa giải đấu và ghi danh chính thức đội vào giải (`APPROVED`), cấp quyền nộp bot thi đấu cho đội.
+   * **Từ chối (`Từ chối`)**: Ban tổ chức bắt buộc nhập lý do từ chối (1–500 ký tự). Lý do này được lưu trữ riêng tư, chỉ hiển thị cho Ban tổ chức và các thành viên của đội bị từ chối xem tại trang đội của họ.
+
+4. **Nộp bài thi đấu (Bot Submission)**:
+   * Chỉ các đội đã được Ban tổ chức **Phê duyệt** mới hiển thị tab **“Bài nộp”** và được phép tải lên file mã nguồn bot để thi đấu.
 
 ---
 

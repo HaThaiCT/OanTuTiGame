@@ -817,6 +817,12 @@ export class TournamentAdmissionService {
           WHERE tournament_id = $1 AND team_id = $2`,
         [tournamentId, teamId, preStart ? 'PRESTART_EXCLUDED' : 'WITHDRAWN']
       );
+      await client.query(
+        `UPDATE tournament_registrations SET status='CANCELLED',version=version+1,cancelled_entry_id=NULL,
+           reason=NULLIF(btrim($3),''),reviewed_by_user_id=$4,reviewed_at=clock_timestamp(),updated_at=clock_timestamp()
+         WHERE tournament_id=$1 AND team_id=$2 AND status='APPROVED'`,
+        [tournamentId, teamId, reason.slice(0, 500), ctx.actor.userId],
+      );
       await this.recordAudit(client, ctx, requestId, 'TEAM_WITHDRAWN', 'tournament', tournamentId, {
         teamId,
         reason: reason.slice(0, 500),

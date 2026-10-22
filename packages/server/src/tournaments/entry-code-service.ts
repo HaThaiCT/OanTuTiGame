@@ -4,6 +4,7 @@ import type { CommandContext } from '@oantuti/protocol';
 import type { PostgresDatabase } from '../persistence/db.js';
 import { hashToken } from '../identity/crypto.js';
 import { lockRosterAdmission, admissionRosterProblem } from '../teams/roster-policy.js';
+import { TournamentRegistrationService, type RegistrationDto } from './registration-service.js';
 
 /** Visually ambiguous glyphs (I, O, 0, 1) are excluded so a code survives being read aloud. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -84,12 +85,16 @@ export function normalizeEntryCode(code: string): string {
 }
 
 /**
- * Shared multi-use tournament entry codes (migration 013). A code admits the
- * caller's team through `tournament_admissions`/`tournament_entries` and burns
- * one use inside the same transaction, so capacity and exhaustion cannot race.
+ * Shared multi-use tournament entry codes. ONLINE redemption queues a private
+ * registration, never an admission; LAN direct-service callers keep their existing
+ * enrollment behavior. The pending request and use counter share one transaction.
  */
 export class TournamentEntryCodeService {
-  constructor(private readonly db: PostgresDatabase, private readonly profile: 'LAN_OFFLINE'|'ONLINE' = 'LAN_OFFLINE') {}
+  constructor(
+    private readonly db: PostgresDatabase,
+    private readonly profile: 'LAN_OFFLINE' | 'ONLINE' = 'LAN_OFFLINE',
+    private readonly registrations = new TournamentRegistrationService(db, profile),
+  ) {}
 
   private requireFull(ctx: CommandContext): void {
     if(ctx.actor.scope!=='FULL') throw new EntryCodeError(403,'Full session required','FULL_SESSION_REQUIRED');
@@ -206,15 +211,15 @@ export class TournamentEntryCodeService {
   }
 
   /**
-   * Admits a team with a shared code. The caller must be that team's captain or
-   * an administrator; capacity, duplicates and the use counter are all resolved
-   * under the tournament row lock.
+   * ONLINE requires ADMIN approval after redemption; the code is only provenance
+   * for the same signup request. LAN service callers keep captain/admin admission.
+   * Duplicate checks and the use counter resolve under the tournament row lock.
    */
   async joinWithCode(
     tournamentId: string,
     input: { readonly code: string; readonly teamId: string },
     ctx: CommandContext & {readonly ip?:string}
-  ): Promise<EntryCodeJoinReceipt> {
+  ): Promise<EntryCodeJoinReceipt | RegistrationDto> {
     this.requireFull(ctx);
     if(this.profile==='ONLINE') {
       if(ctx.actor.role!=='STUDENT') throw new EntryCodeError(403,'Student captain required','FORBIDDEN');
@@ -223,6 +228,9 @@ export class TournamentEntryCodeService {
     }
     if(this.profile==='ONLINE') await this.recordAttempt(ctx);
     const teamId = typeof input.teamId === 'string' ? input.teamId.trim() : '';
+    if (!UUID_PATTERN.test(tournamentId) || !UUID_PATTERN.test(teamId)) {
+      throw new EntryCodeError(400, 'tournamentId and teamId must be UUIDs', 'INVALID_ID');
+    }
     if (!teamId) {
       throw new EntryCodeError(400, 'teamId is required', 'INVALID_TEAM_ID');
     }
@@ -271,6 +279,18 @@ export class TournamentEntryCodeService {
         throw new EntryCodeError(403, 'Entry code has been fully redeemed', 'ENTRY_CODE_EXHAUSTED');
       }
 
+      if (this.profile === 'ONLINE') {
+        const registration = await this.registrations.requestOn(client, tournamentId, teamId, ctx, {
+          entryCodeId: entryCode.id,
+          entryCodeRevision: entryCode.revision,
+        });
+        await client.query('UPDATE tournament_entry_codes SET uses=uses+1 WHERE id=$1', [entryCode.id]);
+        await this.recordAudit(client, ctx, requestId, 'ENTRY_CODE_REDEEMED', tournamentId, {
+          teamId, entryCodeId: entryCode.id, revision: entryCode.revision, registrationId: registration.id,
+        });
+        return registration;
+      }
+
       const teamRes = await client.query<{ id: string; captain_user_id: string }>(
         'SELECT id, captain_user_id FROM teams WHERE id = $1 FOR UPDATE',
         [teamId]
@@ -288,10 +308,7 @@ export class TournamentEntryCodeService {
       }
       const problem=await admissionRosterProblem(client,tournamentId,teamId);
       if(problem) throw new EntryCodeError(409,problem,problem);
-      if(this.profile==='ONLINE') {
-        const policy=await client.query('SELECT 1 FROM teams WHERE id=$1 AND tournament_id=$2',[teamId,tournamentId]);
-        if(!policy.rows.length) throw new EntryCodeError(409,'Team belongs to a different tournament policy','TEAM_POLICY_MISMATCH');
-      }
+      // ONLINE has already returned through the registration service above.
 
       const existing = await client.query('SELECT id FROM tournament_entries WHERE tournament_id = $1 AND team_id = $2', [
         tournamentId,
@@ -302,7 +319,7 @@ export class TournamentEntryCodeService {
       }
 
       const countRes = await client.query<{ count: string }>(
-        'SELECT COUNT(*)::text AS count FROM tournament_entries WHERE tournament_id = $1',
+        "SELECT COUNT(*)::text AS count FROM tournament_entries WHERE tournament_id = $1 AND status <> 'EXCLUDED'",
         [tournamentId]
       );
       if (parseInt(countRes.rows[0].count, 10) >= tournament.max_teams) {
