@@ -7,8 +7,8 @@ import { cancelTournamentRegistration, fetchAuthMe, joinTournamentWithCode, list
 import { registrationActions, registrationErrorText, registrationStatusLabel } from '../../../lib/tournament-registration';
 import { entryStatusLabel } from '../../../lib/labels';
 
-const INPUT_CLASS = 'h-11 w-full min-w-0 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--action)]';
-const BUTTON_CLASS = 'min-h-11 rounded-md bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[var(--action-text)] disabled:opacity-60';
+const INPUT_CLASS = 'h-12 w-full min-w-0 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3.5 text-base text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--action)]';
+const BUTTON_CLASS = 'min-h-12 rounded-md bg-[var(--action)] px-5 py-2.5 text-base font-semibold text-[var(--action-text)] disabled:opacity-60 cursor-pointer';
 
 interface RegistrationContext {
   readonly session: AuthMe | null;
@@ -112,7 +112,7 @@ export default function TournamentRegistrationPanel({ tournamentId, state, regis
     <section aria-label="Đăng ký tham dự giải" aria-busy={loading || pending !== null} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Đăng ký tham dự giải</h2>
-        <button type="button" disabled={loading || pending !== null} onClick={() => { void refresh(); router.refresh(); }} className="min-h-10 rounded-md border border-[var(--border-control)] px-3 text-sm disabled:opacity-60">Tải lại trạng thái</button>
+        <button type="button" disabled={loading || pending !== null} onClick={() => { void refresh(); router.refresh(); }} className="min-h-11 rounded-md border border-[var(--border-control)] px-4 py-2 text-sm font-medium disabled:opacity-60">Tải lại trạng thái</button>
       </div>
       {loading && !context ? <p role="status" className="mt-3 text-sm">Đang tải đăng ký của bạn…</p> : null}
       {context?.error ? <p role="alert" className="mt-3 text-sm text-[var(--danger-text)]">{context.error} <Link href="/workspace" className="underline">Mở không gian đội</Link></p> : null}
@@ -138,7 +138,7 @@ export default function TournamentRegistrationPanel({ tournamentId, state, regis
             {team.tournamentId === tournamentId && team.captainUserId === session.user.id && registration && (registration.status === 'CANCELLED' || registration.status === 'REJECTED') && !registration.canRequest && open ? <p className="text-sm text-[var(--text-secondary)]">Hiện chưa thể gửi đăng ký lại. Kiểm tra danh sách đội hoặc liên hệ ban tổ chức để biết điều kiện tham dự.</p> : null}
             <div className="flex flex-wrap items-center gap-3">
               {actions.canRequest ? <button type="button" disabled={disabled} onClick={() => void request()} className={BUTTON_CLASS}>{pending === 'request' ? 'Đang gửi…' : registration ? 'Gửi đăng ký lại' : 'Gửi đăng ký'}</button> : null}
-              {actions.canCancel ? <button type="button" disabled={disabled} onClick={() => void cancel()} className="min-h-11 rounded-md border border-[var(--danger-text)] px-4 py-2 text-sm text-[var(--danger-text)] disabled:opacity-60">{pending === 'cancel' ? 'Đang hủy…' : 'Hủy đăng ký'}</button> : null}
+              {actions.canCancel ? <button type="button" disabled={disabled} onClick={() => void cancel()} className="min-h-12 rounded-md border border-[var(--danger-text)] px-5 py-2.5 text-base font-medium text-[var(--danger-text)] disabled:opacity-60 cursor-pointer">{pending === 'cancel' ? 'Đang hủy…' : 'Hủy đăng ký'}</button> : null}
               <Link href={teamBase} className="text-sm text-[var(--action)] underline">Trang đội / theo dõi đăng ký →</Link>
               {actions.canSubmit ? <Link href={`${teamBase}?tab=submission`} className="text-sm font-semibold text-[var(--action)] underline">Bài nộp thi đấu →</Link> : null}
             </div>

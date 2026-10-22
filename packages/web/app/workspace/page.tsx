@@ -379,7 +379,7 @@ export default function WorkspacePage() {
             name="username"
             required
             autoComplete="username"
-            className="h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm font-sans text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
+            className="h-12 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-4 text-base font-sans text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
           />
         </label>
         <label className="flex flex-col gap-2 text-xs font-medium text-[var(--text-secondary)]">
@@ -389,7 +389,7 @@ export default function WorkspacePage() {
             type="password"
             required
             autoComplete="current-password"
-            className="h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm font-sans text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
+            className="h-12 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-4 text-base font-sans text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors"
           />
         </label>
         {error ? (
@@ -400,7 +400,7 @@ export default function WorkspacePage() {
         <button
           type="submit"
           disabled={busy}
-          className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
+          className="vct-btn-primary !w-full !py-3.5 !text-base !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
         >
           {busy ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>

@@ -57,7 +57,7 @@ export default function HeaderSession() {
     return (
       <Link
         href="/workspace"
-        className="vct-btn-primary !py-1.5 !px-4 !text-xs !rounded-full"
+        className="vct-btn-primary !py-2.5 !px-5 !text-sm !rounded-full"
       >
         Đăng nhập
       </Link>
@@ -68,7 +68,7 @@ export default function HeaderSession() {
     <div className="flex items-center gap-2">
       <Link
         href={user.scope === 'FULL' && user.role === 'ADMIN' ? '/organizer' : '/workspace'}
-        className="inline-flex items-center gap-2 border border-[var(--border-control)] bg-[var(--surface-subtle)] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full hover:border-[var(--action)] transition-all shadow-sm"
+        className="inline-flex items-center gap-2 border border-[var(--border-control)] bg-[var(--surface-subtle)] px-4 py-2 text-sm font-bold uppercase tracking-wider rounded-full hover:border-[var(--action)] transition-all shadow-sm"
         title={user.role === 'ADMIN' ? 'Ban tổ chức' : 'Không gian đội'}
       >
         <span className="text-[var(--action)] text-xs">●</span>
@@ -78,7 +78,7 @@ export default function HeaderSession() {
         type="button"
         disabled={pending}
         onClick={() => void signOut()}
-        className="border border-[var(--border-control)] bg-transparent px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] rounded-full hover:border-[var(--danger-text)] hover:text-[var(--danger-text)] disabled:opacity-60 cursor-pointer transition-colors"
+        className="border border-[var(--border-control)] bg-transparent px-3.5 py-2 text-sm font-medium text-[var(--text-secondary)] rounded-full hover:border-[var(--danger-text)] hover:text-[var(--danger-text)] disabled:opacity-60 cursor-pointer transition-colors"
       >
         {pending ? '...' : 'Đăng xuất'}
       </button>

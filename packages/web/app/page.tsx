@@ -158,7 +158,7 @@ export default async function HomePage() {
                 <div className="flex items-center gap-3 shrink-0">
                   <Link
                     href={`/tournaments/${spotlight.id}`}
-                    className="vct-btn-primary !py-2.5 !px-5 !text-xs !rounded-full shadow-sm"
+                    className="vct-btn-primary !py-3 !px-6 !text-sm !rounded-full shadow-sm"
                   >
                     Vào xem giải đấu →
                   </Link>
@@ -251,7 +251,7 @@ export default async function HomePage() {
                     {m.gameId ? (
                       <Link
                         href={`/replays?game=${encodeURIComponent(m.gameId)}`}
-                        className="vct-btn-secondary !py-1 !px-3 !text-[11px] !rounded-full shrink-0"
+                        className="vct-btn-secondary !py-1.5 !px-3.5 !text-xs !rounded-full shrink-0"
                       >
                         Xem Replay
                       </Link>
@@ -281,7 +281,7 @@ export default async function HomePage() {
             <div className="pt-1">
               <Link
                 href="/workspace"
-                className="vct-btn-primary !w-full !py-2.5 !text-xs !rounded-full block text-center"
+                className="vct-btn-primary !w-full !py-3 !text-sm !rounded-full block text-center"
               >
                 Vào Không gian đội →
               </Link>

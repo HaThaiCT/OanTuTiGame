@@ -23,8 +23,8 @@ type Notice = { readonly kind: 'success' | 'error'; readonly text: string };
 type RejectionDraft = { readonly id: string; readonly version: number; readonly reason: string };
 
 const FILTERS: readonly RegistrationFilter[] = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
-const BUTTON_CLASS = 'min-h-10 rounded-md border border-[var(--border-control)] px-3 py-2 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)] disabled:opacity-60';
-const INPUT_CLASS = 'min-h-10 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]';
+const BUTTON_CLASS = 'min-h-11 rounded-md border border-[var(--border-control)] px-4 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)] disabled:opacity-60 cursor-pointer';
+const INPUT_CLASS = 'min-h-11 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3.5 py-2 text-base text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]';
 
 function formatInstant(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(iso);

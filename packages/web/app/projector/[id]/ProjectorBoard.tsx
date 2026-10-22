@@ -236,7 +236,7 @@ export default function ProjectorBoard({
             <button
               type="button"
               onClick={() => void toggleFullScreen()}
-              className="flex items-center gap-1.5 rounded-lg border border-[var(--border-control)] bg-[var(--surface)] px-3 py-1.5 font-mono text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--action)] transition-all shadow-xs"
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--border-control)] bg-[var(--surface)] px-3.5 py-2 font-mono text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--action)] transition-all shadow-xs cursor-pointer"
             >
               <span>⛶</span> Toàn màn hình
             </button>
@@ -245,7 +245,7 @@ export default function ProjectorBoard({
             <button
               type="button"
               onClick={() => void copyLink()}
-              className="rounded-lg border border-[var(--border-control)] bg-[var(--surface)] px-3 py-1.5 font-mono text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--action)] transition-all shadow-xs"
+              className="rounded-lg border border-[var(--border-control)] bg-[var(--surface)] px-3.5 py-2 font-mono text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--action)] transition-all shadow-xs cursor-pointer"
             >
               {copied ? '✓ Đã sao chép' : 'Sao chép link'}
             </button>
@@ -253,7 +253,7 @@ export default function ProjectorBoard({
             {/* Back link */}
             <Link
               href={`/tournaments/${tournamentId}`}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-3 py-1.5 font-mono text-xs font-semibold text-[var(--action)] hover:border-[var(--action)] transition-all"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-3.5 py-2 font-mono text-sm font-semibold text-[var(--action)] hover:border-[var(--action)] transition-all"
             >
               ← Về trang giải
             </Link>
@@ -281,11 +281,11 @@ export default function ProjectorBoard({
           {/* 2. BOTTOM SECTION: BẢNG ĐIỀU HÀNH & THÔNG TIN TOÀN DIỆN */}
           <section className="flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-6 shadow-md">
             {/* Section Tabs */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-subtle)] pb-4 font-mono text-xs font-bold uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-2.5 border-b border-[var(--border-subtle)] pb-4 font-mono text-sm font-bold uppercase tracking-wider">
               <button
                 type="button"
                 onClick={() => setActiveTab('MATCHES')}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 transition-all cursor-pointer ${
                   activeTab === 'MATCHES'
                     ? 'bg-[var(--action)] text-[var(--action-text)] shadow-sm'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
@@ -298,7 +298,7 @@ export default function ProjectorBoard({
               <button
                 type="button"
                 onClick={() => setActiveTab('BRACKET')}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 transition-all cursor-pointer ${
                   activeTab === 'BRACKET'
                     ? 'bg-[var(--action)] text-[var(--action-text)] shadow-sm'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
@@ -310,7 +310,7 @@ export default function ProjectorBoard({
               <button
                 type="button"
                 onClick={() => setActiveTab('SCHEDULE')}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 transition-all cursor-pointer ${
                   activeTab === 'SCHEDULE'
                     ? 'bg-[var(--action)] text-[var(--action-text)] shadow-sm'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
@@ -322,7 +322,7 @@ export default function ProjectorBoard({
               <button
                 type="button"
                 onClick={() => setActiveTab('STANDINGS')}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 transition-all cursor-pointer ${
                   activeTab === 'STANDINGS'
                     ? 'bg-[var(--action)] text-[var(--action-text)] shadow-sm'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
@@ -335,7 +335,7 @@ export default function ProjectorBoard({
                 <button
                   type="button"
                   onClick={() => setActiveTab('ANNOUNCEMENTS')}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all ${
+                  className={`flex items-center gap-2 rounded-xl px-5 py-3 transition-all cursor-pointer ${
                     activeTab === 'ANNOUNCEMENTS'
                       ? 'bg-[var(--action)] text-[var(--action-text)] shadow-sm'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'

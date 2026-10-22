@@ -36,11 +36,11 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           {isAdmin ? (
-            <Link className="vct-btn-primary !py-2 !px-4 !text-xs !rounded-full" href={`/organizer/tournaments/${encodeURIComponent(id)}`}>
+            <Link className="vct-btn-primary !py-2.5 !px-5 !text-sm !rounded-full" href={`/organizer/tournaments/${encodeURIComponent(id)}`}>
               Quản lý giải đấu →
             </Link>
           ) : ownEntries.length === 1 ? (
-            <Link className="vct-btn-primary !py-2 !px-4 !text-xs !rounded-full" href={`/workspace/tournaments/${encodeURIComponent(id)}/teams/${encodeURIComponent(ownEntries[0].teamId)}`}>
+            <Link className="vct-btn-primary !py-2.5 !px-5 !text-sm !rounded-full" href={`/workspace/tournaments/${encodeURIComponent(id)}/teams/${encodeURIComponent(ownEntries[0].teamId)}`}>
               Vào trang đội của tôi →
             </Link>
           ) : ownEntries.length > 1 ? (
@@ -49,7 +49,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
             </p>
           ) : null}
           <Link
-            className="vct-btn-secondary !py-2 !px-4 !text-xs !rounded-full ml-auto"
+            className="vct-btn-secondary !py-2.5 !px-5 !text-sm !rounded-full ml-auto"
             href={`/projector/${tournament.id}`}
           >
             Chế độ trình chiếu →

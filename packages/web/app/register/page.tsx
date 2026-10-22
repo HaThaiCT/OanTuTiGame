@@ -14,7 +14,7 @@ const MAX_USERNAME_LENGTH = 50;
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
 const FIELD_CLASS =
-  'h-11 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-3.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors';
+  'h-12 border border-[var(--border-control)] bg-[var(--canvas-deep)] px-4 text-base text-[var(--text-primary)] outline-none focus:border-[var(--action)] rounded-xl transition-colors';
 
 interface FormValues {
   username: string;
@@ -206,7 +206,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={busy}
-            className="vct-btn-primary !w-full !py-3 !text-sm !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
+            className="vct-btn-primary !w-full !py-3.5 !text-base !rounded-xl mt-2 disabled:opacity-60 cursor-pointer"
           >
             {busy ? 'Đang đăng ký...' : 'Đăng ký tài khoản'}
           </button>
