@@ -83,9 +83,9 @@ Mở:
 - Form đăng ký: <https://localhost:14443/register>
 - Trang đăng nhập: <https://localhost:14443/workspace> → **Đăng ký**
 
-`https://127.0.0.1:14443` cũng được hỗ trợ. Các địa chỉ loopback này là cùng máy; Online origin policy vẫn chặn origin khác. Chứng chỉ demo là private/self-signed nên browser có thể cảnh báo. Chỉ chấp nhận nếu chắc chắn URL là localhost của máy demo; không đưa dịch vụ này ra LAN/Internet.
+Both `https://localhost:14443` and `https://127.0.0.1:14443` are supported. Chọn một địa chỉ, mở lại cùng địa chỉ đó cho đến khi hoàn tất thao tác. Chứng chỉ demo là private/self-signed nên browser có thể cảnh báo; chỉ chấp nhận cho đúng loopback trên máy demo, không dùng IP LAN/domain public. Nếu thấy **“Nguồn trang không khớp cấu hình máy chủ”**, kiểm tra address bar và dùng đúng một trong hai origin trên; lỗi này không có nghĩa tài khoản cần quyền ADMIN. Origin bên ngoài hai địa chỉ trên vẫn bị chặn.
 
-Đăng ký trong local-demo bypass tạo `STUDENT` đã verified, không gửi/queue email và có thể login ngay. Mật khẩu vẫn cần đạt policy của form. Nếu bật bypass mà mở bằng IP/domain không khớp, API sẽ trả `Cross-origin mutation denied`; hãy dùng đúng URL loopback nêu trên.
+Đăng ký trong local-demo bypass tạo `STUDENT` đã verified, không gửi/queue email và có thể login ngay. Mật khẩu vẫn cần đạt policy của form. Nếu thấy cảnh báo origin, mở đúng URL loopback đang dùng (`localhost` hoặc `127.0.0.1`); thông báo này chỉ liên quan địa chỉ trang, không phải lỗi vai trò ADMIN.
 
 ### Tự dựng local Online demo
 
