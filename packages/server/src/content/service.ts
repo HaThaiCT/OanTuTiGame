@@ -537,10 +537,9 @@ export class ContentService {
   /**
    * Seeds the standard Python, TypeScript, and C++ starter bots from `sdk/` if missing.
    */
-  async seedBuiltinStarterBots(adminUserId?: string): Promise<void> {
-    const admin = (await this.db.query<{ id: string }>(`SELECT id FROM users WHERE role = 'ADMIN' ORDER BY created_at ASC LIMIT 1`)).rows[0];
-    const authorId = admin?.id ?? adminUserId;
-    if (!authorId) return;
+  async seedBuiltinStarterBots(): Promise<void> {
+    // Built-in SDK templates are product-owned and must not pin a deletable test ADMIN fixture.
+    const authorId: UUID | null = null;
     const starters = [
       {
         slug: 'official-python-starter',
