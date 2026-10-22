@@ -91,7 +91,7 @@ const INPUT_CLASS =
   'h-11 w-full rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]';
 const LABEL_CLASS = 'flex flex-col gap-2 text-sm';
 const PRIMARY_BUTTON_CLASS =
-  'h-11 rounded-md bg-[var(--action)] px-5 font-semibold text-[#0B0D17] disabled:opacity-60';
+  'h-11 rounded-md bg-[var(--action)] px-5 font-semibold text-[var(--action-text)] disabled:opacity-60';
 const SECONDARY_BUTTON_CLASS =
   'h-10 rounded-md border border-[var(--border-control)] px-4 text-sm font-semibold disabled:opacity-60';
 
@@ -958,7 +958,7 @@ export default function MapEditor({ initialMaps }: MapEditorProps) {
                 onClick={() => setTool(entry.id)}
                 className={`h-10 rounded-md px-3 text-sm font-semibold disabled:opacity-60 ${
                   tool === entry.id
-                    ? 'bg-[var(--action)] text-[#0B0D17]'
+                    ? 'bg-[var(--action)] text-[var(--action-text)]'
                     : 'border border-[var(--border-control)] text-[var(--text-primary)]'
                 }`}
               >

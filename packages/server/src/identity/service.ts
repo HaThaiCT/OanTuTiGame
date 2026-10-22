@@ -71,7 +71,7 @@ export interface RegistrationInput {
 
 export interface RegistrationResult {
   readonly user: UserDto;
-  readonly emailVerificationRequired: true;
+  readonly emailVerificationRequired: boolean;
 }
 
 /** `POST /api/v2/auth/reauth` answer: when the confirmation stops being accepted. */
@@ -86,7 +86,7 @@ export class IdentityService {
    */
   readonly authProfile: AuthProfile;
 
-  constructor(private readonly db: Database, authProfile?: AuthProfile, private readonly options: { readonly mail?: IdentityMailOptions } = {}) {
+  constructor(private readonly db: Database, authProfile?: AuthProfile, private readonly options: { readonly mail?: IdentityMailOptions; readonly localDemoSkipEmailVerification?: boolean } = {}) {
     this.authProfile = authProfile ?? (process.env.OANTUTI_AUTH_PROFILE?.trim().toUpperCase() === 'ONLINE' ? 'ONLINE' : 'LAN_OFFLINE');
   }
 
@@ -273,10 +273,10 @@ export class IdentityService {
       if (!changed.rows.length) throw new IdentityError(401, 'Credentials changed; sign in again');
       user.password_hash = upgraded;
     }
-    if (this.authProfile === 'ONLINE') {
-      const verified = await this.db.query('SELECT 1 FROM users WHERE id=$1 AND email IS NOT NULL AND email_verified_at IS NOT NULL', [user.id]);
-      if (!verified.rows.length) throw new IdentityError(403, 'Email address is not verified for this account', 'EMAIL_VERIFICATION_REQUIRED');
-    }
+    if (this.authProfile === 'ONLINE' && !this.options.localDemoSkipEmailVerification) {
+       const verified = await this.db.query('SELECT 1 FROM users WHERE id=$1 AND email IS NOT NULL AND email_verified_at IS NOT NULL', [user.id]);
+       if (!verified.rows.length) throw new IdentityError(403, 'Email address is not verified for this account', 'EMAIL_VERIFICATION_REQUIRED');
+     }
 
     const scope: SessionScope = user.password_change_required ? 'PASSWORD_CHANGE_ONLY' : 'FULL';
     const { raw, hash } = generateToken();
@@ -310,10 +310,8 @@ export class IdentityService {
   }
 
   /**
-   * ONLINE self-registration. Creates an unverified STUDENT account plus a
-   * purpose-bound mailbox-confirmation token (24 h). The plaintext token reaches
-   * the outbox payload only under the development transport flag; production
-   * would mail it instead.
+   * ONLINE self-registration. The explicit local-demo option skips mailbox verification;
+   * normal ONLINE deployments queue a purpose-bound verification email.
    */
   async register(input: RegistrationInput): Promise<RegistrationResult> {
     const username = typeof input.username === 'string' ? input.username.trim() : '';
@@ -331,11 +329,12 @@ export class IdentityService {
     if (!validPassword(input.password)) {
       throw new IdentityError(400, 'Password must contain 12–128 Unicode characters', 'WEAK_PASSWORD');
     }
-
     const passwordHash = await hashPassword(input.password);
-    const verification = generateToken();
+
+    const localDemoSkipEmailVerification = this.options.localDemoSkipEmailVerification === true;
+    const verification = localDemoSkipEmailVerification ? undefined : generateToken();
     const verificationExpiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
-    const mail = this.requireMail();
+    const mail = localDemoSkipEmailVerification ? undefined : this.requireMail();
     return this.db.withTransaction(async (client) => {
       await client.query('LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE');
       const capacity = await client.query<{ value: { limit?: unknown } }>("SELECT value FROM deployment_settings WHERE key='accountCapacity' FOR UPDATE");
@@ -346,12 +345,14 @@ export class IdentityService {
       const clash = await client.query<{ username: string; email: string | null }>('SELECT username,email FROM users WHERE username=$1 OR email=$2', [username,email]);
       if (clash.rows.some((row) => row.username === username)) throw new IdentityError(409, 'Username is already taken', 'USERNAME_TAKEN');
       if (clash.rows.some((row) => row.email === email)) throw new IdentityError(409, 'Email address is already registered', 'EMAIL_TAKEN');
-      const inserted = await client.query<UserRow>(`INSERT INTO users(username,display_name,email,password_hash,role,activation_method,password_change_required)
-        VALUES($1,$2,$3,$4,'STUDENT','SELF_REGISTER',FALSE) RETURNING *`, [username,displayName,email,passwordHash]);
+      const inserted = await client.query<UserRow>(`INSERT INTO users(username,display_name,email,password_hash,role,activation_method,password_change_required${localDemoSkipEmailVerification ? ',email_verified_at' : ''})
+        VALUES($1,$2,$3,$4,'STUDENT','SELF_REGISTER',FALSE${localDemoSkipEmailVerification ? ',clock_timestamp()' : ''}) RETURNING *`, [username,displayName,email,passwordHash]);
       const user = inserted.rows[0];
-      await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_VERIFICATION',$4)", [user.id,verification.hash,email,verificationExpiresAt]);
-      await enqueueIdentityMail(client, mail.keyring, { userId:user.id, topic:'EMAIL_VERIFICATION_REQUESTED', purpose:'EMAIL_VERIFICATION', tokenHash:verification.hash, rawToken:verification.raw, recipient:email, expiresAt:verificationExpiresAt });
-      return { user:this.toUserDto(user), emailVerificationRequired:true as const };
+      if (verification && mail) {
+        await client.query("INSERT INTO email_verification_tokens(user_id,token_hash,target_email,purpose,expires_at) VALUES($1,$2,$3,'EMAIL_VERIFICATION',$4)", [user.id,verification.hash,email,verificationExpiresAt]);
+        await enqueueIdentityMail(client, mail.keyring, { userId:user.id, topic:'EMAIL_VERIFICATION_REQUESTED', purpose:'EMAIL_VERIFICATION', tokenHash:verification.hash, rawToken:verification.raw, recipient:email, expiresAt:verificationExpiresAt });
+      }
+      return { user:this.toUserDto(user), emailVerificationRequired:!localDemoSkipEmailVerification };
     });
   }
 
@@ -705,7 +706,7 @@ export class IdentityService {
       role: Role;
       password_change_required: boolean;
       user_created_at: Date;
-    }>(query, [hash, this.authProfile === 'ONLINE']);
+    }>(query, [hash, this.authProfile === 'ONLINE' && !this.options.localDemoSkipEmailVerification]);
 
     const row = res.rows[0];
     if (!row) {

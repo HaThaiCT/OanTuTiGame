@@ -1545,11 +1545,15 @@ export const organizerAccounts = {
     return apiRequest(`/api/v2/submissions/${encodeURIComponent(submissionId)}/build-log`);
   },
 };
-
-export function searchOrganizerTeams(q: string, input: { readonly limit?: number; readonly offset?: number } = {}): Promise<ApiResult<{ readonly teams: readonly { readonly id: string; readonly name: string; readonly courseId: string; readonly courseCode: string }[]; readonly total: number }>> {
+export interface OrganizerTeamOption { readonly id: string; readonly name: string; readonly courseId: string; readonly courseCode: string }
+export function searchOrganizerTeams(q: string, input: { readonly limit?: number; readonly offset?: number } = {}): Promise<ApiResult<{ readonly teams: readonly OrganizerTeamOption[]; readonly total: number }>> {
   const query = new URLSearchParams({ q, limit: String(input.limit ?? 50), offset: String(input.offset ?? 0) });
   return apiRequest(`/api/v2/organizer/teams?${query}`);
 }
+export function addOrganizerTeamMember(teamId: string, userId: string): Promise<ApiResult<TeamDto>> {
+  return apiRequest(`/api/v2/organizer/teams/${encodeURIComponent(teamId)}/members`, { method: 'POST', body: { userId } });
+}
+
 export interface TeamDto { readonly id: string; readonly name: string; readonly captainUserId: string; readonly tournamentId?: string | null; readonly closedAt?: string | null; readonly rosterLocked?: boolean; readonly members?: readonly { readonly userId: string; readonly username: string; readonly displayName: string; readonly role: string }[] }
 export interface TeamInvitationDto { readonly id: string; readonly teamId: string; readonly teamName: string; readonly tournamentId: string; readonly recipientUserId: string; readonly status: 'PENDING'|'ACCEPTED'|'DECLINED'|'REVOKED'; readonly expiresAt: string; readonly createdAt: string }
 export const onlineTeams = {

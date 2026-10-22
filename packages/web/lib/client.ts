@@ -34,15 +34,16 @@ function payloadCode(payload: unknown): string | null {
   return typeof candidate === 'string' && candidate.trim() !== '' ? candidate : null;
 }
 
-function statusHint(status: number): string | null {
-  if (status === 401) return 'Phiên đăng nhập đã hết hạn — hãy đăng nhập lại bằng tài khoản ADMIN.';
-  if (status === 403) return 'Chỉ tài khoản ADMIN được thực hiện thao tác này.';
+function statusHint(result: ApiResult<unknown>): string | null {
+  if (result.status === 403 && result.message === 'Cross-origin mutation denied') return 'Nguồn trang không khớp cấu hình máy chủ. Hãy mở đúng địa chỉ HTTPS được cấu hình rồi thử lại.';
+  if (result.status === 401) return 'Phiên đăng nhập đã hết hạn — hãy đăng nhập lại bằng tài khoản ADMIN.';
+  if (result.status === 403) return 'Chỉ tài khoản ADMIN được thực hiện thao tác này.';
   return null;
 }
 
 export function errorText(result: ApiResult<unknown>, fallback: string): string {
-  const hint = statusHint(result.status);
-  if (hint) return result.message ? `${hint} (${result.message})` : hint;
+  const hint = statusHint(result);
+  if (hint) return result.message && result.message !== 'Cross-origin mutation denied' ? `${hint} (${result.message})` : hint;
   if (result.message) return result.message;
   return result.status > 0 ? `${fallback} (HTTP ${result.status})` : fallback;
 }

@@ -45,7 +45,7 @@ const INPUT_CLASS =
   'h-10 w-full min-w-0 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]';
 const LABEL_CLASS = 'flex min-w-0 flex-col gap-1 text-xs text-[var(--text-secondary)]';
 const PRIMARY_BUTTON_CLASS =
-  'h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[#0B0D17] disabled:opacity-60';
+  'h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[var(--action-text)] disabled:opacity-60';
 const SECONDARY_BUTTON_CLASS =
   'h-10 rounded-md border border-[var(--border-control)] px-3 text-xs font-semibold disabled:opacity-60';
 

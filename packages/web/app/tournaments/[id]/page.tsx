@@ -91,7 +91,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
                   ● {stateLabel[tournament.state] ?? tournament.state}
                 </p>
               </div>
-              <span className={`font-mono text-[10px] font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow-xs ${tournament.isRated ? 'bg-[var(--action)] text-white' : 'border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-[var(--text-secondary)]'}`}>
+              <span className={`font-mono text-[10px] font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow-xs ${tournament.isRated ? 'bg-[var(--action)] text-[var(--action-text)]' : 'border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-[var(--text-secondary)]'}`}>
                 {tournament.isRated ? 'RATED' : 'UNRATED'}
               </span>
             </div>

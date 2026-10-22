@@ -27,3 +27,9 @@ target/
 *.key
 *.pem
 /DEMO_CREDENTIALS.md
+
+# Local agent artifacts and temporary test runners
+.agents/
+.commandcode/
+.playwright-cli/
+skills-lock.json

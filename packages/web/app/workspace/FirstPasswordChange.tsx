@@ -112,7 +112,7 @@ export default function FirstPasswordChange({ username, onChanged }: Props) {
         <button
           type="submit"
           disabled={busy}
-          className="min-h-10 rounded-md bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[#151618] disabled:opacity-60"
+          className="min-h-10 rounded-md bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[var(--action-text)] disabled:opacity-60"
         >
           {busy ? 'Đang đổi…' : 'Đổi mật khẩu và vào không gian đội'}
         </button>

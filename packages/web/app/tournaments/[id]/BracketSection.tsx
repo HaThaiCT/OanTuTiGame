@@ -3,6 +3,7 @@ import { TeamRatingName } from '../../_components/TeamRatingName';
 import type { BracketEncounter, BracketRound } from '../../../lib/api';
 import { encounterStatusLabel, stageLabel } from '../../../lib/labels';
 import BracketGraphic from './BracketGraphic';
+import MatchResultPanel from './MatchResultPanel';
 
 export interface BracketSectionProps {
   /** `null` = the bracket API could not be read; `[]` = the server has no encounters scheduled yet. */
@@ -223,12 +224,7 @@ export default function BracketSection({ encounters, rounds = [], canViewReplay 
                                         Trực tiếp
                                       </Link>
                                     ) : null}
-                                    <Link
-                                      className="text-[var(--action)] hover:text-[var(--action-hover)]"
-                                      href={`/api/v2/games/${game.gameId}/result`}
-                                    >
-                                      Kết quả
-                                    </Link>
+                                    <MatchResultPanel gameId={game.gameId} />
                                     {canViewReplay ? <>
                                     <Link
                                       className="text-[var(--action)] hover:text-[var(--action-hover)]"

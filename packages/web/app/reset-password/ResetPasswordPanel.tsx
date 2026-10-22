@@ -78,7 +78,7 @@ export default function ResetPasswordPanel() {
         </p>
         <Link
           href="/workspace"
-          className="mt-4 inline-block rounded-md bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[#0B0D17]"
+          className="mt-4 inline-block rounded-md bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[var(--action-text)]"
         >
           Tới trang đăng nhập →
         </Link>

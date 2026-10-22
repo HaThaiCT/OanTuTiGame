@@ -56,7 +56,7 @@ export default async function ReplaysPage({
           />
           <button
             type="submit"
-            className="rounded-md bg-[var(--action)] px-5 py-2 text-sm font-semibold text-[#0B0D17]"
+            className="rounded-md bg-[var(--action)] px-5 py-2 text-sm font-semibold text-[var(--action-text)]"
           >
             Xem replay
           </button>

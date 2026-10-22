@@ -173,7 +173,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
 
   const app = Fastify({ logger: false, trustProxy: trustedProxyConfig });
   const auth = new AuthService(db);
-  const identityService = options?.pgDb ? new IdentityService(options.pgDb, authProfile, onlineConfig ? { mail: toIdentityMailOptions(onlineConfig) } : {}) : undefined;
+  const identityService = options?.pgDb ? new IdentityService(options.pgDb, authProfile, onlineConfig ? { mail: toIdentityMailOptions(onlineConfig), localDemoSkipEmailVerification: onlineConfig.localDemoSkipEmailVerification } : {}) : undefined;
   app.setErrorHandler((error: unknown, _request, reply) => {
     if (error instanceof TeamError) return reply.code(error.statusCode).send({ code: error.code, message: error.message });
     if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
@@ -186,7 +186,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const url = request.url.split('?')[0];
     if (['POST', 'PUT', 'DELETE'].includes(request.method) && ['/api/bots', '/api/matches', '/api/matches/test', '/api/tournaments'].some((route) => url === route || (route === '/api/bots' && url.startsWith('/api/bots/')))) auth.requireUser(request);
   });
-  protectMutations(app, authProfile === 'ONLINE' ? [onlineConfig!.publicBaseUrl] : options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']), { exactOrigin: authProfile === 'ONLINE' });
+  protectMutations(app, authProfile === 'ONLINE' ? onlineConfig!.allowedOrigins : options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']), { exactOrigin: true, allowCrossSiteForExactOrigin: authProfile === 'ONLINE' && onlineConfig!.localDemoSkipEmailVerification });
   if (!options?.pgDb) {
     auth.registerRoutes(app);
     registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));
@@ -242,7 +242,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const privateTestRunner = new PrivateTestRunner(options.pgDb, artifactStore, replayStore, {
       spoolDir: path.join(executionSpoolDir, 'tests'),
     });
-    registerIdentityRoutes(app, identityService, authProfile === 'ONLINE' ? [onlineConfig!.publicBaseUrl] : options.allowedOrigins);
+    registerIdentityRoutes(app, identityService, authProfile === 'ONLINE' ? onlineConfig!.allowedOrigins : options.allowedOrigins);
     registerTeamRoutes(app, teamService, identityService);
     registerSubmissionRoutes(app, submissionService, identityService, privateTestRunner);
     const resultService = new ResultService(options.pgDb, replayStore);

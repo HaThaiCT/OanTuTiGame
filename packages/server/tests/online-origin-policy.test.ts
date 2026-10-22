@@ -23,7 +23,7 @@ describe('ONLINE full-app integration boundaries', () => {
 
   it('requires injected Online configuration and reports profile and mail readiness', async () => {
     const db = new PostgresDatabase();
-    const config: OnlineConfig = { publicBaseUrl: 'https://arena.example.test', smtp: { host: 'smtp.invalid', port: 465, tlsMode: 'implicit', user: 'u', password: 'p' }, from: 'arena@example.test', replyTo: 'support@example.test', keyring: { currentKeyId: 'k', keys: new Map([['k', Buffer.alloc(32, 7)]]) }, trustedProxies: [] };
+    const config: OnlineConfig = { publicBaseUrl: 'https://arena.example.test', allowedOrigins: ['https://arena.example.test'], smtp: { host: 'smtp.invalid', port: 465, tlsMode: 'implicit', user: 'u', password: 'p' }, from: 'arena@example.test', replyTo: 'support@example.test', keyring: { currentKeyId: 'k', keys: new Map([['k', Buffer.alloc(32, 7)]]) }, trustedProxies: [], localDemoSkipEmailVerification: false };
     const sent: unknown[] = [];
     const onlineEnvKeys = ['OANTUTI_AUTH_PROFILE','OANTUTI_PUBLIC_BASE_URL','OANTUTI_SMTP_HOST','OANTUTI_SMTP_PORT','OANTUTI_SMTP_TLS_MODE','OANTUTI_SMTP_USER','OANTUTI_SMTP_PASSWORD_FILE','OANTUTI_MAIL_KEYRING_FILE','OANTUTI_MAIL_FROM','OANTUTI_MAIL_REPLY_TO','OANTUTI_TRUST_PROXY','OANTUTI_ALLOWED_ORIGINS'] as const;
     const priorEnv = new Map(onlineEnvKeys.map(key => [key, process.env[key]]));
@@ -46,7 +46,7 @@ describe('ONLINE full-app integration boundaries', () => {
   });
   it('returns a safe membership conflict code when a student creates a second team in the same tournament', async () => {
     const db = new PostgresDatabase();
-    const config: OnlineConfig = { publicBaseUrl: 'https://arena.example.test', smtp: { host: 'smtp.invalid', port: 465, tlsMode: 'implicit', user: 'u', password: 'p' }, from: 'arena@example.test', replyTo: 'support@example.test', keyring: { currentKeyId: 'k', keys: new Map([['k', Buffer.alloc(32, 8)]]) }, trustedProxies: [] };
+    const config: OnlineConfig = { publicBaseUrl: 'https://arena.example.test', allowedOrigins: ['https://arena.example.test'], smtp: { host: 'smtp.invalid', port: 465, tlsMode: 'implicit', user: 'u', password: 'p' }, from: 'arena@example.test', replyTo: 'support@example.test', keyring: { currentKeyId: 'k', keys: new Map([['k', Buffer.alloc(32, 8)]]) }, trustedProxies: [], localDemoSkipEmailVerification: false };
     const studentId = randomUUID(), username = `team_error_${randomUUID().replaceAll('-','')}`;
     const student = {userId:studentId,username,role:'STUDENT' as const,teamIds:[] as string[],scope:'FULL' as const};
     const organizer = {userId:randomUUID(),username:'team_error_admin',role:'ADMIN' as const,teamIds:[] as string[],scope:'FULL' as const};
@@ -78,7 +78,7 @@ describe('ONLINE full-app integration boundaries', () => {
 
   it('marks actual ONLINE session cookies Secure regardless of forwarded protocol', async () => {
     const db = new PostgresDatabase();
-    const config: OnlineConfig = { publicBaseUrl: 'https://arena.example.test', smtp: { host: 'smtp.invalid', port: 465, tlsMode: 'implicit', user: 'u', password: 'p' }, from: 'arena@example.test', replyTo: 'support@example.test', keyring: { currentKeyId: 'k', keys: new Map([['k', Buffer.alloc(32, 8)]]) }, trustedProxies: ['127.0.0.1'] };
+    const config: OnlineConfig = { publicBaseUrl: 'https://arena.example.test', allowedOrigins: ['https://arena.example.test'], smtp: { host: 'smtp.invalid', port: 465, tlsMode: 'implicit', user: 'u', password: 'p' }, from: 'arena@example.test', replyTo: 'support@example.test', keyring: { currentKeyId: 'k', keys: new Map([['k', Buffer.alloc(32, 8)]]) }, trustedProxies: ['127.0.0.1'], localDemoSkipEmailVerification: false };
     let context: AppContext | undefined;
     let userId: string | undefined;
     const username = `secure_cookie_${randomUUID().replaceAll('-', '')}`;
@@ -120,5 +120,23 @@ describe('ONLINE exact-origin mutation boundary', () => {
 
   it('permits the exact configured HTTPS origin through an internal HTTP proxy hop', async () => {
     expect((await request('https://arena.example.test', 'internal-api:4304')).json()).toEqual({ accepted: true });
+  });
+  it('keeps localhost aliases distinct unless the validated local-demo option is enabled', async () => {
+    const normal = Fastify();
+    protectMutations(normal, ['https://localhost:14443'], { exactOrigin: true });
+    normal.post('/register', async () => ({ accepted: true }));
+    const localDemo = Fastify();
+    protectMutations(localDemo, ['https://localhost:14443', 'https://127.0.0.1:14443'], { exactOrigin: true, allowCrossSiteForExactOrigin: true });
+    localDemo.post('/register', async () => ({ accepted: true }));
+    try {
+      const normalAlias = await normal.inject({ method: 'POST', url: '/register', headers: { origin: 'https://127.0.0.1:14443' }, payload: {} });
+      const demoAlias = await localDemo.inject({ method: 'POST', url: '/register', headers: { origin: 'https://127.0.0.1:14443' }, payload: {} });
+      const browserAlias = await localDemo.inject({ method: 'POST', url: '/register', headers: { origin: 'https://127.0.0.1:14443', 'sec-fetch-site': 'cross-site' }, payload: {} });
+      const foreignOrigin = await localDemo.inject({ method: 'POST', url: '/register', headers: { origin: 'https://evil.example', 'sec-fetch-site': 'cross-site' }, payload: {} });
+      expect(normalAlias.statusCode).toBe(403);
+      expect(demoAlias.statusCode).toBe(200);
+      expect(browserAlias.statusCode).toBe(200);
+      expect(foreignOrigin.statusCode).toBe(403);
+    } finally { await normal.close(); await localDemo.close(); }
   });
 });

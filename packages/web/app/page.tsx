@@ -2,6 +2,7 @@ import Link from 'next/link';
 import FeaturedRanking from './_components/FeaturedRanking';
 import { getBracket, getGlobalTeamLeaderboard, listTournaments, type TournamentSummary } from '../lib/api';
 import { formatLabel, stateLabel } from '../lib/labels';
+import { selectHomepageTournaments } from '../lib/homepage-tournaments';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,12 +48,12 @@ export default async function HomePage() {
     }
   }
 
-  const runningTournaments = tournaments.filter(t => t.state === 'RUNNING');
-  const spotlight = runningTournaments[0] ?? tournaments[0] ?? null;
-  const otherFeatured = tournaments.filter(t => t.id !== spotlight?.id).slice(0, 4);
+  const { spotlight, featured: otherFeatured } = selectHomepageTournaments(tournaments);
 
   return (
+
     <div className="space-y-6">
+      <h1 className="sr-only">OanTuTi Arena — giải đấu lập trình bot</h1>
       {/* 1. Live & Recent Match Strip (Ticker) */}
       {recentMatches.length > 0 ? (
         <section aria-label="Trận đấu gần đây" className="relative">

@@ -43,7 +43,7 @@ COPY --chown=node:node sdk/ ./sdk/
 COPY deploy/linux/server-entrypoint.sh /app/server-entrypoint.sh
 # Operator CLIs for migrations, first ADMIN bootstrap, and maintenance recovery. The `ops` profile
 # stages mounted secrets into per-process private files; none run as part of normal service startup.
-COPY --chown=node:node deploy/linux/apply-migrations.mts deploy/linux/bootstrap-admin.mts deploy/linux/recover-admin.mts deploy/linux/online-preflight.mts deploy/linux/ops-entrypoint.mts ./deploy/linux/
+COPY --chown=node:node deploy/linux/apply-migrations.mts deploy/linux/bootstrap-admin.mts deploy/linux/recover-admin.mts deploy/linux/online-preflight.mts deploy/linux/ops-entrypoint.mts deploy/linux/operator-secrets.mts ./deploy/linux/
 COPY --chown=node:node deploy/demo-data/ ./deploy/demo-data/
 # Rules authority: the server invokes exactly this binary for every accepted trace.
 COPY --from=verifier /src/target/release/verify-trace /app/bin/verify-trace

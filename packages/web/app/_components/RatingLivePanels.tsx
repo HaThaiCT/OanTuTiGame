@@ -115,7 +115,7 @@ export function LiveLeaderboard({ initial, featured = false }: { initial: Global
                 CHIẾN ĐỘI
               </th>
               <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] text-right">
-                RATING VCT
+                RATING
               </th>
               <th scope="col" className="p-2.5 font-heading text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[var(--surface-subtle)] border-b border-[var(--border-subtle)] text-right w-20">
                 SỐ GIẢI
@@ -251,7 +251,6 @@ export function LiveTeamProfile({ teamId, initial }: { teamId: string; initial: 
           </span>
           <span>·</span>
           <span>{profile.rating.ratedContests} GIẢI ĐẤU</span>
-          <RatingBadge rating={profile.rating} />
         </div>
       </div>
 

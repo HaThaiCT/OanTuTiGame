@@ -2,25 +2,23 @@
 import Link from 'next/link';
 import { useId, useState } from 'react';
 import type { TournamentSummary } from '../../lib/api';
+import { filterTournaments, orderTournamentsForDirectory, type TournamentDirectoryStatus } from '../../lib/public-game-result';
 import { formatLabel, stateLabel } from '../../lib/labels';
 import { HandPieceIcon } from '../replays/ReplayBoard';
 const formats = [
-  { id: 'ALL', label: 'Tất cả', color: 'var(--text-secondary)' },
-  { id: 'SINGLE_ELIMINATION', label: 'Loại trực tiếp', color: '#ff4655' },
-  { id: 'SWISS_PLAYOFF', label: 'Swiss - Playoff', color: '#00f5d4' },
-  { id: 'ROUND_ROBIN', label: 'Vòng tròn', color: '#38bdf8' },
-  { id: 'ELO_ARENA', label: 'Elo Arena', color: '#f5a524' },
+  { id: 'ALL', label: 'Mọi thể thức' },
+  { id: 'SINGLE_ELIMINATION', label: 'Loại trực tiếp' },
+  { id: 'SWISS_PLAYOFF', label: 'Swiss - Playoff' },
+  { id: 'ROUND_ROBIN', label: 'Vòng tròn' },
+  { id: 'ELO_ARENA', label: 'Elo Arena' },
 ];
 
 export default function TournamentCatalog({ tournaments }: { tournaments: TournamentSummary[] }) {
   const [query, setQuery] = useState('');
   const [format, setFormat] = useState('ALL');
+  const [status, setStatus] = useState<TournamentDirectoryStatus>('ALL');
   const [page, setPage] = useState(0);
-  const visible = tournaments.filter(
-    t =>
-      (format === 'ALL' || t.format === format) &&
-      t.name.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi')),
-  );
+  const visible = orderTournamentsForDirectory(filterTournaments(tournaments, { status, format, query }));
   const pageCount = Math.max(1, Math.ceil(visible.length / 4));
   const currentPage = Math.min(page, pageCount - 1);
 
@@ -38,10 +36,10 @@ export default function TournamentCatalog({ tournaments }: { tournaments: Tourna
         />
         <button
           type="button"
-          className="vct-btn-secondary !py-1.5 !px-4 !text-xs !rounded-full"
           onClick={() => {
             setQuery('');
             setFormat('ALL');
+            setStatus('ALL');
             setPage(0);
           }}
         >
@@ -54,7 +52,6 @@ export default function TournamentCatalog({ tournaments }: { tournaments: Tourna
           <button
             key={f.id}
             type="button"
-            style={{ color: format === f.id ? undefined : f.color }}
             aria-pressed={format === f.id}
             onClick={() => {
               setFormat(f.id);
@@ -62,6 +59,19 @@ export default function TournamentCatalog({ tournaments }: { tournaments: Tourna
             }}
           >
             {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="arena-filters" role="group" aria-label="Lọc trạng thái giải đấu">
+        {([
+          ['ALL', 'Tất cả'],
+          ['LIVE', 'Đang diễn ra'],
+          ['UPCOMING', 'Sắp tới'],
+          ['ENDED', 'Đã kết thúc'],
+        ] as const).map(([value, label]) => (
+          <button key={value} type="button" aria-pressed={status === value} onClick={() => { setStatus(value); setPage(0); }}>
+            {label}
           </button>
         ))}
       </div>
@@ -106,7 +116,7 @@ export default function TournamentCatalog({ tournaments }: { tournaments: Tourna
                 <span
                   className={
                     t.isRated
-                      ? 'bg-[var(--action)] text-white font-mono text-[10px] font-bold tracking-widest px-2.5 py-0.5 rounded-full shadow-sm'
+                      ? 'bg-[var(--action)] text-[var(--action-text)] font-mono text-[10px] font-bold tracking-widest px-2.5 py-0.5 rounded-full shadow-sm'
                       : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)] font-mono text-[10px] tracking-widest px-2.5 py-0.5 rounded-full'
                   }
                   title={t.globalRatingPolicy}

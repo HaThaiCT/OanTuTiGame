@@ -46,7 +46,7 @@ export default function WasmVerifierPanel({ payload }: { readonly payload: Repla
           type="button"
           onClick={run}
           disabled={state.kind === 'running'}
-          className="rounded-sm border border-[var(--action)] bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[#151618] hover:bg-[var(--action-hover)] disabled:opacity-60"
+          className="rounded-sm border border-[var(--action)] bg-[var(--action)] px-4 py-2 text-sm font-semibold text-[var(--action-text)] hover:bg-[var(--action-hover)] disabled:opacity-60"
         >
           {state.kind === 'running' ? 'Đang xác minh…' : 'Xác minh bằng engine WASM'}
         </button>

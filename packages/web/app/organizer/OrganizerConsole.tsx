@@ -27,6 +27,7 @@ import EntryCodesPanel from './EntryCodesPanel';
 import MapEditor from './MapEditor';
 import TournamentAdjudication from './TournamentAdjudication';
 import AccountsInspectionPanel from './AccountsInspectionPanel';
+import LanRosterAssignment from './LanRosterAssignment';
 import { TeamRatingName } from '../_components/TeamRatingName';
 import { TournamentRatingProvider } from '../_components/TournamentRatingContext';
 import { useRatingRefresh } from '../_components/RatingLivePanels';
@@ -160,7 +161,7 @@ const INPUT_CLASS =
   'h-11 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-secondary)]';
 const LABEL_CLASS = 'flex flex-col gap-2 text-sm';
 const PRIMARY_BUTTON_CLASS =
-  'h-11 rounded-md bg-[var(--action)] px-5 font-semibold text-[#0B0D17] disabled:opacity-60';
+  'h-11 rounded-md bg-[var(--action)] px-5 font-semibold text-[var(--action-text)] disabled:opacity-60';
 const SECONDARY_BUTTON_CLASS =
   'h-10 rounded-md border border-[var(--border-control)] px-4 text-sm font-semibold disabled:opacity-60';
 
@@ -836,6 +837,7 @@ export default function OrganizerConsole({
       {accountsScope === true && section === 'teams' && (
         <AccountsInspectionPanel authProfile={authProfile} tournaments={tournaments} entriesByTournament={entriesByTournament} />
       )}
+      {accountsScope && authProfile === 'LAN_OFFLINE' && section === 'teams' ? <LanRosterAssignment enabled /> : null}
       <div className="grid items-start gap-4">
         {section === 'create' ? (
         <form onSubmit={createTournament} className="flex min-w-0 flex-col gap-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">

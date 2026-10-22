@@ -33,6 +33,15 @@ describe('strict Online configuration', () => {
     symlinkSync(env.OANTUTI_SMTP_PASSWORD_FILE!, `${env.OANTUTI_SMTP_PASSWORD_FILE}.link`);
     expect(() => loadOnlineConfig({ ...env, OANTUTI_SMTP_PASSWORD_FILE: `${env.OANTUTI_SMTP_PASSWORD_FILE}.link` })).toThrow();
   });
+
+  it('permits the local signup bypass only for a development HTTPS loopback origin', () => {
+    const base = environment();
+    const enabled = { ...base, NODE_ENV: 'development', OANTUTI_PUBLIC_BASE_URL: 'https://localhost:14443', OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION: 'true' };
+    expect(loadOnlineConfig(enabled)).toMatchObject({ localDemoSkipEmailVerification: true, allowedOrigins: ['https://localhost:14443', 'https://127.0.0.1:14443'] });
+    expect(() => loadOnlineConfig({ ...enabled, NODE_ENV: 'production' })).toThrow(/OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION/);
+    expect(() => loadOnlineConfig({ ...enabled, OANTUTI_PUBLIC_BASE_URL: 'https://arena.example' })).toThrow(/OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION/);
+    expect(loadOnlineConfig({ ...base, NODE_ENV: 'development', OANTUTI_PUBLIC_BASE_URL: 'https://localhost:14443' })).toMatchObject({ localDemoSkipEmailVerification: false, allowedOrigins: ['https://localhost:14443'] });
+  });
 });
 describe('authenticated mail material', () => {
   const keyring: MailKeyring = { currentKeyId: 'a', keys: new Map([['a', Buffer.alloc(32, 1)]]) };

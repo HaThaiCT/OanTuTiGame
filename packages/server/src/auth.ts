@@ -132,11 +132,12 @@ export function isLanOrLocalOrigin(origin: string): boolean {
   }
 }
 
-export function protectMutations(app: FastifyInstance, allowedOrigins: readonly string[], options: { readonly exactOrigin?: boolean } = {}): void {
+export function protectMutations(app: FastifyInstance, allowedOrigins: readonly string[], options: { readonly exactOrigin?: boolean; readonly allowCrossSiteForExactOrigin?: boolean } = {}): void {
   app.addHook('onRequest', async (request) => {
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return;
-    if (request.headers['sec-fetch-site'] === 'cross-site') throw new HttpError(403, 'Cross-origin mutation denied');
     const origin = request.headers.origin;
+    const isAllowedLocalExactOrigin = options.allowCrossSiteForExactOrigin === true && options.exactOrigin === true && origin !== undefined && allowedOrigins.includes(origin);
+    if (request.headers['sec-fetch-site'] === 'cross-site' && !isAllowedLocalExactOrigin) throw new HttpError(403, 'Cross-origin mutation denied');
     if (options.exactOrigin && (!origin || !allowedOrigins.includes(origin))) {
       throw new HttpError(403, 'Cross-origin mutation denied');
     }

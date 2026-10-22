@@ -5,19 +5,13 @@ import type { RatingChangeDto, TeamRatingSummary } from '@oantuti/protocol';
 import { useContext } from 'react';
 import { RatingContext } from './rating-context';
 
-const RANK_LABEL: Record<TeamRatingSummary['rank'], string> = {
-  UNRATED: 'Chưa xếp hạng', NEWBIE: 'Newbie', PUPIL: 'Pupil', SPECIALIST: 'Specialist', EXPERT: 'Expert',
-  CANDIDATE_MASTER: 'Candidate Master', MASTER: 'Master', INTERNATIONAL_MASTER: 'International Master',
-  GRANDMASTER: 'Grandmaster', INTERNATIONAL_GRANDMASTER: 'International Grandmaster', LEGENDARY_GRANDMASTER: 'Legendary Grandmaster',
-};
-
 export function RatingBadge({ rating }: { readonly rating: TeamRatingSummary }) {
+  if (!rating || rating.rank === 'UNRATED' || rating.rating === null || rating.rating === undefined) return null;
   return (
     <span
-      className={`rating-badge rating-${rating.rank.toLowerCase()} font-heading font-bold uppercase tracking-wider text-[10px] px-2.5 py-0.5 rounded-full border border-current shadow-xs`}
-      title={RANK_LABEL[rating.rank]}
+      className={`rating-badge rating-${rating.rank.toLowerCase()} font-mono font-bold text-[10px] px-2 py-0.5 rounded-full border border-current shadow-xs`}
     >
-      {rating.rank === 'UNRATED' ? 'Unrated' : `${RANK_LABEL[rating.rank]} · ${rating.rating}`}
+      {rating.rating}
     </span>
   );
 }
@@ -26,8 +20,14 @@ export function TeamRatingName({ teamId, name, rating, compact = false }: { read
   const publishedTeam = useContext(RatingContext)?.teams.find(team => team.teamId === teamId);
   rating = publishedTeam?.rating ?? rating;
   name = publishedTeam?.name ?? name;
-  const label = rating ? `${name} — ${RANK_LABEL[rating.rank]}${rating.rating === null ? '' : `, ${rating.rating}`}` : `${name} — Rating global đang tải hoặc không khả dụng`;
-  return <span className={`rating-name${rating ? ` rating-${rating.rank.toLowerCase()}` : ''}`}><Link href={`/teams/${encodeURIComponent(teamId)}`} title={label} aria-label={label}>{name}</Link>{rating && !compact ? <RatingBadge rating={rating} /> : null}</span>;
+  const label = rating && rating.rating !== null ? `${name} (Rating: ${rating.rating})` : name;
+  return (
+    <span className={`rating-name${rating ? ` rating-${rating.rank.toLowerCase()}` : ''}`}>
+      <Link href={`/teams/${encodeURIComponent(teamId)}`} title={label} aria-label={label}>
+        {name}
+      </Link>
+    </span>
+  );
 }
 
 export function RatingHistoryChart({ points }: { readonly points: readonly Pick<RatingChangeDto, 'publicationOrder' | 'newRating' | 'tournamentName'>[] }) {

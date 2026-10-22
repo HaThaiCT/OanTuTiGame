@@ -3,7 +3,7 @@ import { isIP } from 'node:net';
 import type { MailKeyring } from './mail-crypto.js';
 export type AuthProfile = 'LAN_OFFLINE' | 'ONLINE';
 export interface SmtpConfig { readonly host: string; readonly port: number; readonly tlsMode: 'implicit' | 'starttls'; readonly user: string; readonly password: string }
-export interface OnlineConfig { readonly publicBaseUrl: string; readonly smtp: SmtpConfig; readonly from: string; readonly replyTo: string; readonly keyring: MailKeyring; readonly trustedProxies: readonly string[] }
+export interface OnlineConfig { readonly publicBaseUrl: string; readonly allowedOrigins: readonly string[]; readonly smtp: SmtpConfig; readonly from: string; readonly replyTo: string; readonly keyring: MailKeyring; readonly trustedProxies: readonly string[]; readonly localDemoSkipEmailVerification: boolean }
 export function resolveAuthProfile(env: NodeJS.ProcessEnv = process.env): AuthProfile {
   const value = env.OANTUTI_AUTH_PROFILE;
   if (value === undefined) return 'LAN_OFFLINE';
@@ -24,6 +24,16 @@ function mailbox(env: NodeJS.ProcessEnv, name: string): string { const value = r
 export function loadOnlineConfig(env: NodeJS.ProcessEnv = process.env): OnlineConfig | undefined {
   if (resolveAuthProfile(env) === 'LAN_OFFLINE') return undefined;
   const publicBaseUrl = required(env, 'OANTUTI_PUBLIC_BASE_URL');
+  const skipEmailVerification = env.OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION === 'true';
+  if (skipEmailVerification) {
+    let hostname = '';
+    try { hostname = new URL(publicBaseUrl).hostname; } catch { /* exact URL validation below reports the configuration error */ }
+    if (env.NODE_ENV !== 'development' || !['localhost', '127.0.0.1', '::1'].includes(hostname)) {
+      throw new Error('Invalid OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION');
+    }
+  } else if (env.OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION !== undefined && env.OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION !== 'false') {
+    throw new Error('Invalid OANTUTI_LOCAL_DEMO_SKIP_EMAIL_VERIFICATION');
+  }
   try { const url = new URL(publicBaseUrl); if (url.protocol !== 'https:' || url.origin !== publicBaseUrl || url.username || url.password || url.hostname.includes('*')) throw new Error(); } catch { throw new Error('Invalid OANTUTI_PUBLIC_BASE_URL'); }
   const host = required(env, 'OANTUTI_SMTP_HOST'); if (!/^[A-Za-z0-9.-]+$/.test(host) || host.includes('..')) throw new Error('Invalid OANTUTI_SMTP_HOST');
   const portText = required(env, 'OANTUTI_SMTP_PORT'); const port = Number(portText); if (!/^\d+$/.test(portText) || !Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid OANTUTI_SMTP_PORT');
@@ -39,5 +49,9 @@ export function loadOnlineConfig(env: NodeJS.ProcessEnv = process.env): OnlineCo
     for (const item of required(env, 'OANTUTI_TRUST_PROXY').split(',')) { const parts = item.split('/'); const version = isIP(parts[0]!); if (!version || parts.length > 2 || (parts.length === 2 && (!/^\d+$/.test(parts[1]!) || Number(parts[1]) > (version === 4 ? 32 : 128)))) throw new Error('Invalid OANTUTI_TRUST_PROXY'); trustedProxies.push(item); }
   }
   if (env.OANTUTI_ALLOWED_ORIGINS !== undefined && env.OANTUTI_ALLOWED_ORIGINS !== publicBaseUrl) throw new Error('Invalid OANTUTI_ALLOWED_ORIGINS');
-  return { publicBaseUrl, smtp: { host, port, tlsMode, user, password }, from: mailbox(env, 'OANTUTI_MAIL_FROM'), replyTo: mailbox(env, 'OANTUTI_MAIL_REPLY_TO'), keyring, trustedProxies };
+  const baseUrl = new URL(publicBaseUrl);
+  const localAlias = baseUrl.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
+  const localOriginAlias = `${baseUrl.protocol}//${localAlias}${baseUrl.port ? `:${baseUrl.port}` : ''}`;
+  const allowedOrigins = skipEmailVerification ? [publicBaseUrl, localOriginAlias] : [publicBaseUrl];
+  return { publicBaseUrl, allowedOrigins, smtp: { host, port, tlsMode, user, password }, from: mailbox(env, 'OANTUTI_MAIL_FROM'), replyTo: mailbox(env, 'OANTUTI_MAIL_REPLY_TO'), keyring, trustedProxies, localDemoSkipEmailVerification: skipEmailVerification };
 }

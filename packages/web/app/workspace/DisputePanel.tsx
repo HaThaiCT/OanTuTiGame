@@ -220,7 +220,7 @@ export default function DisputePanel({
               <button
                 type="submit"
                 disabled={sending}
-                className="h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[#0B0D17] disabled:opacity-60"
+                className="h-10 rounded-md bg-[var(--action)] px-4 text-sm font-semibold text-[var(--action-text)] disabled:opacity-60"
               >
                 {sending ? 'Đang gửi…' : 'Gửi tranh chấp'}
               </button>

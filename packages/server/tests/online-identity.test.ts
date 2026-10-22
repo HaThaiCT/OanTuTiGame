@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { Database } from '../src/persistence/db.js';
@@ -222,6 +223,7 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
   });
 
   it('registers a student, stores only the token hash, then verifies the mailbox and logs in', async () => {
+
     const erin = { username: `erin_${RUN}`, email: `erin.${RUN}@example.test` };
     const registered = await register(erin.username, erin.email);
     expect(registered.statusCode).toBe(201);
@@ -269,6 +271,39 @@ describe('S04 ONLINE identity, recovery & shared tournament entry codes (Postgre
     expect(loggedIn.json().scope).toBe('FULL');
     const me = await app.inject({ method: 'GET', url: '/api/v2/auth/me', headers: { cookie: cookieOf(loggedIn) } });
     expect(me.json().authProfile).toBe('ONLINE');
+  });
+
+  it('lets the local demo sign in its separately provisioned email-less ADMIN only under the validated bypass flag', async () => {
+    const adminUsername = `admin_${RUN}`;
+    const original = await db.query<{ email: string; email_verified_at: Date }>('SELECT email,email_verified_at FROM users WHERE username=$1 AND role=\'ADMIN\'', [adminUsername]);
+    expect(original.rows).toHaveLength(1);
+    await db.query('UPDATE users SET email=NULL,email_verified_at=NULL WHERE username=$1', [adminUsername]);
+    try {
+      await expect(online.login(adminUsername, PASSWORD)).rejects.toMatchObject({ code: 'EMAIL_VERIFICATION_REQUIRED' });
+      const localIdentity = new IdentityService(db, 'ONLINE', { mail, localDemoSkipEmailVerification: true });
+      const localSession = await localIdentity.login(adminUsername, PASSWORD);
+      expect(localSession.scope).toBe('FULL');
+      expect((await localIdentity.authenticateToken(localSession.token))?.actor.role).toBe('ADMIN');
+    } finally {
+      await db.query('UPDATE users SET email=$2,email_verified_at=$3 WHERE username=$1', [adminUsername, original.rows[0].email, original.rows[0].email_verified_at]);
+    }
+  });
+
+  it('creates immediately usable local-demo accounts while normal Online signups remain email-gated', async () => {
+    const enabled = new IdentityService(db, 'ONLINE', { mail, localDemoSkipEmailVerification: true });
+    const localStudent = { username: `local_${RUN}`, email: `local.${RUN}@example.test` };
+    const created = await enabled.register({ ...localStudent, displayName: localStudent.username, password: PASSWORD });
+    userIds.push(created.user.id);
+    expect(created.emailVerificationRequired).toBe(false);
+    const state = await db.query<{ email_verified_at: Date | null }>('SELECT email_verified_at FROM users WHERE id=$1', [created.user.id]);
+    expect(state.rows[0].email_verified_at).not.toBeNull();
+    expect((await db.query('SELECT id FROM email_verification_tokens WHERE user_id=$1 AND consumed_at IS NULL', [created.user.id])).rows).toHaveLength(0);
+    expect((await db.query('SELECT outbox_id FROM identity_mail_deliveries WHERE user_id=$1', [created.user.id])).rows).toHaveLength(0);
+    expect((await enabled.login(localStudent.username, PASSWORD)).scope).toBe('FULL');
+    const regular = await online.register({ username: `verified_${RUN}`, email: `verified.${RUN}@example.test`, displayName: 'Pending', password: PASSWORD });
+    userIds.push(regular.user.id);
+    expect(regular.emailVerificationRequired).toBe(true);
+    await expect(online.login(regular.user.username, PASSWORD)).rejects.toMatchObject({ code: 'EMAIL_VERIFICATION_REQUIRED' });
   });
 
   it('keeps encrypted delivery material independent of public outbox metadata', async () => {
