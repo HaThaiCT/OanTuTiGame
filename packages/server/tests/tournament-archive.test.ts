@@ -85,6 +85,7 @@ describe('LAN tournament archive command', () => {
     await db.query(`DELETE FROM audit_events WHERE resource_id = ANY($1::text[])`, [tournaments]);
     await db.query(`DELETE FROM outbox_events WHERE payload->>'tournamentId' = ANY($1::text[])`, [tournaments]);
     await db.query(`DELETE FROM command_receipts WHERE scope = ANY($1::text[])`, [tournaments.map((id) => `ARCHIVE:${id}`)]);
+    await db.query(`DELETE FROM teams WHERE course_id = $1`, [courseId]);
     await db.query(`DELETE FROM tournaments WHERE id = ANY($1::uuid[])`, [tournaments]);
     await db.query(`DELETE FROM sessions WHERE token_hash = ANY($1::text[])`, [sessionHashes]);
     await db.query(`DELETE FROM users WHERE id = $1`, [studentId]);

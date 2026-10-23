@@ -91,11 +91,11 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
       await client.query('DELETE FROM tournament_entries');
       await client.query('DELETE FROM test_snapshots');
       await client.query('DELETE FROM submissions');
-      await client.query('DELETE FROM submission_sources');
+      await client.query(`DELETE FROM submission_sources WHERE NOT EXISTS (SELECT 1 FROM starter_bot_templates WHERE source_digest = submission_sources.digest)`);
       await client.query('DELETE FROM tournament_admissions');
-      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM team_memberships');
       await client.query('DELETE FROM teams');
+      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM courses');
       await client.query('DELETE FROM sessions');
       await client.query('DELETE FROM users');
@@ -115,7 +115,7 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
       await client.query('DELETE FROM tournament_entries');
       await client.query('DELETE FROM test_snapshots');
       await client.query('DELETE FROM submissions');
-      await client.query('DELETE FROM submission_sources');
+      await client.query(`DELETE FROM submission_sources WHERE NOT EXISTS (SELECT 1 FROM starter_bot_templates WHERE source_digest = submission_sources.digest)`);
       await client.query('DELETE FROM tournament_admissions');
       await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM team_memberships');

@@ -189,7 +189,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
     const url = request.url.split('?')[0];
     if (['POST', 'PUT', 'DELETE'].includes(request.method) && ['/api/bots', '/api/matches', '/api/matches/test', '/api/tournaments'].some((route) => url === route || (route === '/api/bots' && url.startsWith('/api/bots/')))) auth.requireUser(request);
   });
-  protectMutations(app, authProfile === 'ONLINE' ? onlineConfig!.allowedOrigins : options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']), { exactOrigin: true, allowCrossSiteForExactOrigin: authProfile === 'ONLINE' && onlineConfig!.localDemoSkipEmailVerification });
+  protectMutations(app, authProfile === 'ONLINE' ? onlineConfig!.allowedOrigins : options?.allowedOrigins ?? (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000']), { exactOrigin: authProfile === 'ONLINE', allowCrossSiteForExactOrigin: authProfile === 'ONLINE' && onlineConfig!.localDemoSkipEmailVerification });
   if (!options?.pgDb) {
     auth.registerRoutes(app);
     registerBotRoutes(app, db, auth, options?.botsDir ?? path.resolve(process.cwd(), 'storage/bots'));

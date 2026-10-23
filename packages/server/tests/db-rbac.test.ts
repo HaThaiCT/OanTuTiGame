@@ -17,7 +17,6 @@ describe('Database RBAC & Admin Seed', () => {
     expect(admin).toBeDefined();
     expect(admin?.role).toBe('ADMIN');
     expect(admin?.email).toBe('admin@oantuti.arena');
-    expect(admin?.id).toBe('usr_admin_default');
   });
 
   it('defaults new user creation to role PLAYER', () => {

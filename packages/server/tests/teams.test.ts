@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { Database } from '../src/persistence/db.js';
 import { IdentityService } from '../src/identity/service.js';
@@ -29,9 +30,9 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
     await db.withTransaction(async (client) => {
       await client.query('DELETE FROM tournament_entries');
       await client.query('DELETE FROM tournament_admissions');
-      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM team_memberships');
       await client.query('DELETE FROM teams');
+      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM courses');
       await client.query('DELETE FROM sessions');
       await client.query('DELETE FROM users');
@@ -39,7 +40,7 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
     });
 
     // Bootstrap singleton admin
-    await identity.bootstrapAdmin('lan_organizer', 'OrganizerSecurePassword123!');
+    await identity.bootstrapAdmin(adminUsername, 'OrganizerSecurePassword123!');
   });
 
   afterAll(async () => {
@@ -47,6 +48,13 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
     await db.close();
   });
 
+  const runId = randomUUID().replaceAll('-', '');
+  const adminUsername = `lan_organizer_${runId}`;
+  const studentOne = `lan_student_1_${runId}`;
+  const studentTwo = `lan_student_2_${runId}`;
+  const courseCode = `CS${runId.slice(0, 6).toUpperCase()}`;
+  const teamName = `Cyber Warriors ${runId.slice(0, 6)}`;
+  const tournamentName = `Spring Invitational ${runId.slice(0, 6)}`;
   let adminCookie = '';
   let studentCookie = '';
   let studentTempPass = '';
@@ -58,7 +66,7 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
       method: 'POST',
       url: '/api/v2/auth/login',
       payload: {
-        username: 'lan_organizer',
+        username: adminUsername,
         password: 'OrganizerSecurePassword123!',
       },
     });
@@ -70,7 +78,7 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
     expect(adminCookie).toContain('oantuti_session=');
 
     const body = res.json();
-    expect(body.user.username).toBe('lan_organizer');
+    expect(body.user.username).toBe(adminUsername);
     expect(body.user.role).toBe('ADMIN');
     expect(body.scope).toBe('FULL');
   });
@@ -82,8 +90,8 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
       headers: { cookie: adminCookie },
       payload: {
         users: [
-          { username: 'lan_student_1', displayName: 'Student One', role: 'STUDENT' },
-          { username: 'lan_student_2', displayName: 'Student Two', role: 'STUDENT' },
+          { username: studentOne, displayName: 'Student One', role: 'STUDENT' },
+          { username: studentTwo, displayName: 'Student Two', role: 'STUDENT' },
         ],
       },
     });
@@ -109,7 +117,7 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
       method: 'POST',
       url: '/api/v2/auth/login',
       payload: {
-        username: 'lan_student_1',
+        username: studentOne,
         password: studentTempPass,
       },
     });
@@ -164,7 +172,7 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
       method: 'POST',
       url: '/api/v2/organizer/courses',
       headers: { cookie: adminCookie },
-      payload: { code: 'CS101', name: 'Intro to Competitive Bot AI' },
+      payload: { code: courseCode, name: 'Intro to Competitive Bot AI' },
     });
     expect(courseRes.statusCode).toBe(200);
 
@@ -173,11 +181,11 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
       method: 'POST',
       url: '/api/v2/organizer/teams',
       headers: { cookie: adminCookie },
-      payload: { courseCode: 'CS101', name: 'Cyber Warriors', captainUsername: 'lan_student_1' },
+      payload: { courseCode, name: teamName, captainUsername: studentOne },
     });
     expect(teamRes.statusCode).toBe(201);
     teamId = teamRes.json().team.id;
-    expect(teamRes.json().team.name).toBe('Cyber Warriors');
+    expect(teamRes.json().team.name).toBe(teamName);
 
     // A team roster names its members, so it is private: the organizer or a member may read it.
     const anonymous = await app.inject({ method: 'GET', url: `/api/v2/teams/${teamId}` });
@@ -200,8 +208,8 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
       url: '/api/v2/organizer/tournaments',
       headers: { cookie: adminCookie },
       payload: {
-        courseCode: 'CS101',
-        name: 'Spring 2026 Invitational',
+        courseCode,
+        name: tournamentName,
         format: 'ROUND_ROBIN',
         maxTeams: 8,
         minTeamSize: 1,
@@ -267,7 +275,7 @@ describe('S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate', 
     expect(entriesRes.statusCode).toBe(200);
     expect(entriesRes.json().entries.length).toBe(1);
     expect(entriesRes.json().entries[0].teamId).toBe(teamId);
-    expect(entriesRes.json().entries[0].teamName).toBe('Cyber Warriors');
+    expect(entriesRes.json().entries[0].teamName).toBe(teamName);
 
     // Query public tournament state
     const tCheck = await app.inject({

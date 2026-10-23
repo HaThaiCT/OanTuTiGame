@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { MapDescriptor } from '@oantuti/engine';
@@ -10,6 +10,7 @@ import { hashPassword } from '../src/identity/crypto.js';
 import { MapService, MapError } from '../src/tournaments/map-service.js';
 import { TournamentLifecycleService } from '../src/tournaments/lifecycle-service.js';
 
+const previousDevExecution = process.env.OANTUTI_DEV_EXECUTION;
 const MAP_V1: MapDescriptor = {
   mapName: 'map-versions-v1',
   width: 3,
@@ -86,6 +87,7 @@ describe('S16: Map versions & tournament map commitments', () => {
   }
 
   beforeAll(async () => {
+    process.env.OANTUTI_DEV_EXECUTION = '1';
     db = new PostgresDatabase();
     mapService = new MapService(db);
     identityService = new IdentityService(db);
@@ -107,10 +109,10 @@ describe('S16: Map versions & tournament map commitments', () => {
     const reauth = await app.inject({
       method: 'POST',
       url: '/api/v2/auth/reauth',
-      headers: { cookie: adminCookie },
+      headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000' },
       payload: { password: adminPassword },
     });
-    expect(reauth.statusCode).toBe(200);
+    expect(reauth.statusCode, reauth.body).toBe(200);
     adminActor = {
       userId: adminUserId,
       role: 'ADMIN',
@@ -168,7 +170,6 @@ describe('S16: Map versions & tournament map commitments', () => {
     await db.query(`DELETE FROM courses WHERE id = $1`, [courseId]);
     await db.close();
   });
-
   describe('1. Version creation and versioned reads', () => {
     it('createMap publishes version 1 in the same transaction', async () => {
       const created = await mapService.createMap(adminActor, {
@@ -176,7 +177,6 @@ describe('S16: Map versions & tournament map commitments', () => {
         displayName: 'Versioned Arena',
         descriptor: MAP_V1,
       });
-
       expect(created.currentVersion).toBe(1);
 
       const versions = await db.query<{ version: number; descriptor: MapDescriptor }>(
@@ -277,7 +277,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const published = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/maps/${versionedSlug}/versions`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: { descriptor: MAP_V3 },
       });
       expect(published.statusCode).toBe(201);
@@ -286,7 +286,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const invalid = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/maps/${versionedSlug}/versions`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: { descriptor: INVALID_DESCRIPTOR },
       });
       expect(invalid.statusCode).toBe(400);
@@ -295,7 +295,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const unauthenticated = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/maps/${versionedSlug}/versions`,
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000' },
         payload: { descriptor: MAP_V1 },
       });
       expect(unauthenticated.statusCode).toBe(401);
@@ -324,7 +324,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const missingSlug = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tDraft}/map-commitment`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: {},
       });
       expect(missingSlug.statusCode).toBe(400);
@@ -344,7 +344,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const committed = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tDraft}/map-commitment`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: { slug: versionedSlug },
       });
       expect(committed.statusCode).toBe(200);
@@ -368,7 +368,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const lockedOpen = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tOpen}/map-commitment`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: { slug: versionedSlug },
       });
       expect(lockedOpen.statusCode).toBe(409);
@@ -398,7 +398,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const mismatch = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tPublished}/start`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: { mapSlug: plainSlug },
       });
       expect(mismatch.statusCode).toBe(409);
@@ -407,7 +407,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const started = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tPublished}/start`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: {},
       });
       expect(started.statusCode).toBe(200);
@@ -449,7 +449,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const noSlug = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tPlain}/start`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: {},
       });
       expect(noSlug.statusCode).toBe(400);
@@ -458,7 +458,7 @@ describe('S16: Map versions & tournament map commitments', () => {
       const started = await app.inject({
         method: 'POST',
         url: `/api/v2/organizer/tournaments/${tPlain}/start`,
-        headers: { cookie: adminCookie, 'content-type': 'application/json' },
+        headers: { cookie: adminCookie, origin: process.env.OANTUTI_PUBLIC_BASE_URL ?? 'http://localhost:3000', 'content-type': 'application/json' },
         payload: { mapSlug: plainSlug },
       });
       expect(started.statusCode).toBe(200);
@@ -532,4 +532,8 @@ describe('S16: Map versions & tournament map commitments', () => {
       }
     });
   });
+});
+afterAll(() => {
+  if (previousDevExecution === undefined) delete process.env.OANTUTI_DEV_EXECUTION;
+  else process.env.OANTUTI_DEV_EXECUTION = previousDevExecution;
 });

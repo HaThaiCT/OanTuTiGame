@@ -15,6 +15,7 @@ describe('one team per student per tournament', () => {
   const db = new PostgresDatabase();
   const admission = new TournamentAdmissionService(db);
   const teams = new TeamService(db);
+  const runId = randomUUID().replaceAll('-', '');
   const ids = {
     courseId: randomUUID(),
     adminUserId: randomUUID(),
@@ -32,7 +33,7 @@ describe('one team per student per tournament', () => {
   };
   const admin: Actor = {
     userId: ids.adminUserId,
-    username: 'roster_admin',
+    username: `roster_admin_${runId}`,
     role: 'ADMIN',
     scope: 'FULL',
     teamIds: [],
@@ -42,13 +43,13 @@ describe('one team per student per tournament', () => {
   beforeAll(async () => {
     await db.query(
       `INSERT INTO users (id, username, display_name, password_hash, role, activation_method)
-       VALUES ($1, 'roster_admin', 'Roster Admin', 'hash', 'ADMIN', 'LOCAL_BOOTSTRAP')`,
-      [ids.adminUserId]
+       VALUES ($1, $2, 'Roster Admin', 'hash', 'ADMIN', 'LOCAL_BOOTSTRAP')`,
+      [ids.adminUserId, `roster_admin_${runId}`]
     );
     for (const [userId, name] of [
-      [ids.u1, 'student_one'],
-      [ids.u2, 'student_two'],
-      [ids.u3, 'student_three'],
+      [ids.u1, `student_one_${runId}`],
+      [ids.u2, `student_two_${runId}`],
+      [ids.u3, `student_three_${runId}`]
     ] as const) {
       await db.query(
         `INSERT INTO users (id, username, display_name, password_hash, role, activation_method)

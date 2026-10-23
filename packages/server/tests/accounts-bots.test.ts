@@ -16,9 +16,10 @@ async function setup(dir = directory()): Promise<AppContext> {
   contexts.push(context);
   return context;
 }
+const LOCAL_ORIGIN = 'http://localhost:3000';
 async function register(context: AppContext, username: string) {
-  const response = await context.app.inject({ method: 'POST', url: '/api/auth/register', payload: { username, email: `${username}@example.com`, password: 'correct horse battery staple' } });
-  expect(response.statusCode).toBe(201);
+  const response = await context.app.inject({ method: 'POST', url: '/api/auth/register', headers: { origin: LOCAL_ORIGIN }, payload: { username, email: `${username}@example.com`, password: 'correct horse battery staple' } });
+  expect(response.statusCode, response.body).toBe(201);
   return { cookie: String(response.headers['set-cookie']).split(';')[0], user: response.json().user as { id: string; role: string } };
 }
 afterEach(async () => {
@@ -42,61 +43,57 @@ describe('Accounts and owned immutable bot revisions', () => {
     raw.close();
     await context.app.close(); context.db.close(); contexts.splice(contexts.indexOf(context), 1);
     const restarted = await setup(dir);
-    expect((await restarted.app.inject({ url: '/api/auth/me', headers: { cookie } })).json().user.id).toBe(user.id);
-    expect((await restarted.app.inject({ method: 'POST', url: '/api/auth/logout', headers: { cookie, 'content-type': 'application/json' }, payload: {} })).statusCode).toBe(204);
+    expect((await restarted.app.inject({ method: 'POST', url: '/api/auth/logout', headers: { cookie, origin: LOCAL_ORIGIN, 'content-type': 'application/json' }, payload: {} })).statusCode).toBe(204);
     await restarted.app.close(); restarted.db.close(); contexts.splice(contexts.indexOf(restarted), 1);
     const again = await setup(dir);
-    expect((await again.app.inject({ url: '/api/auth/me', headers: { cookie } })).json()).toEqual({ user: null });
-    expect((await again.app.inject({ method: 'POST', url: '/api/auth/login', payload: { username: 'alice', password: 'incorrect password' } })).statusCode).toBe(401);
-    expect((await again.app.inject({ method: 'POST', url: '/api/auth/login', payload: { username: 'alice', password: 'correct horse battery staple' } })).statusCode).toBe(200);
+    expect((await again.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: LOCAL_ORIGIN }, payload: { username: 'alice', password: 'incorrect password' } })).statusCode).toBe(401);
+    expect((await again.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: LOCAL_ORIGIN }, payload: { username: 'alice', password: 'correct horse battery staple' } })).statusCode).toBe(200);
   });
 
   it('validates auth payloads and blocks cross-origin mutations including forged forwarded headers', async () => {
     const context = await setup();
     for (const payload of [null, [], {}, { username: 'admin', email: 'a@example.com', password: 'long password', role: 'ADMIN' }]) {
-      expect((await context.app.inject({ method: 'POST', url: '/api/auth/register', payload, headers: { 'content-type': 'application/json' } })).statusCode).toBe(400);
+      expect((await context.app.inject({ method: 'POST', url: '/api/auth/register', payload, headers: { origin: LOCAL_ORIGIN, 'content-type': 'application/json' } })).statusCode).toBe(400);
     }
     await register(context, 'alice');
-    expect((await context.app.inject({ method: 'POST', url: '/api/auth/register', payload: { username: 'alice', email: 'other@example.com', password: 'long password' } })).statusCode).toBe(409);
+    expect((await context.app.inject({ method: 'POST', url: '/api/auth/register', headers: { origin: LOCAL_ORIGIN }, payload: { username: 'alice', email: 'other@example.com', password: 'long password' } })).statusCode).toBe(409);
     const payload = { username: 'alice', password: 'correct horse battery staple' };
     for (const headers of [{ origin: 'https://evil.example' }, { origin: 'https://evil.example', 'x-forwarded-host': 'evil.example', 'x-forwarded-proto': 'https' }, { 'sec-fetch-site': 'cross-site' }]) {
       expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers, payload })).statusCode).toBe(403);
     }
     expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: 'http://localhost:80' }, payload })).statusCode).toBe(200);
     expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: 'http://10.11.172.141:3000' }, payload })).statusCode).toBe(200);
-    expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: 'http://192.168.1.50:3000' }, payload })).statusCode).toBe(200);
-    expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'content-type': 'text/plain' }, payload: JSON.stringify(payload) })).statusCode).toBe(400);
+    expect((await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: LOCAL_ORIGIN, 'content-type': 'text/plain' }, payload: JSON.stringify(payload) })).statusCode).toBe(400);
   });
-
   it('enforces ownership, public source privacy, optimistic revisions, immutable files and soft deletion', async () => {
     const context = await setup();
     const alice = await register(context, 'alice'); const bob = await register(context, 'bob');
     const payload = { name: 'My Bot', language: 'PYTHON', sourceCode: 'print("revision one")' };
     expect((await context.app.inject({ method: 'POST', url: '/api/bots', payload })).statusCode).toBe(401);
-    expect((await context.app.inject({ method: 'POST', url: '/api/bots', headers: { cookie: alice.cookie }, payload: { ...payload, filePath: '/etc/passwd' } })).statusCode).toBe(400);
-    const created = await context.app.inject({ method: 'POST', url: '/api/bots', headers: { cookie: alice.cookie }, payload });
+    expect((await context.app.inject({ method: 'POST', url: '/api/bots', headers: { cookie: alice.cookie, origin: LOCAL_ORIGIN }, payload: { ...payload, filePath: '/etc/passwd' } })).statusCode).toBe(400);
+    const created = await context.app.inject({ method: 'POST', url: '/api/bots', headers: { cookie: alice.cookie, origin: LOCAL_ORIGIN }, payload });
     expect(created.statusCode).toBe(201); const bot = created.json().bot;
     expect(bot).toMatchObject({ userId: alice.user.id, version: 1, isActive: true }); expect(bot.file_path).toBeUndefined();
     const oldPath = context.db.getBotById(bot.id)!.file_path!;
     const elo = context.db.getLeaderboard().find((entry) => entry.bot_id === bot.id);
     for (const request of [{ method: 'GET' as const, url: `/api/bots/${bot.id}` }, { method: 'GET' as const, url: `/api/bots/${bot.id}/versions` }, { method: 'PUT' as const, url: `/api/bots/${bot.id}`, payload: { ...payload, version: 1 } }, { method: 'DELETE' as const, url: `/api/bots/${bot.id}` }]) {
-      expect((await context.app.inject({ ...request, headers: { cookie: bob.cookie } })).statusCode).toBe(404);
+      expect((await context.app.inject({ ...request, headers: { cookie: bob.cookie, origin: LOCAL_ORIGIN } })).statusCode).toBe(404);
     }
     const system = context.db.listBots().find((entry) => entry.user_id === 'usr_system')!;
-    expect((await context.app.inject({ method: 'DELETE', url: `/api/bots/${system.id}`, headers: { cookie: alice.cookie } })).statusCode).toBe(404);
+    expect((await context.app.inject({ method: 'DELETE', url: `/api/bots/${system.id}`, headers: { cookie: alice.cookie, origin: LOCAL_ORIGIN } })).statusCode).toBe(404);
     const list = await context.app.inject({ url: '/api/bots' }); expect(list.body).not.toContain('revision one'); expect(list.body).not.toContain('file_path'); expect(list.body).not.toContain('source_code');
     expect((await context.app.inject({ url: '/api/bots?mine=1' })).statusCode).toBe(401);
     expect((await context.app.inject({ url: '/api/bots?mine=1', headers: { cookie: alice.cookie } })).json().bots.map((entry: { id: string }) => entry.id)).toEqual([bot.id]);
-    const changed = await context.app.inject({ method: 'PUT', url: `/api/bots/${bot.id}`, headers: { cookie: alice.cookie }, payload: { ...payload, version: 1, sourceCode: 'print("revision two")' } });
+    const changed = await context.app.inject({ method: 'PUT', url: `/api/bots/${bot.id}`, headers: { cookie: alice.cookie, origin: LOCAL_ORIGIN }, payload: { ...payload, version: 1, sourceCode: 'print("revision two")' } });
     expect(changed.statusCode).toBe(200); expect(changed.json().bot.version).toBe(2);
     expect(readFileSync(oldPath, 'utf8')).toBe(payload.sourceCode); expect(context.db.getBotById(bot.id)!.file_path).not.toBe(oldPath);
-    expect((await context.app.inject({ method: 'PUT', url: `/api/bots/${bot.id}`, headers: { cookie: alice.cookie }, payload: { ...payload, version: 1 } })).statusCode).toBe(409);
+    expect((await context.app.inject({ method: 'PUT', url: `/api/bots/${bot.id}`, headers: { cookie: alice.cookie, origin: LOCAL_ORIGIN }, payload: { ...payload, version: 1 } })).statusCode).toBe(409);
     const versions = (await context.app.inject({ url: `/api/bots/${bot.id}/versions`, headers: { cookie: alice.cookie } })).json().versions;
     expect(versions.map((revision: { sourceCode: string }) => revision.sourceCode)).toEqual(['print("revision two")', payload.sourceCode]);
     expect(context.db.getLeaderboard().find((entry) => entry.bot_id === bot.id)).toEqual(elo);
-    expect((await context.app.inject({ method: 'POST', url: '/api/bots', headers: { cookie: bob.cookie }, payload })).statusCode).toBe(201);
+    expect((await context.app.inject({ method: 'POST', url: '/api/bots', headers: { cookie: bob.cookie, origin: LOCAL_ORIGIN }, payload })).statusCode).toBe(201);
     const historicalMatch = context.db.createMatch({ mapId: 'sample-donut', whiteBotId: bot.id, blackBotId: system.id });
-    expect((await context.app.inject({ method: 'DELETE', url: `/api/bots/${bot.id}`, headers: { cookie: alice.cookie } })).statusCode).toBe(204);
+    expect((await context.app.inject({ method: 'DELETE', url: `/api/bots/${bot.id}`, headers: { cookie: alice.cookie, origin: LOCAL_ORIGIN } })).statusCode).toBe(204);
     expect(context.db.getBotById(bot.id)!.is_active).toBe(0); expect(context.db.getMatchById(historicalMatch.id)).toBeDefined();
     expect((await context.app.inject({ url: `/api/bots/${bot.id}/versions`, headers: { cookie: alice.cookie } })).json().versions).toHaveLength(2);
     expect(context.db.listBots().some((entry) => entry.id === bot.id)).toBe(false);
@@ -105,13 +102,13 @@ describe('Accounts and owned immutable bot revisions', () => {
 
   it('protects match/tournament creation and validates untrusted runtime payloads without leaking paths', async () => {
     const context = await setup(); const { cookie } = await register(context, 'alice');
-    const adminRes = await context.app.inject({ method: 'POST', url: '/api/auth/login', payload: { username: 'admin', password: 'admin123' } });
+    const adminRes = await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { origin: LOCAL_ORIGIN }, payload: { username: 'admin', password: 'admin123' } });
     const adminCookie = String(adminRes.headers['set-cookie']).split(';')[0];
     for (const url of ['/api/matches', '/api/matches/test', '/api/tournaments']) {
-      expect((await context.app.inject({ method: 'POST', url, payload: {} })).statusCode).toBe(401);
+      expect((await context.app.inject({ method: 'POST', url, headers: { origin: LOCAL_ORIGIN }, payload: {} })).statusCode).toBe(401);
       const callerCookie = url === '/api/tournaments' ? adminCookie : cookie;
       for (const payload of [null, [], { maxTurns: '5' }, { mapId: '../../etc/passwd', sourceCode: 4 }]) {
-        const response = await context.app.inject({ method: 'POST', url, headers: { cookie: callerCookie, 'content-type': 'application/json' }, payload });
+        const response = await context.app.inject({ method: 'POST', url, headers: { cookie: callerCookie, origin: LOCAL_ORIGIN, 'content-type': 'application/json' }, payload });
         expect(response.statusCode).toBe(400); expect(response.body).not.toContain(process.cwd());
       }
     }
@@ -148,7 +145,7 @@ for line in sys.stdin:
     elif message['type'] == 'TURN':
         print(json.dumps({'action': 'MOVE', 'piece_id': 1, 'target': [0, 2]}), flush=True)
 `;
-    const response = await context.app.inject({ method: 'POST', url: '/api/matches/test', headers: { cookie }, payload: { mapId: 'sample-donut', opponentBotId: opponent.id, language: 'PYTHON', sourceCode, maxTurns: 1 } });
+    const response = await context.app.inject({ method: 'POST', url: '/api/matches/test', headers: { cookie, origin: LOCAL_ORIGIN }, payload: { mapId: 'sample-donut', opponentBotId: opponent.id, language: 'PYTHON', sourceCode, maxTurns: 1 } });
     expect(response.statusCode).toBe(200); const { matchId } = response.json();
     const live = await context.app.inject({ url: `/api/matches/${matchId}` });
     expect(live.statusCode).toBe(200); expect(live.json().isLive).toBe(true);

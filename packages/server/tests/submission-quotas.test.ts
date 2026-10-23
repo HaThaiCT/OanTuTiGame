@@ -223,11 +223,11 @@ describe('S05 Submission quotas (official receipts & private tests)', () => {
       await client.query('DELETE FROM tournament_entries');
       await client.query('DELETE FROM test_snapshots');
       await client.query('DELETE FROM submissions');
-      await client.query('DELETE FROM submission_sources');
+      await client.query(`DELETE FROM submission_sources s WHERE NOT EXISTS (SELECT 1 FROM starter_bot_templates t WHERE t.source_digest = s.digest)`);
       await client.query('DELETE FROM tournament_admissions');
-      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM team_memberships');
       await client.query('DELETE FROM teams');
+      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM courses');
       await client.query('DELETE FROM sessions');
       await client.query('DELETE FROM users');
@@ -249,7 +249,8 @@ describe('S05 Submission quotas (official receipts & private tests)', () => {
         await client.query(
           `DELETE FROM submission_sources s
            WHERE NOT EXISTS (SELECT 1 FROM submissions su WHERE su.source_digest = s.digest)
-             AND NOT EXISTS (SELECT 1 FROM test_snapshots ts WHERE ts.source_digest = s.digest)`
+             AND NOT EXISTS (SELECT 1 FROM test_snapshots ts WHERE ts.source_digest = s.digest)
+             AND NOT EXISTS (SELECT 1 FROM starter_bot_templates t WHERE t.source_digest = s.digest)`
         );
       });
     }

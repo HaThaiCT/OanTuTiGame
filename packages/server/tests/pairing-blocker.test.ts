@@ -101,8 +101,8 @@ describe('S09: a pairing failure blocks the round instead of degrading it', () =
     await db.query(`DELETE FROM tournament_rounds WHERE tournament_id = $1`, [tournamentId]);
     await db.query(`DELETE FROM tournament_entries WHERE tournament_id = $1`, [tournamentId]);
     await db.query(`DELETE FROM outbox_events WHERE payload->>'tournamentId' = $1`, [tournamentId]);
-    await db.query(`DELETE FROM tournaments WHERE id = $1`, [tournamentId]);
     await db.query(`DELETE FROM teams WHERE course_id = $1`, [courseId]);
+    await db.query(`DELETE FROM tournaments WHERE id = $1`, [tournamentId]);
     await db.query(`DELETE FROM users WHERE username LIKE $1`, [`blk\\_%\\_${runId}`]);
     await db.query(`DELETE FROM courses WHERE id = $1`, [courseId]);
     await db.close();

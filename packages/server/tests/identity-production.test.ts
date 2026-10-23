@@ -24,9 +24,9 @@ describe('S03 Production Identity, Teams & Tournament Substrate (PostgreSQL 16)'
     await db.withTransaction(async (client) => {
       await client.query('DELETE FROM tournament_entries');
       await client.query('DELETE FROM tournament_admissions');
-      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM team_memberships');
       await client.query('DELETE FROM teams');
+      await client.query('DELETE FROM tournaments');
       await client.query('DELETE FROM courses');
       await client.query('DELETE FROM sessions');
       await client.query('DELETE FROM users');
