@@ -41,6 +41,8 @@ services:
       OANTUTI_SPOOL_DIR: /app/storage/execution
       PUBLIC_ORIGINS: '${PUBLIC_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}'
       OANTUTI_AUTH_PROFILE: '${OANTUTI_AUTH_PROFILE:-LAN_OFFLINE}'
+      OANTUTI_PUBLIC_BASE_URL: '${OANTUTI_PUBLIC_BASE_URL:-http://localhost:3000}'
+      OANTUTI_SKIP_EMAIL_VERIFICATION: '${OANTUTI_SKIP_EMAIL_VERIFICATION:-true}'
       OANTUTI_DEV_EXECUTION: '0'
       # Only the gateway is published. It replaces forwarded client addresses; trust its private
       # Compose-network address so clients do not share one login-throttle bucket.
