@@ -1,0 +1,8 @@
+HTTP/1.1 503 Service Unavailable
+Server: nginx/1.30.5
+Date: Fri, 23 Oct 2026 06:51:05 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 920
+Connection: keep-alive
+
+{"status":"degraded","productionReady":false,"accepts":{"officialGame":false,"build":false,"privateTest":false},"checks":[{"name":"database","ok":true,"detail":"PostgreSQL reachable"},{"name":"schema","ok":true,"detail":"schema version 32 matches this build"},{"name":"executionGateway","ok":false,"detail":"no native gateway configured: nothing can dispatch sandboxed work"},{"name":"executionPlane","ok":true,"detail":"development executor is off"},{"name":"backupFence","ok":false,"detail":"backup freshness is not enforced (OANTUTI_BACKUP_FENCE=off)"},{"name":"objectRoots","ok":true,"detail":"every recorded object path is inside the configured roots"},{"name":"mail","ok":true,"detail":"identity mail consumer is configured and started"},{"name":"workers","ok":false,"detail":"no complete authenticated native worker capacity"}],"schemaVersion":32,"expectedSchemaVersion":32,"timestamp":"2026-10-23T06:51:05.222Z"}

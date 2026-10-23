@@ -1,0 +1,4 @@
+Read-only captured 2026-10-23; HEAD 54f51939886355fecc9cfa586c3c705578ffc119.
+Container images: API sha256:a306f6959b7b6c2d2669514b8457dfa5a87e1631418933a79a1c886fd2518594; web sha256:c83c07cc772880a81cfadfcefdcbbc6ef6f494c6688963979bc1c473b65bfa03.
+GET /api/health/ready => 503 JSON degraded; productionReady false; database reachable, schema version 32 equals expected 32, executionGateway false (no native gateway configured), executionPlane true (development executor off), backupFence false (freshness not enforced), workers false (no complete authenticated native worker capacity). API Docker .State.Health=null. No secret values recorded.
+schema_migrations: versions 1-32, latest 032-starter-bot-seed-author. migration_checksums: columns version, checksum, recorded_at; 30 rows, min version 1, max version 30. Versions 31 and 32 have no checksum row. No checksum values copied.

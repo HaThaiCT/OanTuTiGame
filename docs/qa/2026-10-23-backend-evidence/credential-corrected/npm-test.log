@@ -1,0 +1,148 @@
+
+> oantuti-arena-specs@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2
+
+stdout | packages/server/tests/portable-demo-restore.test.ts
+[singleton-admin] retired 1 leftover ADMIN fixture(s) from earlier files: grace_admin_1792738052904_690
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts (10 tests | 7 failed) 1497ms
+     × requires fresh-empty acknowledgement and explicit database settings before touching objects 41ms
+     × refuses a nonempty database without extracting evidence 16ms
+     × restores private evidence into configured roots and rebases database paths without shell parsing 14ms
+     × refuses unrelated files in private roots before applying database changes 14ms
+     × rejects archive symlinks before extraction or database apply 26ms
+     × propagates psql failure instead of reporting success 16ms
+     × refuses public operator-supplied object roots without changing their permissions 18ms
+ ❯ packages/server/tests/online-mail-delivery.test.ts (11 tests | 1 failed) 468ms
+     × does not schedule a duplicate after SMTP accepted but delivery acknowledgement failed 34ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/server/tests/online-mail-delivery.test.ts > durable encrypted identity mail > does not schedule a duplicate after SMTP accepted but delivery acknowledgement failed
+error: must be owner of relation outbox_events
+ ❯ node_modules/pg-pool/index.js:45:11
+ ❯ packages/server/tests/online-mail-delivery.test.ts:208:40
+    206|       expect(transport.messages).toHaveLength(1);
+    207|       expect(await delivery(queued.eventId)).toMatchObject({state:'SEN…
+    208|     } finally { await consumer.stop(); await db.query(`DROP TRIGGER ${…
+       |                                        ^
+    209|   });
+    210| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > requires fresh-empty acknowledgement and explicit database settings before touching objects
+AssertionError: expected [Function] to throw error including 'fresh-empty-database' but got 'PGPASSWORD_FILE must be a private reg…'
+
+Expected: "fresh-empty-database"
+Received: "PGPASSWORD_FILE must be a private regular file"
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts:102:98
+    100|     const f = fixture();
+    101|     try {
+    102|       await expect(restoreDemo({ cwd: f.root, demoDataDir: f.demoDataD…
+       |                                                                                                  ^
+    103|       await expect(restoreDemo({ cwd: f.root, demoDataDir: f.demoDataD…
+    104|       expect(existsSync(join(f.root, 'storage'))).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > refuses a nonempty database without extracting evidence
+AssertionError: expected [Function] to throw error including 'not empty' but got 'PGPASSWORD_FILE must be a private reg…'
+
+Expected: "not empty"
+Received: "PGPASSWORD_FILE must be a private regular file"
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts:111:144
+    109|     const f = fixture();
+    110|     try {
+    111|       await expect(restoreDemo({ cwd: f.root, demoDataDir: f.demoDataD…
+       |                                                                                                                                                ^
+    112|       expect(existsSync(join(f.root, 'storage'))).toBe(false);
+    113|       expect(existsSync(f.env.SQL_CAPTURE)).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > restores private evidence into configured roots and rebases database paths without shell parsing
+Error: PGPASSWORD_FILE must be a private regular file
+ ❯ restoreDemo deploy/linux/restore-demo.ts:44:91
+     42|   if (env.PGPASSWORD_FILE) {
+     43|     const secret = lstatSync(env.PGPASSWORD_FILE);
+     44|     if (!secret.isFile() || secret.isSymbolicLink() || (secret.mode & …
+       |                                                                                           ^
+     45|     env.PGPASSWORD = readFileSync(env.PGPASSWORD_FILE, 'utf8').replace…
+     46|   }
+ ❯ packages/server/tests/portable-demo-restore.test.ts:122:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > refuses unrelated files in private roots before applying database changes
+AssertionError: expected [Function] to throw error including 'must be empty' but got 'PGPASSWORD_FILE must be a private reg…'
+
+Expected: "must be empty"
+Received: "PGPASSWORD_FILE must be a private regular file"
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts:141:159
+    139|       mkdirSync(replays, { mode: 0o700 });
+    140|       writeFileSync(join(replays, 'unrelated'), 'keep');
+    141|       await expect(restoreDemo({ cwd: f.root, demoDataDir: f.demoDataD…
+       |                                                                                                                                                               ^
+    142|       expect(readFileSync(join(replays, 'unrelated'), 'utf8')).toBe('k…
+    143|       expect(existsSync(f.env.SQL_CAPTURE)).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > rejects archive symlinks before extraction or database apply
+AssertionError: expected [Function] to throw error including 'Invalid demo archive' but got 'PGPASSWORD_FILE must be a private reg…'
+
+Expected: "Invalid demo archive"
+Received: "PGPASSWORD_FILE must be a private regular file"
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts:153:122
+    151|       symlinkSync(f.root, join(f.root, 'objects/storage/replays/unsafe…
+    152|       execFileSync('tar', ['-czf', join(f.demoDataDir, 'arena_objects.…
+    153|       await expect(restoreDemo({ cwd: f.root, demoDataDir: f.demoDataD…
+       |                                                                                                                          ^
+    154|       expect(existsSync(f.env.SQL_CAPTURE)).toBe(false);
+    155|       expect(existsSync(join(f.root, 'storage/replays/abc.oantuti'))).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > propagates psql failure instead of reporting success
+Error: PGPASSWORD_FILE must be a private regular file
+ ❯ restoreDemo deploy/linux/restore-demo.ts:44:91
+     42|   if (env.PGPASSWORD_FILE) {
+     43|     const secret = lstatSync(env.PGPASSWORD_FILE);
+     44|     if (!secret.isFile() || secret.isSymbolicLink() || (secret.mode & …
+       |                                                                                           ^
+     45|     env.PGPASSWORD = readFileSync(env.PGPASSWORD_FILE, 'utf8').replace…
+     46|   }
+ ❯ packages/server/tests/portable-demo-restore.test.ts:166:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  packages/server/tests/portable-demo-restore.test.ts > portable host demo restore > refuses public operator-supplied object roots without changing their permissions
+AssertionError: expected [Function] to throw error including 'group/world' but got 'PGPASSWORD_FILE must be a private reg…'
+
+Expected: "group/world"
+Received: "PGPASSWORD_FILE must be a private regular file"
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts:177:159
+    175|       mkdirSync(replays, { mode: 0o755 });
+    176|       chmodSync(replays, 0o755);
+    177|       await expect(restoreDemo({ cwd: f.root, demoDataDir: f.demoDataD…
+       |                                                                                                                                                               ^
+    178|       expect(statSync(replays).mode & 0o777).toBe(0o755);
+    179|     } finally { f.clean(); }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  2 failed | 118 passed | 5 skipped (125)
+      Tests  8 failed | 726 passed | 43 skipped (777)
+   Start at  13:45:27
+   Duration  235.71s (transform 4.47s, setup 6.44s, import 17.89s, tests 183.67s, environment 24ms)
+

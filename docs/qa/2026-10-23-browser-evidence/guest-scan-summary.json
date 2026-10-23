@@ -1,0 +1,1124 @@
+{
+  "rows": [
+    {
+      "name": "home",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "OanTuTi Arena — giải đấu lập trình bot và bản tin chính thức",
+        "main": 2
+      },
+      "passes": 26,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".px-3 > span"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "news",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/news/chao-mung-oantuti-arena-2026",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Chào mừng đến với OanTuTi Arena — Đấu trường thuật toán Búa Kéo Bao",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "list",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/tournaments",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Giải đấu OanTuTi",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "registration",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Kiểm thử đăng ký và xét duyệt đội",
+        "main": 1
+      },
+      "passes": 23,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rankings",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/rankings",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Bảng xếp hạng đội",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "bracket",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/tournaments/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "SHOWCASE-UNRATED",
+        "main": 1
+      },
+      "passes": 28,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        },
+        {
+          "id": "target-size",
+          "impact": "serious",
+          "count": 12,
+          "targets": [
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(1) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(2) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(3) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(4) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(1) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(2) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(3) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(4) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(1) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(2) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(3) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(4) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "projector",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/projector/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "main": 2
+      },
+      "passes": 24,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 11,
+          "targets": [
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "width": 1440,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/workspace",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Đăng nhập",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "home",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "OanTuTi Arena — giải đấu lập trình bot và bản tin chính thức",
+        "main": 2
+      },
+      "passes": 26,
+      "violations": []
+    },
+    {
+      "name": "news",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/news/chao-mung-oantuti-arena-2026",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Chào mừng đến với OanTuTi Arena — Đấu trường thuật toán Búa Kéo Bao",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "list",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/tournaments",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Giải đấu OanTuTi",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "registration",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Kiểm thử đăng ký và xét duyệt đội",
+        "main": 1
+      },
+      "passes": 23,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rankings",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/rankings",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Bảng xếp hạng đội",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "bracket",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/tournaments/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "SHOWCASE-UNRATED",
+        "main": 1
+      },
+      "passes": 28,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        },
+        {
+          "id": "target-size",
+          "impact": "serious",
+          "count": 12,
+          "targets": [
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(1) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(2) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(3) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(1) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t:nth-child(1) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(4) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(1) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(2) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(3) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".border-t:nth-child(2) > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(4) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(1) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(2) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(3) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ],
+            [
+              ".py-4.px-4:nth-child(2) > .overflow-x-auto > .min-w-\\[760px\\] > tbody > .border-t > td:nth-child(6) > .gap-1.font-semibold.flex-col > .gap-3.flex-wrap.items-center:nth-child(4) > .gap-2.flex-col.flex > .underline.underline-offset-2.text-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "projector",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/projector/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "main": 2
+      },
+      "passes": 24,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 11,
+          "targets": [
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "width": 1440,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/workspace",
+      "layout": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "h1": "Đăng nhập",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "home",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "OanTuTi Arena — giải đấu lập trình bot và bản tin chính thức",
+        "main": 2
+      },
+      "passes": 26,
+      "violations": []
+    },
+    {
+      "name": "news",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/news/chao-mung-oantuti-arena-2026",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Chào mừng đến với OanTuTi Arena — Đấu trường thuật toán Búa Kéo Bao",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "list",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/tournaments",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Giải đấu OanTuTi",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "registration",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Kiểm thử đăng ký và xét duyệt đội",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rankings",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/rankings",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Bảng xếp hạng đội",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "bracket",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/tournaments/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "SHOWCASE-UNRATED",
+        "main": 1
+      },
+      "passes": 29,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              "section:nth-child(5) > .overflow-x-auto"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "projector",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/projector/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "main": 2
+      },
+      "passes": 24,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 11,
+          "targets": [
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "width": 390,
+      "theme": "light",
+      "url": "http://127.0.0.1:14301/workspace",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Đăng nhập",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "home",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "OanTuTi Arena — giải đấu lập trình bot và bản tin chính thức",
+        "main": 2
+      },
+      "passes": 26,
+      "violations": []
+    },
+    {
+      "name": "news",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/news/chao-mung-oantuti-arena-2026",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Chào mừng đến với OanTuTi Arena — Đấu trường thuật toán Búa Kéo Bao",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "list",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/tournaments",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Giải đấu OanTuTi",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    },
+    {
+      "name": "registration",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Kiểm thử đăng ký và xét duyệt đội",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "rankings",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/rankings",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Bảng xếp hạng đội",
+        "main": 1
+      },
+      "passes": 24,
+      "violations": []
+    },
+    {
+      "name": "bracket",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/tournaments/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "SHOWCASE-UNRATED",
+        "main": 1
+      },
+      "passes": 29,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              ".bg-\\[var\\(--action\\)\\]"
+            ]
+          ]
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "count": 1,
+          "targets": [
+            [
+              "section:nth-child(5) > .overflow-x-auto"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "projector",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/projector/9c243cb8-b27e-4176-8592-78bb1f1fc377",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "main": 2
+      },
+      "passes": 24,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "count": 11,
+          "targets": [
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(1) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(2) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(4) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(1) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(2) > .opacity-80.text-\\[10px\\]"
+            ],
+            [
+              "article:nth-child(3) > .pt-2\\.5.border-t.flex-col > .flex-wrap.gap-2 > .hover\\:border-\\[var\\(--action\\)\\].gap-1\\.5.px-2\\.5:nth-child(3) > .opacity-80.text-\\[10px\\]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "width": 390,
+      "theme": "dark",
+      "url": "http://127.0.0.1:14301/workspace",
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390,
+        "h1": "Đăng nhập",
+        "main": 1
+      },
+      "passes": 25,
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "net": [
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:14301/api/v2/auth/me",
+      "status": 401
+    }
+  ]
+}

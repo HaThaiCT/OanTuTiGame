@@ -1,0 +1,144 @@
+{
+  "keys": [
+    {
+      "tag": "A",
+      "text": "OanTuTi\nARENA\nUET · ĐHQGHN",
+      "href": "/",
+      "outline": "solid",
+      "rect": {
+        "x": 36,
+        "y": 16.578125,
+        "width": 151.734375,
+        "height": 39.625,
+        "top": 16.578125,
+        "right": 187.734375,
+        "bottom": 56.203125,
+        "left": 36
+      }
+    },
+    {
+      "tag": "A",
+      "text": "Trang chủ",
+      "href": "/",
+      "outline": "solid",
+      "rect": {
+        "x": 223.734375,
+        "y": 0,
+        "width": 72.40625,
+        "height": 72.796875,
+        "top": 0,
+        "right": 296.140625,
+        "bottom": 72.796875,
+        "left": 223.734375
+      }
+    },
+    {
+      "tag": "A",
+      "text": "Giải đấu",
+      "href": "/tournaments",
+      "outline": "solid",
+      "rect": {
+        "x": 324.140625,
+        "y": 0,
+        "width": 62.25,
+        "height": 72.796875,
+        "top": 0,
+        "right": 386.390625,
+        "bottom": 72.796875,
+        "left": 324.140625
+      }
+    },
+    {
+      "tag": "A",
+      "text": "Bảng xếp hạng",
+      "href": "/rankings",
+      "outline": "solid",
+      "rect": {
+        "x": 414.390625,
+        "y": 0,
+        "width": 112.015625,
+        "height": 72.796875,
+        "top": 0,
+        "right": 526.40625,
+        "bottom": 72.796875,
+        "left": 414.390625
+      }
+    },
+    {
+      "tag": "BUTTON",
+      "text": "☀",
+      "href": null,
+      "outline": "solid",
+      "rect": {
+        "x": 1171.796875,
+        "y": 20.390625,
+        "width": 32,
+        "height": 32,
+        "top": 20.390625,
+        "right": 1203.796875,
+        "bottom": 52.390625,
+        "left": 1171.796875
+      }
+    },
+    {
+      "tag": "BUTTON",
+      "text": "☾",
+      "href": null,
+      "outline": "solid",
+      "rect": {
+        "x": 1206.796875,
+        "y": 20.390625,
+        "width": 32,
+        "height": 32,
+        "top": 20.390625,
+        "right": 1238.796875,
+        "bottom": 52.390625,
+        "left": 1206.796875
+      }
+    },
+    {
+      "tag": "BUTTON",
+      "text": "▣",
+      "href": null,
+      "outline": "solid",
+      "rect": {
+        "x": 1241.796875,
+        "y": 20.390625,
+        "width": 32,
+        "height": 32,
+        "top": 20.390625,
+        "right": 1273.796875,
+        "bottom": 52.390625,
+        "left": 1241.796875
+      }
+    },
+    {
+      "tag": "A",
+      "text": "Đăng nhập",
+      "href": "/workspace?returnTo=%2Ftournaments%2F9628ef7a-b9e5-404f-8760-40af96c60666%3Ftab%3Dregistration",
+      "outline": "solid",
+      "rect": {
+        "x": 1290.796875,
+        "y": 16.015625,
+        "width": 113.203125,
+        "height": 40.75,
+        "top": 16.015625,
+        "right": 1404,
+        "bottom": 56.765625,
+        "left": 1290.796875
+      }
+    }
+  ],
+  "zoom": {
+    "zoom": "2",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "height": 1870,
+    "viewport": 900,
+    "bodyWidth": 720
+  },
+  "offline": {
+    "error": "page.reload: net::ERR_INTERNET_DISCONNECTED\nCall log:\n  - waiting for navigation until \"domcontentloaded\"\n",
+    "url": "http://127.0.0.1:14301/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration"
+  }
+}

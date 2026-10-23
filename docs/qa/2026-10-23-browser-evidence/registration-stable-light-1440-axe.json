@@ -1,0 +1,30 @@
+{
+  "state": {
+    "theme": "light",
+    "storage": "light",
+    "elements": [
+      {
+        "text": "Đăng ký tham gia",
+        "href": "http://127.0.0.1:14301/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration",
+        "aria": null,
+        "class": "whitespace-nowrap rounded-xl px-4 py-2.5 font-heading text-xs font-bold transition-all bg-[var(--action)] text-[var(--action-text)] shadow-xs",
+        "fg": "rgb(15, 25, 35)",
+        "bg": "rgb(185, 28, 44)"
+      }
+    ]
+  },
+  "axe": [
+    {
+      "id": "color-contrast",
+      "nodes": [
+        {
+          "html": "<a class=\"whitespace-nowrap rounded-xl px-4 py-2.5 font-heading text-xs font-bold transition-all bg-[var(--action)] text-[var(--action-text)] shadow-xs\" href=\"/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration\">Đăng ký tham gia</a>",
+          "target": [
+            ".bg-\\[var\\(--action\\)\\]"
+          ],
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.75 (foreground color: #0f1923, background color: #b91c2c, font size: 8.7pt (11.625px), font weight: bold). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ]
+}

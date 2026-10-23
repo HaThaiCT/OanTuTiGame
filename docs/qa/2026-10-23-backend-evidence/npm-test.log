@@ -1,0 +1,164 @@
+
+> oantuti-arena-specs@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2
+
+stderr | packages/server/tests/identity-production.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/identity-production.test.ts (11 tests | 11 skipped) 93ms
+stderr | packages/server/tests/online-identity.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-identity.test.ts (9 tests | 9 skipped) 182ms
+stderr | packages/server/tests/submission-quotas.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/submission-quotas.test.ts (9 tests | 9 skipped) 605ms
+stderr | packages/server/tests/appeal-and-announcements.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/appeal-and-announcements.test.ts (10 tests | 10 skipped) 450ms
+stderr | packages/server/tests/lease-reclamation.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/lease-reclamation.test.ts (1 test | 1 skipped) 261ms
+stderr | packages/server/tests/online-identity-lifecycle.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-identity-lifecycle.test.ts (9 tests | 9 failed) 2814ms
+     × does not treat a LAN bootstrap password as verified ONLINE identity 351ms
+     × cannot reuse a historical consumed token to activate the current email 375ms
+     × revokes sibling reset tokens when one reset succeeds without activating pending email 383ms
+     × expires a full identity rate window using PostgreSQL time despite a skewed application clock 325ms
+     × rejects a full rate window when the application clock is skewed forward 340ms
+     × serializes concurrent attempts at the account limit boundary 367ms
+     × limits account reset requests to three per hour 332ms
+     × limits reset requests by IP even for unknown accounts 4ms
+     × maintenance recovery preserves the singleton ADMIN identity and revokes sessions and outstanding tokens 318ms
+stderr | packages/server/tests/submission-lifecycle.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/submission-lifecycle.test.ts (10 tests | 10 skipped) 162ms
+stderr | packages/server/tests/private-test-runner.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/private-test-runner.test.ts (8 tests | 8 skipped) 54ms
+stderr | packages/server/tests/online-identity-lifecycle-contract.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-identity-lifecycle-contract.test.ts (9 tests | 9 skipped) 52ms
+stderr | packages/server/tests/build-pipeline.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/build-pipeline.test.ts (8 tests | 8 skipped) 38ms
+stderr | packages/server/tests/teams.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/teams.test.ts (7 tests | 7 skipped) 177ms
+stderr | packages/server/tests/reauth.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/reauth.test.ts (10 tests | 10 skipped) 132ms
+stderr | packages/server/tests/online-origin-policy.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-origin-policy.test.ts (13 tests | 3 failed) 1207ms
+     × requires injected Online configuration and reports profile and mail readiness 116ms
+     × returns a safe membership conflict code when a student creates a second team in the same tournament 427ms
+     × marks actual ONLINE session cookies Secure regardless of forwarded protocol 398ms
+stderr | packages/server/tests/login-throttle-origin.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/login-throttle-origin.test.ts (2 tests | 2 failed) 465ms
+     × ignores a forwarded address when no proxy is trusted 326ms
+     × honours the forwarded address only from a named proxy 117ms
+stderr | packages/server/tests/grace-autoseal.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/grace-autoseal.test.ts (5 tests | 5 skipped) 38ms
+stderr | packages/server/tests/portable-demo-restore.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/portable-demo-restore.test.ts (10 tests | 7 failed) 1457ms
+     × requires fresh-empty acknowledgement and explicit database settings before touching objects 36ms
+     × refuses a nonempty database without extracting evidence 16ms
+     × restores private evidence into configured roots and rebases database paths without shell parsing 21ms
+     × refuses unrelated files in private roots before applying database changes 17ms
+     × rejects archive symlinks before extraction or database apply 18ms
+     × propagates psql failure instead of reporting success 17ms
+     × refuses public operator-supplied object roots without changing their permissions 18ms
+stderr | packages/server/tests/map-versions.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/map-versions.test.ts (11 tests | 11 skipped) 266ms
+stderr | packages/server/tests/four-formats.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/four-formats.test.ts (14 tests | 4 failed | 1 skipped) 106ms
+       × gives the four games of a series four distinct map versions from the pool 5ms
+       × keeps the caller map for the whole series when the tournament has no pool 5ms
+       × runs Swiss rounds, auto-qualifies the cut-off into the playoff and crowns a finalist 8ms
+       × runs the full Elo epoch count and parks the arena in PROVISIONAL 6ms
+stderr | packages/server/tests/online-tournament-registration.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-tournament-registration.test.ts (10 tests | 10 skipped) 64ms
+stderr | packages/server/tests/dq-finalists.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/dq-finalists.test.ts (2 tests | 2 skipped) 41ms
+stderr | packages/server/tests/online-team-lifecycle.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-team-lifecycle.test.ts (11 tests | 11 skipped) 44ms
+stderr | packages/server/tests/replay-authorization.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/replay-authorization.test.ts (7 tests | 7 skipped) 56ms
+stderr | packages/server/tests/native-build-acceptance.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/native-build-acceptance.test.ts (7 tests | 7 skipped) 59ms
+stderr | packages/server/tests/native-game-acceptance.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/native-game-acceptance.test.ts (7 tests | 7 skipped) 43ms
+stderr | packages/server/tests/native-private-test-acceptance.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/native-private-test-acceptance.test.ts (8 tests | 8 skipped) 46ms
+stderr | packages/server/tests/online-mail-delivery.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/online-mail-delivery.test.ts (11 tests | 11 skipped) 34ms
+stderr | packages/server/tests/tournament-archive.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/tournament-archive.test.ts (16 tests | 16 skipped) 49ms
+stderr | packages/server/tests/public-standings-bracket.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/public-standings-bracket.test.ts (4 tests | 4 skipped) 236ms
+stderr | packages/server/tests/durable-jobs.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/durable-jobs.test.ts (11 tests | 11 skipped) 40ms
+stderr | packages/server/tests/corrections-and-finalization.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/corrections-and-finalization.test.ts (13 tests | 13 skipped) 88ms
+stderr | packages/server/tests/e2e-user-journeys.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/e2e-user-journeys.test.ts (3 tests | 3 skipped) 34ms
+stderr | packages/server/tests/swiss-bye.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/swiss-bye.test.ts (1 test | 1 skipped) 44ms
+stderr | packages/server/tests/content-service.test.ts
+[singleton-admin] skipped: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+
+ ❯ packages/server/tests/content-service.test.ts (3 tests | 3 skipped) 50ms

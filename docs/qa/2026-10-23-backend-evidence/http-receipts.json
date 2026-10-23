@@ -1,0 +1,630 @@
+[
+  {
+    "case": "login admin",
+    "method": "POST",
+    "path": "/api/v2/auth/login",
+    "payload": {
+      "password": "[REDACTED]"
+    },
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "0e8b503a-aad6-4e64-bcf1-3cde1db22b23",
+        "username": "audit_admin",
+        "displayName": "audit_admin",
+        "role": "ADMIN",
+        "email": "audit_admin@example.test",
+        "passwordChangeRequired": false,
+        "createdAt": "2026-10-23T06:48:17.339Z"
+      },
+      "scope": "FULL",
+      "expiresAt": "2026-10-23T18:49:42.625Z"
+    }
+  },
+  {
+    "case": "login student",
+    "method": "POST",
+    "path": "/api/v2/auth/login",
+    "payload": {
+      "password": "[REDACTED]"
+    },
+    "actor": "student",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "3f08e8a0-c3aa-4e59-89c1-01d57a0b9a88",
+        "username": "audit_student",
+        "displayName": "audit_student",
+        "role": "STUDENT",
+        "email": "audit_student@example.test",
+        "passwordChangeRequired": false,
+        "createdAt": "2026-10-23T06:48:17.732Z"
+      },
+      "scope": "FULL",
+      "expiresAt": "2026-10-30T06:49:42.937Z"
+    }
+  },
+  {
+    "case": "B02 readiness isolated",
+    "method": "GET",
+    "path": "/api/health/ready",
+    "payload": null,
+    "actor": "guest",
+    "expected": 503,
+    "status": 503,
+    "body": {
+      "status": "degraded",
+      "productionReady": false,
+      "accepts": {
+        "officialGame": false,
+        "build": false,
+        "privateTest": false
+      },
+      "checks": [
+        {
+          "name": "database",
+          "ok": true,
+          "detail": "PostgreSQL reachable"
+        },
+        {
+          "name": "schema",
+          "ok": true,
+          "detail": "schema version 32 matches this build"
+        },
+        {
+          "name": "executionGateway",
+          "ok": false,
+          "detail": "no native gateway configured: nothing can dispatch sandboxed work"
+        },
+        {
+          "name": "executionPlane",
+          "ok": true,
+          "detail": "development executor is off"
+        },
+        {
+          "name": "backupFence",
+          "ok": false,
+          "detail": "backup freshness is not enforced (OANTUTI_BACKUP_FENCE=off)"
+        },
+        {
+          "name": "objectRoots",
+          "ok": true,
+          "detail": "every recorded object path is inside the configured roots"
+        },
+        {
+          "name": "mail",
+          "ok": true,
+          "detail": "identity mail consumer is configured and started"
+        },
+        {
+          "name": "workers",
+          "ok": false,
+          "detail": "no complete authenticated native worker capacity"
+        }
+      ],
+      "schemaVersion": 32,
+      "expectedSchemaVersion": 32,
+      "timestamp": "2026-10-23T06:49:42.949Z"
+    }
+  },
+  {
+    "case": "B07 ADMIN create DRAFT",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments",
+    "payload": {
+      "courseCode": "AUDIT_HTTP",
+      "name": "Backend HTTP audit",
+      "format": "ROUND_ROBIN",
+      "minTeamSize": 1,
+      "maxTeamSize": 3,
+      "maxTeams": 4,
+      "isRated": false
+    },
+    "actor": "admin",
+    "expected": 201,
+    "status": 201,
+    "body": {
+      "tournament": {
+        "id": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+        "name": "Backend HTTP audit",
+        "format": "ROUND_ROBIN",
+        "state": "DRAFT",
+        "rules_revision": "ArenaGameplay/v2",
+        "max_teams": 4,
+        "is_rated": false,
+        "global_rating_policy": "ArenaContestRating/v1",
+        "registration_opens_at": null,
+        "registration_closes_at": null,
+        "created_at": "2026-10-23T06:49:42.961Z"
+      }
+    }
+  },
+  {
+    "case": "B07 publish DRAFT to PUBLISHED",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/publish",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "state": "PUBLISHED"
+    }
+  },
+  {
+    "case": "B07 open PUBLISHED to REGISTRATION_OPEN",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/open-registration",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "state": "REGISTRATION_OPEN",
+      "registrationClosesAt": null
+    }
+  },
+  {
+    "case": "B14 guest detail",
+    "method": "GET",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+    "payload": null,
+    "actor": "guest",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "id": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "courseId": "f25f84a7-6767-479b-a055-91e194f93f83",
+      "name": "Backend HTTP audit",
+      "isRated": false,
+      "globalRatingPolicy": "ArenaContestRating/v1",
+      "format": "ROUND_ROBIN",
+      "state": "REGISTRATION_OPEN",
+      "version": 3,
+      "rulesRevision": "ArenaGameplay/v2",
+      "maxTeams": 4,
+      "minTeamSize": 1,
+      "maxTeamSize": 3,
+      "registrationOpensAt": "2026-10-23T06:49:42.989Z",
+      "admittedTeamCount": 0,
+      "createdAt": "2026-10-23T06:49:42.961Z"
+    }
+  },
+  {
+    "case": "B08 student create team",
+    "method": "POST",
+    "path": "/api/v2/me/teams",
+    "payload": {
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "name": "Audit HTTP team"
+    },
+    "actor": "student",
+    "expected": 201,
+    "status": 201,
+    "body": {
+      "id": "7b6b33cb-3876-4109-b8eb-88e75074ac6f",
+      "courseId": "f25f84a7-6767-479b-a055-91e194f93f83",
+      "name": "Audit HTTP team",
+      "captainUserId": "3f08e8a0-c3aa-4e59-89c1-01d57a0b9a88",
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "rosterLocked": false,
+      "members": [
+        {
+          "userId": "3f08e8a0-c3aa-4e59-89c1-01d57a0b9a88",
+          "username": "audit_student",
+          "displayName": "audit_student",
+          "role": "CAPTAIN"
+        }
+      ],
+      "createdAt": "2026-10-23T06:49:43.012Z"
+    }
+  },
+  {
+    "case": "B09 request pending",
+    "method": "POST",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/registrations",
+    "payload": {
+      "teamId": "7b6b33cb-3876-4109-b8eb-88e75074ac6f"
+    },
+    "actor": "student",
+    "expected": 201,
+    "status": 201,
+    "body": {
+      "id": "9103dd8d-a317-416b-9307-3fa8c8cb6c30",
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "teamId": "7b6b33cb-3876-4109-b8eb-88e75074ac6f",
+      "teamName": "Audit HTTP team",
+      "status": "PENDING",
+      "version": 1,
+      "reason": null,
+      "requestedAt": "2026-10-23T06:49:43.036Z",
+      "reviewedAt": null,
+      "canCancel": true,
+      "canRequest": false,
+      "members": [
+        {
+          "role": "CAPTAIN",
+          "userId": "3f08e8a0-c3aa-4e59-89c1-01d57a0b9a88",
+          "username": "audit_student",
+          "displayName": "audit_student"
+        }
+      ]
+    }
+  },
+  {
+    "case": "B10 student cannot approve",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/registrations/9103dd8d-a317-416b-9307-3fa8c8cb6c30/review",
+    "payload": {
+      "decision": "APPROVE",
+      "expectedVersion": 1
+    },
+    "actor": "student",
+    "expected": 403,
+    "status": 403,
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "Only administrators can review requests"
+    }
+  },
+  {
+    "case": "B10 approve PENDING to APPROVED",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/registrations/9103dd8d-a317-416b-9307-3fa8c8cb6c30/review",
+    "payload": {
+      "decision": "APPROVE",
+      "expectedVersion": 1
+    },
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "id": "9103dd8d-a317-416b-9307-3fa8c8cb6c30",
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "teamId": "7b6b33cb-3876-4109-b8eb-88e75074ac6f",
+      "teamName": "Audit HTTP team",
+      "status": "APPROVED",
+      "version": 2,
+      "reason": null,
+      "requestedAt": "2026-10-23T06:49:43.036Z",
+      "reviewedAt": "2026-10-23T06:49:43.066Z",
+      "canCancel": false,
+      "canRequest": false,
+      "members": [
+        {
+          "role": "CAPTAIN",
+          "userId": "3f08e8a0-c3aa-4e59-89c1-01d57a0b9a88",
+          "username": "audit_student",
+          "displayName": "audit_student"
+        }
+      ]
+    }
+  },
+  {
+    "case": "B12 stale review rejects",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/registrations/9103dd8d-a317-416b-9307-3fa8c8cb6c30/review",
+    "payload": {
+      "decision": "REJECT",
+      "reason": "stale audit",
+      "expectedVersion": 1
+    },
+    "actor": "admin",
+    "expected": 409,
+    "status": 409,
+    "body": {
+      "code": "STALE_VERSION",
+      "message": "Registration changed; reload before trying again"
+    }
+  },
+  {
+    "case": "B14 guest registrations denied",
+    "method": "GET",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/registrations",
+    "payload": null,
+    "actor": "guest",
+    "expected": 401,
+    "status": 401,
+    "body": {
+      "code": "UNAUTHENTICATED",
+      "message": "Sign in to continue"
+    }
+  },
+  {
+    "case": "B14 student confirms approved",
+    "method": "GET",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/registrations",
+    "payload": null,
+    "actor": "student",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "registrations": [
+        {
+          "id": "9103dd8d-a317-416b-9307-3fa8c8cb6c30",
+          "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+          "teamId": "7b6b33cb-3876-4109-b8eb-88e75074ac6f",
+          "teamName": "Audit HTTP team",
+          "status": "APPROVED",
+          "version": 2,
+          "reason": null,
+          "requestedAt": "2026-10-23T06:49:43.036Z",
+          "reviewedAt": "2026-10-23T06:49:43.066Z",
+          "canCancel": true,
+          "canRequest": false,
+          "members": [
+            {
+              "role": "CAPTAIN",
+              "userId": "3f08e8a0-c3aa-4e59-89c1-01d57a0b9a88",
+              "username": "audit_student",
+              "displayName": "audit_student"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "case": "B13 close requires reauth",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/close-registration",
+    "payload": {},
+    "actor": "admin",
+    "expected": 403,
+    "status": 403,
+    "body": {
+      "code": "REAUTH_REQUIRED",
+      "message": "Recent re-authentication required for this action"
+    }
+  },
+  {
+    "case": "B13 password reauth",
+    "method": "POST",
+    "path": "/api/v2/auth/reauth",
+    "payload": {
+      "password": "[REDACTED]"
+    },
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "reauthenticatedUntil": "2026-10-23T06:59:43.398Z"
+    }
+  },
+  {
+    "case": "B13 close after reauth",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/close-registration",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "state": "VALIDATING_SUBMISSIONS"
+    }
+  },
+  {
+    "case": "B11 lock first",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/lock",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 400,
+    "body": {
+      "error": "IDEMPOTENCY_KEY_INVALID: the key must be 16\u2013128 characters"
+    }
+  },
+  {
+    "case": "B11 lock replay",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/lock",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 400,
+    "body": {
+      "error": "IDEMPOTENCY_KEY_INVALID: the key must be 16\u2013128 characters"
+    }
+  },
+  {
+    "case": "B12 stale lock",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/lock",
+    "payload": {
+      "expectedVersion": 1
+    },
+    "actor": "admin",
+    "expected": 409,
+    "status": 409,
+    "body": {
+      "error": "STALE_VERSION: expected tournament version 1, current 4"
+    }
+  },
+  {
+    "case": "B27 start without execution prerequisites",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/start",
+    "payload": {},
+    "actor": "admin",
+    "expected": "safe 4xx/503",
+    "status": 400,
+    "body": {
+      "error": "MAP_REQUIRED"
+    }
+  },
+  {
+    "case": "B11 follow-up login",
+    "method": "POST",
+    "path": "/api/v2/auth/login",
+    "payload": {
+      "password": "[REDACTED]"
+    },
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "0e8b503a-aad6-4e64-bcf1-3cde1db22b23",
+        "username": "audit_admin",
+        "displayName": "audit_admin",
+        "role": "ADMIN",
+        "email": "audit_admin@example.test",
+        "passwordChangeRequired": false,
+        "createdAt": "2026-10-23T06:48:17.339Z"
+      },
+      "scope": "FULL",
+      "expiresAt": "2026-10-23T18:50:37.514Z"
+    }
+  },
+  {
+    "case": "B11 valid lock first",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/lock",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "receiptId": "59c781f9-6732-4acc-acd0-644a1ee75527",
+      "timestamp": "2026-10-23T06:50:37.544Z",
+      "data": {
+        "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+        "state": "READY_TO_START",
+        "eligibleTeamsCount": 0,
+        "excludedTeamsCount": 1,
+        "lockedAt": "2026-10-23T06:50:37.544Z"
+      }
+    }
+  },
+  {
+    "case": "B11 valid lock replay",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/lock",
+    "payload": {},
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "data": {
+        "state": "READY_TO_START",
+        "lockedAt": "2026-10-23T06:50:37.544Z",
+        "tournamentId": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+        "eligibleTeamsCount": 0,
+        "excludedTeamsCount": 1
+      },
+      "receiptId": "59c781f9-6732-4acc-acd0-644a1ee75527",
+      "timestamp": "2026-10-23T06:50:37.544Z"
+    }
+  },
+  {
+    "case": "B14 final public state",
+    "method": "GET",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+    "payload": null,
+    "actor": "guest",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "id": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "courseId": "f25f84a7-6767-479b-a055-91e194f93f83",
+      "name": "Backend HTTP audit",
+      "isRated": false,
+      "globalRatingPolicy": "ArenaContestRating/v1",
+      "format": "ROUND_ROBIN",
+      "state": "READY_TO_START",
+      "version": 5,
+      "rulesRevision": "ArenaGameplay/v2",
+      "maxTeams": 4,
+      "minTeamSize": 1,
+      "maxTeamSize": 3,
+      "registrationOpensAt": "2026-10-23T06:49:42.989Z",
+      "admittedTeamCount": 0,
+      "createdAt": "2026-10-23T06:49:42.961Z"
+    }
+  },
+  {
+    "case": "B27 reauth fresh ADMIN session",
+    "method": "POST",
+    "path": "/api/v2/auth/reauth",
+    "payload": {
+      "password": "[REDACTED]"
+    },
+    "actor": "admin",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "reauthenticatedUntil": "2026-10-23T07:02:21.395Z"
+    }
+  },
+  {
+    "case": "B27 before start READY_TO_START",
+    "method": "GET",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+    "payload": null,
+    "actor": "guest",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "id": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "courseId": "f25f84a7-6767-479b-a055-91e194f93f83",
+      "name": "Backend HTTP audit",
+      "isRated": false,
+      "globalRatingPolicy": "ArenaContestRating/v1",
+      "format": "ROUND_ROBIN",
+      "state": "READY_TO_START",
+      "version": 5,
+      "rulesRevision": "ArenaGameplay/v2",
+      "maxTeams": 4,
+      "minTeamSize": 1,
+      "maxTeamSize": 3,
+      "registrationOpensAt": "2026-10-23T06:49:42.989Z",
+      "admittedTeamCount": 0,
+      "createdAt": "2026-10-23T06:49:42.961Z"
+    }
+  },
+  {
+    "case": "B27 start READY without committed map",
+    "method": "POST",
+    "path": "/api/v2/organizer/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda/start",
+    "payload": {},
+    "actor": "admin",
+    "expected": 400,
+    "status": 400,
+    "body": {
+      "error": "MAP_REQUIRED"
+    }
+  },
+  {
+    "case": "B27 after rejected start unchanged",
+    "method": "GET",
+    "path": "/api/v2/tournaments/67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+    "payload": null,
+    "actor": "guest",
+    "expected": 200,
+    "status": 200,
+    "body": {
+      "id": "67df8a1f-38ec-42bc-98b6-2cbfc11ecbda",
+      "courseId": "f25f84a7-6767-479b-a055-91e194f93f83",
+      "name": "Backend HTTP audit",
+      "isRated": false,
+      "globalRatingPolicy": "ArenaContestRating/v1",
+      "format": "ROUND_ROBIN",
+      "state": "READY_TO_START",
+      "version": 5,
+      "rulesRevision": "ArenaGameplay/v2",
+      "maxTeams": 4,
+      "minTeamSize": 1,
+      "maxTeamSize": 3,
+      "registrationOpensAt": "2026-10-23T06:49:42.989Z",
+      "admittedTeamCount": 0,
+      "createdAt": "2026-10-23T06:49:42.961Z"
+    }
+  }
+]

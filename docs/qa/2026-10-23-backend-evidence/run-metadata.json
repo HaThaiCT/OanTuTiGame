@@ -1,0 +1,6 @@
+{
+  "database": "arena_audit_20261023_0642_test",
+  "command": "npm test",
+  "started": "2026-10-23T06:43:00.990846+00:00",
+  "grants": "ALL table/sequence and schema rights in disposable DB only"
+}
