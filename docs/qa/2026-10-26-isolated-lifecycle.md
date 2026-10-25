@@ -123,5 +123,43 @@ The standalone sudoers helper scripts verified that Linux cgroup and sandbox iso
    - 616 / 616 replay objects matched bit-for-bit SHA-256 (100.0%).
    - 12 / 12 submission source archives verified on disk (100.0%).
 4. **Shared Environment Protection:** Domain data on the shared demo database `arena` (`oantuti-demo-20261022-postgres`) remains completely untouched.
-5. **Structured Trace Evidence:** Complete DB rows, API request payloads, and status codes recorded in `docs/qa/2026-10-26-lifecycle-evidence.json`.
-6. **No Git Commit/Push:** Working tree modifications remain strictly bounded to documentation and test evidence receipts.
+5. **Structured Trace Evidence:** Normalized observed state records from database rows and UI transitions documented in `docs/qa/2026-10-26-lifecycle-evidence.json`.
+6. **Version Control State:** At checkpoint before delivery, working tree modifications were uncommitted; final scoped evidence and report artifacts were subsequently committed in delivery commit `24ad9058ac3187dbb34c004bf1e66806876b639a` and pushed to remote tracking branches `develop/online-v2-2` and `develop/online-v2`.
+
+---
+
+## 5. Administrator Next Steps (Native Worker Commissioning Contract)
+
+To transition the deployment from `listening/degraded` (HTTP 503) to fully operational (`200 OK`) and advance submissions from `VALIDATING`/`QUEUED` to `READY`, the system administrator must execute the following contract-based provisioning steps:
+
+1. **Compile Native Binaries:**
+   - Build `arena-job-broker` and `arena-worker` from `crates/arena-supervisor` (using host Rust toolchain or Docker build stage) and place them into an operator-owned directory (e.g. `/usr/local/bin/arena-job-broker` and `/usr/local/libexec/oantuti/arena-worker`).
+2. **Deploy Native Gateway Configuration (`OANTUTI_NATIVE_CONFIG`):**
+   - Author a root/operator-owned configuration file (mode `0640` or `0600`, non-world-writable) conforming to the contract in `packages/server/src/jobs/runtime-config.ts`:
+     ```json
+     {
+       "executable": "/usr/local/bin/arena-job-broker",
+       "socketPath": "/run/oantuti/broker.sock",
+       "workerUid": 997,
+       "socketGid": 984,
+       "deploymentGeneration": 1,
+       "runtimeProfileDigest": "<sha256-digest-of-deploy/linux/runtime-profile.json>",
+       "maxBuildSlots": 2,
+       "maxGameSlots": 4,
+       "spoolRoot": "/var/spool/oantuti",
+       "compiledArtifactsDir": "/var/lib/oantuti/artifacts",
+       "toolchains": [
+         { "language": "PYTHON", "imageDigest": "<image-sha256>", "version": "3.12", "flags": [] },
+         { "language": "TYPESCRIPT", "imageDigest": "<image-sha256>", "version": "5.6", "flags": [] },
+         { "language": "CPP", "imageDigest": "<image-sha256>", "version": "g++-13", "flags": ["-std=c++20"] }
+       ]
+     }
+     ```
+3. **Provision Supervised Worker Unit:**
+   - Create a dedicated systemd service unit (e.g. `oantuti-worker.service`) running under user `arena-supervisor` (UID `997`, GID `984`) with cgroup delegation enabled (`Delegate=yes`) to invoke `arena-worker` pointing to `/run/oantuti/broker.sock`.
+4. **Validate & Recheck:**
+   - Run preflight check (`npx tsx deploy/linux/online-preflight.mts`).
+   - Restart the API server with `OANTUTI_NATIVE_CONFIG` set.
+   - Probe `GET /api/health/ready` to verify that `executionGateway: true` and `workers: true` before opening tournament rounds to official match play.
+
+*Release gate enforcement:* Full production release remains blocked until this human operator infrastructure provisioning is completed.

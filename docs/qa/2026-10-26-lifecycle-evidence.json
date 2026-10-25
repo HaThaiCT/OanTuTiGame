@@ -1,5 +1,7 @@
 {
   "timestamp": "2026-10-26T03:30:00Z",
+  "evidenceType": "NORMALIZED_OBSERVED_STATE_SUMMARY",
+  "evidenceDescription": "Normalized observed state summary from database rows, browser UI element states, and API responses (not raw HTTP packet captures or mock injections)",
   "environment": {
     "workspace": "/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2",
     "branch": "develop/online-v2-2",
