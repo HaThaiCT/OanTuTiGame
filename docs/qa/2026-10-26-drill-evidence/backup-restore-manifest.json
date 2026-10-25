@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-10-26T02:50:00Z",
+  "drillType": "Consistent Local Database & Object Store Verification Drill",
+  "scopeExclusion": "Local verification only; does NOT constitute off-host disaster recovery certification. Archive matches demo assets but does not provide object recovery for test DB references.",
+  "databaseVerification": {
+    "sourceDatabase": "arena_audit_merge_20261026_test",
+    "restoreDatabase": "arena_restore_drill_complete",
+    "dumpFiles": {
+      "initialDrillDump": {
+        "path": "/tmp/backup_drill_20261026.sql",
+        "sizeBytes": 547246,
+        "sha256": "90267a0b896c440e8a47c05cef489f62583ab02a54a710982fa4f3b7a13f22fd"
+      },
+      "objectsDrillDump": {
+        "path": "/tmp/drill_with_objects/database.sql",
+        "sizeBytes": 551617,
+        "sha256": "fbacc05bce0ef8dc0d4320226bfae42e028e199c3d3daf56e6babbb128eb1df9"
+      }
+    },
+    "dumpDurationSeconds": 0.158,
+    "restoreDurationSeconds": 1.1,
+    "countsMatch": true,
+    "tableCounts": {
+      "schema_migrations": 30,
+      "users": 69,
+      "teams": 546,
+      "tournaments": 10,
+      "tournament_entries": 8,
+      "submissions": 3,
+      "starter_bot_templates": 5
+    }
+  },
+  "objectStoreVerification": {
+    "objectsArchive": "/tmp/drill_with_objects/objects.tar.gz",
+    "objectsArchiveSizeBytes": 243500,
+    "objectsArchiveSha256": "67ff2ffe4920f73e4070b62e14f7ba5853ce927adec2b753988ca1b979b5561a",
+    "bundledSourceArchive": "deploy/demo-data/arena_objects.tar.gz",
+    "bundledSourceSha256": "b509e177ca29aa576806baabb32cf3f9b5949652ef9c4f6c5958ec28abc13e9f",
+    "rootfsSha256Distinction": "Sandbox rootfs SHA-256 is 63768f52c0ba59396b40aabfa6ced7650d5f7b309ba09d9e606b7189eb3865b4; objects archive is 67ff2ffe4920f73e4070b62e14f7ba5853ce927adec2b753988ca1b979b5561a",
+    "totalObjectsInArchive": 628,
+    "objectsExtractedMatch": true,
+    "databaseReferencedObjects": {
+      "demoDatabase": {
+        "databaseName": "arena",
+        "referencedReplaysCount": 616,
+        "verifiedReplaysInStore": 616,
+        "replaysIntegrity": "100% matched bit-for-bit SHA-256 digest to stored file content (616 / 616)",
+        "referencedSubmissionSourcesCount": 12,
+        "verifiedSubmissionSourcesInStore": 12,
+        "submissionsIntegrity": "100% matched zip archives verified with unzip integrity check (12 / 12)"
+      },
+      "dumpedTestDatabase": {
+        "databaseName": "arena_audit_merge_20261026_test",
+        "referencedReplaysCount": 121,
+        "verifiedReplaysInStore": 0,
+        "replaysIntegrity": "0 / 121 matched; all 121 test replays are ephemeral test suite artifacts absent from bundled demo archive",
+        "referencedSubmissionSourcesCount": 16,
+        "verifiedSubmissionSourcesInStore": 3,
+        "submissionsIntegrity": "3 / 16 matched (only the 3 official starter templates: python, typescript, cpp); 13 test packages were ephemeral /tmp fixtures",
+        "relationalRecoveryVerdict": "INCOMPLETE_RECOVERY — SQL tables and schema restored, but referenced test replays and test submission files were not present in the bundled demo archive. Object archive equality (628 files) is distinct from relational reference recovery."
+      }
+    }
+  }
+}

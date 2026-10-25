@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-10-26T03:25:00Z",
+  "drillType": "Matching Demo DB Read-Only Snapshot + Demo Storage Archive Full Recovery",
+  "source": {
+    "container": "oantuti-demo-20261022-postgres",
+    "database": "arena",
+    "readOnly": true
+  },
+  "destination": {
+    "container": "oantuti-local-online-test-pg",
+    "database": "arena_restore_demo_verify_test",
+    "storagePath": "/tmp/oantuti-demo-restore-storage/storage"
+  },
+  "dumpMetrics": {
+    "dumpFile": "/tmp/demo_backup_snapshot.sql",
+    "sizeBytes": 5903823,
+    "sha256": "5074b3fb4cee00d11495cdd8180e12a6c0da1c0620ba118e6cddc160c53fa730",
+    "dumpDurationSeconds": 0.278,
+    "restoreDurationSeconds": 1.124
+  },
+  "tableCounts": {
+    "schema_migrations": 32,
+    "users": 133,
+    "teams": 77,
+    "tournaments": 47,
+    "tournament_entries": 156,
+    "submissions": 154,
+    "starter_bot_templates": 3,
+    "replay_objects": 616,
+    "submission_sources": 12
+  },
+  "cryptographicDigestVerification": {
+    "totalReplayObjectsReferenced": 616,
+    "totalReplayObjectsVerifiedBitForBit": 616,
+    "replaysIntegrity": "616/616 (100.0%)",
+    "totalSubmissionSourcesReferenced": 12,
+    "totalSubmissionSourcesVerifiedOnDisk": 12,
+    "submissionsIntegrity": "12/12 (100.0%)"
+  },
+  "recoveryStatus": "FULL_RECOVERY_VERIFIED"
+}

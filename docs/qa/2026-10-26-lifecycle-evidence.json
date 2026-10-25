@@ -1,0 +1,130 @@
+{
+  "timestamp": "2026-10-26T03:30:00Z",
+  "environment": {
+    "workspace": "/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2",
+    "branch": "develop/online-v2-2",
+    "headCommit": "2beb83cdbdfe5ed85e61b4468f647c5eb54bc152",
+    "apiEndpoint": "http://127.0.0.1:15611",
+    "webEndpoint": "http://127.0.0.1:15612",
+    "database": {
+      "container": "oantuti-local-online-test-pg",
+      "port": 15543,
+      "name": "arena_closure_20261026_030157_test",
+      "migrationsApplied": 32,
+      "userRole": "arena_app"
+    },
+    "storage": {
+      "path": "/tmp/oantuti-closure-20261026_030157-storage",
+      "mode": "0700"
+    },
+    "credentialsFile": {
+      "path": "/tmp/oantuti-closure-20261026_030157-credentials.json",
+      "mode": "0600"
+    }
+  },
+  "readinessProbe": {
+    "url": "http://127.0.0.1:15611/api/health/ready",
+    "httpStatus": 503,
+    "verdict": "listening/degraded (authentic baseline)",
+    "checks": {
+      "database": true,
+      "schema": true,
+      "schemaVersion": 32,
+      "executionGateway": false,
+      "executionPlaneDevOff": true,
+      "backupFence": false,
+      "objectRoots": true,
+      "mail": true,
+      "workers": false
+    }
+  },
+  "uiActionsAndDatabaseEvidence": {
+    "tournamentLifecycle": {
+      "tournamentId": "a2d3ac60-fb54-4607-8a47-3cc41248a8c5",
+      "courseCode": "CS101",
+      "name": "Giải Đấu AI Thuật Toán 2026",
+      "format": "SINGLE_ELIMINATION",
+      "maxTeams": 8,
+      "stateTransitions": [
+        { "from": "INITIAL", "to": "DRAFT", "trigger": "UI form submission on /organizer?tab=create" },
+        { "from": "DRAFT", "to": "PUBLISHED", "trigger": "UI button 'Công bố giải' clicked by system_admin" },
+        { "from": "PUBLISHED", "to": "REGISTRATION_OPEN", "trigger": "UI button 'Mở đăng ký' clicked by system_admin" }
+      ],
+      "mapCommitment": {
+        "mapSlug": "standard-8x8",
+        "version": 1,
+        "committedBy": "system_admin"
+      },
+      "screenshot": "docs/qa/2026-10-23-browser-evidence/isolated-organizer-tournament-created-1440.png"
+    },
+    "teamAndRosterAcl": {
+      "teamId": "b7405e37-00cd-4f60-88c9-975904f68588",
+      "teamName": "Chiến Đội Sao Băng",
+      "captain": {
+        "username": "student_alice",
+        "userId": "14556a7a-e7d1-4f7e-b11c-95cfac3e2654",
+        "role": "CAPTAIN"
+      },
+      "invitation": {
+        "id": "20f70aaa-c1bd-48a4-8183-5234a258125a",
+        "recipientUsername": "student_bob",
+        "status": "ACCEPTED",
+        "respondedAt": "2026-10-25T20:16:19Z"
+      },
+      "memberAclVerified": {
+        "captainPermission": "Alice sees 'Gửi đăng ký' button and can register team",
+        "memberRestriction": "Bob sees 'Chiến Đội Sao Băng · Thành viên' with zero registration submission controls"
+      }
+    },
+    "registrationAndApproval": {
+      "registrationId": "d52d1d05-90b3-4d70-9ed8-ac81a9739031",
+      "requestedBy": "student_alice",
+      "requestedAt": "2026-10-25T20:18:47Z",
+      "confirmDialogHandled": true,
+      "initialStatus": "PENDING",
+      "pendingScreenshot": "docs/qa/2026-10-23-browser-evidence/isolated-student-registration-pending-1440.png",
+      "approval": {
+        "reviewedBy": "system_admin",
+        "reviewedAt": "2026-10-25T20:19:51Z",
+        "status": "APPROVED",
+        "tournamentEntryCreated": {
+          "entryId": "67f02b0e-3827-4662-b279-2490ef32a2a8",
+          "status": "ELIGIBLE"
+        },
+        "approvedScreenshot": "docs/qa/2026-10-23-browser-evidence/isolated-admin-approved-team-1440.png"
+      }
+    },
+    "botSubmission": {
+      "submissionId": "dd3cd906-4819-4db4-8d11-f201cc280930",
+      "receiptOrdinal": 1,
+      "language": "PYTHON",
+      "entrypoint": "starter_bot.py",
+      "sourceDigest": "1b03359e4c9e9decb7e0fbbb1e3a36e458808db4b2f61a7769e0d463804215f4",
+      "status": "VALIDATING",
+      "receivedAt": "2026-10-25T20:20:43Z",
+      "honestQueueBehavior": "devExecutor is OFF (OANTUTI_DEV_EXECUTION=0); status correctly remains VALIDATING without mock injection",
+      "screenshot": "docs/qa/2026-10-23-browser-evidence/isolated-student-submission-uploaded-1440.png"
+    },
+    "newsAdministration": {
+      "slug": "khoi-tranh-giai-dau-ai-2026",
+      "title": "Khởi tranh Giải Đấu AI Thuật Toán 2026",
+      "state": "PUBLISHED",
+      "publishedAt": "2026-10-25T20:24:40Z",
+      "author": "system_admin",
+      "screenshot": "docs/qa/2026-10-23-browser-evidence/isolated-admin-news-published-1440.png"
+    },
+    "monacoIde": {
+      "route": "/tournaments/a2d3ac60-fb54-4607-8a47-3cc41248a8c5?tab=submissions",
+      "mode": "Soạn mã trực tiếp (IDE)",
+      "renderedFiles": ["main.py"],
+      "screenshot": "docs/qa/2026-10-23-browser-evidence/isolated-student-private-ide-1440.png"
+    }
+  },
+  "exactNativeGatewayBlockerAnalysis": {
+    "sudoersPolicy": "Restricted by NOPASSWD whitelist to 6 specific fixed-parameter helper scripts (oantuti-dev-helper-v1 verify-rootfs/smoke-controller/smoke-reaper, smoke-gvisor.py, three-language-match.py, trusted-match.py). Arbitrary binaries and systemd-run require root password.",
+    "brokerWorkerTransport": "LocalJobBrokerTransport spawns arena-job-broker (options.executable) and requires that connecting worker clients authenticate with SO_PEERCRED peer.uid == options.workerUid (arena-supervisor UID 997).",
+    "unprivilegedUserns": "/proc/sys/kernel/apparmor_restrict_unprivileged_userns is 1. Unprivileged bwrap fails with EPERM. User ha-thai (UID 1000) cannot create namespaces or switch to UID 997 without sudo.",
+    "operatorGrantRequirement": "To connect the native queue worker in production, the operator must either provision a systemd service unit (e.g., oantuti-worker.service running as arena-supervisor) or extend sudoers rules to permit running arena-worker as arena-supervisor. This is an administrative infrastructure provisioning requirement, not a software compilation defect."
+  },
+  "backupRecoveryReceipt": "docs/qa/2026-10-26-drill-evidence/demo-backup-recovery-receipt.json"
+}
