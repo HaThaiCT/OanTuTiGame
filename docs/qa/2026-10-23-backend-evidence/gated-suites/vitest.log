@@ -1,0 +1,30 @@
+
+ RUN  v4.1.12 /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2
+
+ ❯ packages/server/tests/global-rating-publication.test.ts (10 tests | 1 failed) 893ms
+     × approves once, replays the decision idempotently, and rebuilds rows after rejection and reopen 250ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/server/tests/global-rating-publication.test.ts > global rating publication > approves once, replays the decision idempotently, and rebuilds rows after rejection and reopen
+AssertionError: expected 'undefined' to be 'RATING_PAGE_STALE' // Object.is equality
+
+Expected: "RATING_PAGE_STALE"
+Received: "undefined"
+
+ ❯ packages/server/tests/global-rating-publication.test.ts:331:35
+    329|     const stalePage = await app.inject({ method: 'GET', url: `/api/v2/…
+    330|     expect(stalePage.statusCode).toBe(409);
+    331|     expect(stalePage.json().code).toBe('RATING_PAGE_STALE');
+       |                                   ^
+    332|     expect(stalePage.json().message).toBe('RATING_PAGE_STALE');
+    333|     await db.query(`UPDATE global_rating_contests SET desired_included…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  1 failed | 41 passed (42)
+   Start at  01:30:57
+   Duration  14.12s (transform 500ms, setup 159ms, import 695ms, tests 12.79s, environment 0ms)
+

@@ -1,12 +1,12 @@
 # Browser / Docker surface QA — 2026-10-23
 
-**Baseline:** HEAD `54f51939886355fecc9cfa586c3c705578ffc119`; initial worktree clean. Read-only preview: `http://127.0.0.1:14301`, `https://localhost:14443`. No rebuild/restart or domain-data edits. Evidence and raw scans: [`2026-10-23-browser-evidence/`](2026-10-23-browser-evidence/). Chromium 145, axe-core 4.11.0. No UI source changes.
+**Baseline:** HEAD `54f51939886355fecc9cfa586c3c705578ffc119`; initial worktree clean. Read-only preview: `http://127.0.0.1:14301`, `https://localhost:14443`. No rebuild/restart or domain-data edits. Evidence and raw scans: [`2026-10-23-browser-evidence/`](2026-10-23-browser-evidence/). Chromium 145, axe-core 4.11.0. No UI source changes were made during the initial read-only audit.
 
 ## Executive summary
 
 Verified guest News/article rendering and click-through; public tournament list/hub and its `team`, `registration`, `submissions`, `starter-bots` tabs; actual click from registration to login and preservation of the tournament/tab URL; HTTPS login with authorized documented `student_alice` returning to the exact registration tab; public standings/bracket/projector; all three starter ZIP downloads and archive integrity; a downloaded Python bot running locally; one keyboard traversal, 200% CSS zoom and isolated offline reload. No viewport overflow or uncaught page JS errors in initial scans.
 
-**Confirmed accessibility issue — WCAG 2.2 AA 1.4.3 contrast:** selected “Đăng ký tham gia” tab in stable actual light theme computes foreground #0f1923 on #b91c2c, contrast 2.75:1; 11.625px bold text requires 4.5:1. Clicked “Giao diện sáng”, waited for `data-theme=light`, confirmed stored light preference and computed colors; axe independently flagged node again. `registration-stable-light-1440.png` and `registration-stable-light-1440-axe.json`. Original `registration-390-light.png` was dark-theme; initial scan theme labels therefore aren't reliable proof of state. Stable rerun confirms this issue only, not all scan counts. No UI fix under model boundary.
+**Confirmed accessibility issue — WCAG 2.2 AA 1.4.3 contrast:** selected “Đăng ký tham gia” tab in stable actual light theme computes foreground #0f1923 on #b91c2c, contrast 2.75:1; 11.625px bold text requires 4.5:1. Clicked “Giao diện sáng”, waited for `data-theme=light`, confirmed stored light preference and computed colors; axe independently flagged node again. `registration-stable-light-1440.png` and `registration-stable-light-1440-axe.json`. Original `registration-390-light.png` was dark-theme; initial scan theme labels therefore aren't reliable proof of state. Stable rerun confirms this issue only, not all scan counts. **Post-audit local fix:** Resolved in workspace (`packages/web/app/tournaments/[id]/page.tsx`) by setting inline `style={isActive ? { color: 'var(--action-text)' } : undefined}` to overcome unlayered `a { color: inherit; }` in `globals.css`. Verified on local preview port 15602 with isolated mock fixture API 15603: computed foreground `#ffffff` on background `#b91c2c`, contrast 6.43:1 (axe-core passed with 0 violations on tab node; `registration-stable-light-1440-fixed.png`, `registration-fixed-light-1440-axe.json`). The unchanged demo deployment (`172.20.0.3` / `14301`) remains at 2.75:1 until redeployed.
 
 Additional scanner observations for triage: bracket desktop target-size 12 nodes; mobile scrollable-region-focusable 1; projector contrast 11 nodes (some canvas/background indeterminate); home and projector each expose two `<main>` landmarks. No full WCAG conformance claim.
 
@@ -40,7 +40,5 @@ Additional scanner observations for triage: bracket desktop target-size 12 nodes
 - Projector filter outcome not confirmed. Comprehensive keyboard-only operation, screen reader, 200% OS text resize, and focus-not-obscured were not assessed.
 - Native worker/backup readiness is degraded per readiness result. Migration checksum table contains no entries for schema versions 31–32; checksum contents were not compared.
 
-No UI fixes, service restart/rebuild, or demo domain writes. Original axe/theme artifacts remain with stated theme caveat.
+No UI fixes, service restart/rebuild, or demo domain writes were performed during the initial read-only audit. (Subsequent post-audit workspace contrast fix in `packages/web/app/tournaments/[id]/page.tsx` was verified in local preview on port 15602; unchanged demo deployment remains at 2.75:1).
 - Native worker/backup readiness is explicitly degraded in readiness result. No migration content-checksum claim beyond schema table metadata.
-
-No UI fixes, service restart/rebuild, or demo domain writes. Original axe/theme artifacts remain with stated theme caveat.

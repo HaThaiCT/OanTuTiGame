@@ -1,0 +1,5 @@
+{
+  "testExit": 0,
+  "database": "arena_audit_postfix_20261026_test",
+  "testOnlyGrants": "all table/sequence cleanup rights, schema privileges, outbox ownership"
+}

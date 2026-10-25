@@ -1,0 +1,98 @@
+
+> oantuti-arena-specs@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2
+
+ ❯ packages/server/tests/identity-production.test.ts (11 tests | 11 skipped) 45ms
+ ❯ packages/server/tests/submission-quotas.test.ts (9 tests | 9 skipped) 82ms
+ ❯ packages/server/tests/submission-lifecycle.test.ts (10 tests | 10 skipped) 88ms
+stdout | packages/server/tests/teams.test.ts
+[singleton-admin] retired 1 leftover ADMIN fixture(s) from earlier files: grace_admin_1792953253459_388
+
+ ❯ packages/server/tests/teams.test.ts (7 tests | 7 skipped) 81ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/server/tests/identity-production.test.ts > S03 Production Identity, Teams & Tournament Substrate (PostgreSQL 16)
+error: update or delete on table "teams" violates foreign key constraint "encounters_team_a_id_fkey" on table "encounters"
+ ❯ node_modules/pg/lib/client.js:694:17
+ ❯ packages/server/tests/identity-production.test.ts:28:7
+     26|       await client.query('DELETE FROM tournament_admissions');
+     27|       await client.query('DELETE FROM team_memberships');
+     28|       await client.query('DELETE FROM teams');
+       |       ^
+     29|       await client.query('DELETE FROM tournaments');
+     30|       await client.query('DELETE FROM courses');
+ ❯ PostgresDatabase.withTransaction packages/server/src/persistence/db.ts:89:22
+ ❯ packages/server/tests/identity-production.test.ts:24:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  packages/server/tests/submission-lifecycle.test.ts > S05 Submission Source Pipeline & Private Workspace Tests (T3a)
+error: update or delete on table "teams" violates foreign key constraint "encounters_team_a_id_fkey" on table "encounters"
+ ❯ node_modules/pg/lib/client.js:694:17
+ ❯ packages/server/tests/submission-lifecycle.test.ts:97:7
+     95|       await client.query('DELETE FROM tournament_admissions');
+     96|       await client.query('DELETE FROM team_memberships');
+     97|       await client.query('DELETE FROM teams');
+       |       ^
+     98|       await client.query('DELETE FROM tournaments');
+     99|       await client.query('DELETE FROM courses');
+ ❯ PostgresDatabase.withTransaction packages/server/src/persistence/db.ts:89:22
+ ❯ packages/server/tests/submission-lifecycle.test.ts:87:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  packages/server/tests/submission-lifecycle.test.ts > S05 Submission Source Pipeline & Private Workspace Tests (T3a)
+error: update or delete on table "tournaments" violates foreign key constraint "teams_tournament_id_fkey" on table "teams"
+ ❯ node_modules/pg/lib/client.js:694:17
+ ❯ packages/server/tests/submission-lifecycle.test.ts:120:7
+    118|       await client.query(`DELETE FROM submission_sources WHERE NOT EXI…
+    119|       await client.query('DELETE FROM tournament_admissions');
+    120|       await client.query('DELETE FROM tournaments');
+       |       ^
+    121|       await client.query('DELETE FROM team_memberships');
+    122|       await client.query('DELETE FROM teams');
+ ❯ PostgresDatabase.withTransaction packages/server/src/persistence/db.ts:89:22
+ ❯ packages/server/tests/submission-lifecycle.test.ts:111:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  packages/server/tests/submission-quotas.test.ts > S05 Submission quotas (official receipts & private tests)
+error: update or delete on table "teams" violates foreign key constraint "encounters_team_a_id_fkey" on table "encounters"
+ ❯ node_modules/pg/lib/client.js:694:17
+ ❯ packages/server/tests/submission-quotas.test.ts:229:7
+    227|       await client.query('DELETE FROM tournament_admissions');
+    228|       await client.query('DELETE FROM team_memberships');
+    229|       await client.query('DELETE FROM teams');
+       |       ^
+    230|       await client.query('DELETE FROM tournaments');
+    231|       await client.query('DELETE FROM courses');
+ ❯ PostgresDatabase.withTransaction packages/server/src/persistence/db.ts:89:22
+ ❯ packages/server/tests/submission-quotas.test.ts:222:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  packages/server/tests/teams.test.ts > S03 HTTP REST API Routes — Identity, Teams & Tournament Substrate
+error: update or delete on table "teams" violates foreign key constraint "encounters_team_a_id_fkey" on table "encounters"
+ ❯ node_modules/pg/lib/client.js:694:17
+ ❯ packages/server/tests/teams.test.ts:34:7
+     32|       await client.query('DELETE FROM tournament_admissions');
+     33|       await client.query('DELETE FROM team_memberships');
+     34|       await client.query('DELETE FROM teams');
+       |       ^
+     35|       await client.query('DELETE FROM tournaments');
+     36|       await client.query('DELETE FROM courses');
+ ❯ PostgresDatabase.withTransaction packages/server/src/persistence/db.ts:89:22
+ ❯ packages/server/tests/teams.test.ts:30:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  4 failed | 116 passed | 5 skipped (125)
+      Tests  697 passed | 80 skipped (777)
+   Start at  01:33:28
+   Duration  82.24s (transform 1.72s, setup 2.83s, import 6.74s, tests 60.26s, environment 10ms)
+

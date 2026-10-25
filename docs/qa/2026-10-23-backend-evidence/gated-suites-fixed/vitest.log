@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2
+
+
+ Test Files  5 passed (5)
+      Tests  42 passed (42)
+   Start at  01:32:25
+   Duration  13.68s (transform 443ms, setup 142ms, import 599ms, tests 12.48s, environment 0ms)
+

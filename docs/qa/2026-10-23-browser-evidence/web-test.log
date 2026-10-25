@@ -1,0 +1,13 @@
+
+> oantuti-arena-specs@1.0.0 test:web
+> vitest run packages/web
+
+
+ RUN  v4.1.12 /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2
+
+
+ Test Files  11 passed (11)
+      Tests  35 passed (35)
+   Start at  02:11:14
+   Duration  1.67s (transform 195ms, setup 286ms, import 208ms, tests 143ms, environment 1ms)
+

@@ -1,0 +1,57 @@
+
+> @oantuti/web@1.0.0 prebuild
+> npm run assets:monaco
+
+
+> @oantuti/web@1.0.0 assets:monaco
+> node scripts/copy-monaco-assets.mjs
+
+Copied Monaco 0.57.0 JS, workers, CSS and local assets to /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2/packages/web/public/monaco
+
+> @oantuti/web@1.0.0 build
+> next build
+
+▲ Next.js 16.4.2 (Turbopack)
+✓ Running next.config.ts took 30ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 724ms
+  Running TypeScript ...
+  Finished TypeScript in 1183ms ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/12) ...
+  Generating static pages using 7 workers (3/12) 
+  Generating static pages using 7 workers (6/12) 
+  Generating static pages using 7 workers (9/12) 
+✓ Generating static pages using 7 workers (12/12) in 222ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /account
+├ ○ /apple-icon.png
+├ ○ /forgot-password
+├ ○ /icon.png
+├ ○ /icon.svg
+├ ƒ /live/[gameId]
+├ ƒ /news/[slug]
+├ ƒ /organizer
+├ ƒ /organizer/tournaments/[id]
+├ ƒ /projector/[id]
+├ ƒ /rankings
+├ ○ /register
+├ ƒ /replays
+├ ○ /reset-password
+├ ƒ /teams/[teamId]
+├ ƒ /tournaments
+├ ƒ /tournaments/[id]
+├ ○ /verify-email
+├ ○ /workspace
+├ ƒ /workspace/join
+└ ƒ /workspace/tournaments/[id]/teams/[teamId]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-10-25T19:08:44.805Z",
+  "theme": "light",
+  "testedUrl": "http://127.0.0.1:15602/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration",
+  "environment": {
+    "webRuntime": "Next.js 16.4.2 standalone (Turbopack build, port 15602)",
+    "apiBackend": "Isolated mock API fixture on port 15603 (mock tournament payload; not shared demo)",
+    "browser": "Headless Chromium (eval browser tab)",
+    "scanScope": "Targeted node scan on selected tab element (not full page scan)"
+  },
+  "element": {
+    "text": "Đăng ký tham gia",
+    "color": "rgb(255, 255, 255)",
+    "backgroundColor": "rgb(185, 28, 44)",
+    "fontSize": "11.625px",
+    "fontWeight": "700",
+    "computedFgHex": "#ffffff",
+    "computedBgHex": "#b91c2c"
+  },
+  "measuredContrastRatio": "6.43:1",
+  "minimumRequired": "4.5:1",
+  "wcagCriterion": "WCAG 2.2 AA 1.4.3 Contrast (Minimum)",
+  "verdict": "PASS",
+  "scopedNodeAxeSummary": "axe.run(el, { runOnly: ['color-contrast'] }) produced 0 violations on the target node and passed with message: 'Element has sufficient color contrast of 6.43'",
+  "axeDetails": {
+    "axeLoaded": true,
+    "violations": [],
+    "passes": [
+      {
+        "id": "color-contrast",
+        "impact": null,
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT"
+        ],
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/color-contrast?application=axeAPI",
+        "nodes": [
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "fgColor": "#ffffff",
+                  "bgColor": "#b91c2c",
+                  "contrastRatio": 6.43,
+                  "fontSize": "8.7pt (11.625px)",
+                  "fontWeight": "bold",
+                  "expectedContrastRatio": "4.5:1"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element has sufficient color contrast of 6.43"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": null,
+            "html": "<a style=\"color:var(--action-text)\" class=\"whitespace-nowrap rounded-xl px-4 py-2.5 font-heading text-xs font-bold transition-all bg-[var(--action)] text-[var(--action-text)] shadow-xs\" href=\"/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration\">Đăng ký tham gia</a>",
+            "target": [
+              ".overflow-x-auto > .bg-\\[var\\(--action\\)\\].text-\\[var\\(--action-text\\)\\].shadow-xs"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

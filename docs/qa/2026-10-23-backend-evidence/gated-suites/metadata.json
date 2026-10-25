@@ -1,0 +1,22 @@
+{
+  "adminTarget": "127.0.0.1:15543/postgres on test container; each suite creates and drops new test DB(s)",
+  "command": [
+    "npx",
+    "vitest",
+    "run",
+    "tests/migrations-hardening.test.ts",
+    "packages/server/tests/global-rating-placements-db.test.ts",
+    "packages/server/tests/global-rating-publication.test.ts",
+    "packages/server/tests/global-rating-revisions.test.ts",
+    "packages/server/tests/tournament-registration-migration.test.ts"
+  ],
+  "envNames": [
+    "OANTUTI_MIGRATION_TEST_URL",
+    "OANTUTI_VERIFIER_BIN",
+    "PGDATABASE",
+    "PGHOST",
+    "PGPASSWORD",
+    "PGPORT",
+    "PGUSER"
+  ]
+}

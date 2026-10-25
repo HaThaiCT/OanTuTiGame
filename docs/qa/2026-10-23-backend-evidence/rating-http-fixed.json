@@ -1,0 +1,36 @@
+{
+  "transport": "native fetch over TCP loopback, not Fastify inject",
+  "fixture": "isolated HTTP DB; publication generations directly seeded, calculation covered separately by gated regression suite",
+  "before": {
+    "status": 200,
+    "body": {
+      "publication": {
+        "generationId": "1",
+        "activeRevision": "1",
+        "desiredRevision": "1",
+        "updating": false
+      },
+      "rows": [
+        {
+          "teamId": "10ac3aa8-34ca-4d95-8c78-a764a728959f",
+          "name": "Rating HTTP Beta",
+          "rank": 1,
+          "rating": {
+            "rating": 100,
+            "maxRating": 100,
+            "ratedContests": 1,
+            "rank": "NEWBIE"
+          }
+        }
+      ],
+      "nextCursor": "eyJnZW5lcmF0aW9uSWQiOiIxIiwibGFzdFJhdGluZyI6MTAwLCJ0ZWFtSWQiOiIxMGFjM2FhOC0zNGNhLTRkOTUtOGM3OC1hNzY0YTcyODk1OWYifQ"
+    }
+  },
+  "after": {
+    "status": 409,
+    "body": {
+      "code": "RATING_PAGE_STALE",
+      "message": "RATING_PAGE_STALE"
+    }
+  }
+}

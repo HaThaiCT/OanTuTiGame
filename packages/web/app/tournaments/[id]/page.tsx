@@ -277,6 +277,7 @@ export default async function TournamentPage({
                 key={tab.id}
                 href={`/tournaments/${encodeURIComponent(id)}?tab=${tab.id}`}
                 scroll={false}
+                style={isActive ? { color: 'var(--action-text)' } : undefined}
                 className={`whitespace-nowrap rounded-xl px-4 py-2.5 font-heading text-xs font-bold transition-all ${
                   isActive
                     ? 'bg-[var(--action)] text-[var(--action-text)] shadow-xs'

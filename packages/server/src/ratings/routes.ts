@@ -52,7 +52,7 @@ async function requireAdmin(request: FastifyRequest, reply: FastifyReply, identi
 }
 
 function error(reply: FastifyReply, cause: unknown, fallback: string): FastifyReply {
-  const databaseCode = cause && typeof cause === 'object' && 'code' in cause ? String(cause.code) : '';
+  const databaseCode = cause && typeof cause === 'object' && 'code' in cause && typeof cause.code === 'string' ? cause.code : '';
   const unavailable = /^(08[A-Z0-9]{3}|53[0-9]{3}|57P0[123]|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EPIPE|ENOTFOUND)$/.test(databaseCode)
     || (cause instanceof Error && /connection (?:terminated|ended|timeout)|timeout exceeded when trying to connect|cannot use a pool after calling end/i.test(cause.message));
   const status = cause && typeof cause === 'object' && 'statusCode' in cause && typeof cause.statusCode === 'number' ? cause.statusCode : unavailable ? 503 : 500;
