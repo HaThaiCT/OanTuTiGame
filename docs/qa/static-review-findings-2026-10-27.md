@@ -145,3 +145,13 @@ Status: **FIXED — `extendRegistration` bumps `version = version + 1` and decid
 
 ## Verified non-findings (explicitly checked)
 - Starter-bot seed author NULL-ability, test status CHECK set, submission intake quota serialization, live membership lookup, private-test read authz, upload body arithmetic, CRC32 method-0 consistency, roster advisory-lock ordering, canonical seeding, Elo/no-op administrative results, dispute re-resolution policy visibility, `resolveWorkspaceDestination` guest default.
+
+## Runtime smoke addendum (2026-10-27, live stack `http://localhost:14440`)
+
+### R3 · create-team CTA still rerouted through `/workspace?returnTo=...` — a logged-in student loops but never opens the team form
+Observed on the live local stack as a real-account walkthrough: clicking `Tạo đội trong không gian đội →` on `?tab=registration` sent the authenticated no-team student to `/workspace` and immediately back to the same registration tab (workspace page.tsx:63 redirects any FULL session to `resolveWorkspaceDestination(returnTo)`) — the exact pre-fix behavior the earlier report called fixed. Fix: `tournamentCreateTeamHref` now returns the same-route tab `/tournaments/:id?tab=team`, and the CTA shows only while registration is open; a closed registration renders neutral copy ("Giải đã đóng đăng ký nên không thể tạo đội mới…") instead of a dead-end link. Regression: `packages/web/lib/navigation.test.ts` ("sends the no-team create-team CTA to the tournament team tab, not a workspace loop"), 54/54 web tests green. Verified live: link targets `?tab=team`, form `Tạo đội thi đấu cho giải này` reached directly, full account→team→registration journey completed (team created, registration sent, pending state rendered).
+Status: **FIXED (runtime-verified).**
+
+### R4 · registration CTA was offered on a closed-registration tournament (live smoke finding)
+The no-team branch rendered the create-team CTA whenever `teams.length===0 && registrations.length===0`, regardless of `open` state, so a `Đang diễn ra` tournament still advertised team creation through the registration tab. Fixed together with R3 by `open`-gating the CTA and adding the neutral closed-registration copy; live walkthrough confirmed the wording on a closed tournament.
+Status: **FIXED (runtime-verified, part of R3 change).**

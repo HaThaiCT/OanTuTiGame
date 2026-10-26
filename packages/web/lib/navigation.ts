@@ -47,7 +47,7 @@ export function resolveWorkspaceDestination(
  * Generates the safe returnTo link for creating a team from within a tournament registration tab.
  */
 export function tournamentCreateTeamHref(tournamentId: string): string {
-  return `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}`;
+  return `/tournaments/${encodeURIComponent(tournamentId)}?tab=team`;
 }
 
 /**

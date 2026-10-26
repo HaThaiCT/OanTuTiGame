@@ -22,15 +22,26 @@ describe('navigation safeReturnTo and workspace destinations', () => {
     expect(resolveWorkspaceDestination(returnTo, 'STUDENT')).toBe('/tournaments');
   });
 
-  it('resolves student to exact tournament registration tab when using corrected createTeamHref', () => {
+  it('sends the no-team create-team CTA to the tournament team tab, not a workspace loop', () => {
+    // Regression: `?returnTo=...`-style CTA sent an already-authenticated student to /workspace
+    // which immediately redirected back to the registration tab — a no-op loop that never opened
+    // the team-creation panel. The fixed link must navigate within the same tournament route.
     const tournamentId = '17d518be-2a9e-458f-9341-2e407156e7ec';
     const href = tournamentCreateTeamHref(tournamentId);
-    const parsed = new URL(href, 'http://localhost');
-    const returnTo = parsed.searchParams.get('returnTo');
+    expect(href).toBe(`/tournaments/${tournamentId}?tab=team`);
 
-    expect(returnTo).toBe(`/tournaments/${tournamentId}?tab=registration`);
-    expect(resolveWorkspaceDestination(returnTo, 'STUDENT')).toBe(`/tournaments/${tournamentId}?tab=registration`);
-    expect(resolveWorkspaceDestination(returnTo, 'ADMIN')).toBe(`/tournaments/${tournamentId}?tab=registration`);
+    const parsed = new URL(href, 'http://localhost');
+    expect(parsed.pathname).toBe(`/tournaments/${tournamentId}`);
+    expect(parsed.searchParams.get('tab')).toBe('team');
+    expect(parsed.searchParams.has('returnTo')).toBe(false);
+    // It must not render as a recurrence of the legacy workspace-loop URL either.
+    expect(href).not.toContain('/workspace');
+  });
+
+  it('resolves student to exact tournament registration tab when using corrected createTeamHref', () => {
+    const returnTo = '/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=registration';
+    expect(resolveWorkspaceDestination(returnTo, 'STUDENT')).toBe('/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=registration');
+    expect(resolveWorkspaceDestination(returnTo, 'ADMIN')).toBe('/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=registration');
   });
 
   it('sends the join-page fragment to the registration tab because the anchor only renders there', () => {
