@@ -30,7 +30,8 @@ def canonical_path(value):
     return str(path)
 
 
-def verify(archive, rootfs, expected_digest, expected_uid=0, expected_gid=0):
+def verify(archive, rootfs, expected_digest, expected_uid=0, expected_gid=0, required_executables=None):
+    required_executables = required_executables or {}
     if not re.fullmatch('[0-9a-f]{64}', expected_digest):
         raise VerificationError('INVALID_ARCHIVE_DIGEST')
     rootfs = Path(rootfs).absolute()
@@ -96,6 +97,18 @@ def verify(archive, rootfs, expected_digest, expected_uid=0, expected_gid=0):
                             raise VerificationError('CONTENT_MISMATCH')
                     record.update(type='file', size=info.st_size, sha256=content_digest)
             records.append(record)
+        for name, target in required_executables.items():
+            canonical_path(name)
+            if not isinstance(target, str) or not target or target.startswith('/') or not by_name.get(name) or not by_name[name].issym():
+                raise VerificationError('REQUIRED_EXECUTABLE_LINK_MISMATCH')
+            if os.readlink(rootfs / name) != target:
+                raise VerificationError('REQUIRED_EXECUTABLE_LINK_MISMATCH')
+            resolved = (rootfs / name).resolve(strict=True)
+            if not resolved.is_relative_to(rootfs):
+                raise VerificationError('REQUIRED_EXECUTABLE_ESCAPES_ROOTFS')
+            info = resolved.stat()
+            if not stat.S_ISREG(info.st_mode) or not info.st_mode & 0o111:
+                raise VerificationError('REQUIRED_EXECUTABLE_NOT_EXECUTABLE')
     actual = set()
     def walk_error(error):
         raise error
@@ -114,10 +127,17 @@ def main():
     parser.add_argument('--archive', required=True)
     parser.add_argument('--rootfs', required=True)
     parser.add_argument('--archive-sha256', required=True)
+    parser.add_argument('--require-executable', action='append', default=[], metavar='PATH=SYMLINK_TARGET')
     args = parser.parse_args()
     try:
-        result = verify(args.archive, args.rootfs, args.archive_sha256)
-    except (VerificationError, OSError, tarfile.TarError, ValueError) as error:
+        required = {}
+        for value in args.require_executable:
+            name, separator, target = value.partition('=')
+            if not separator or name in required:
+                raise VerificationError('INVALID_REQUIRED_EXECUTABLE')
+            required[name] = target
+        result = verify(args.archive, args.rootfs, args.archive_sha256, required_executables=required)
+    except (VerificationError, OSError, RuntimeError, tarfile.TarError, ValueError) as error:
         code = str(error) if isinstance(error, VerificationError) else type(error).__name__
         print(json.dumps({'status': 'REJECTED', 'code': code}))
         return 1

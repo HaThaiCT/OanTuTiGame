@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "status": "VERIFIED",
+  "scope": "Rootfs executable entrypoints and language toolchain probes; no gVisor bot match executed",
+  "imageId": "sha256:e526d5f922a539c6f6324a2e365073ac2c66686e1ee48b40e28359bd913f407e",
+  "baseImage": "ubuntu@sha256:f610ab94648195aa356059f5b41d6085c9d4d903c072430cdd1af7bdb646106b",
+  "recipe": "deploy/linux/trusted-rootfs.Dockerfile",
+  "recipeSha256": "7408a63354a1e047fe24530ac522c5f86a0fbc1dbf1721b6e4c45af405c6cf7f",
+  "nodeArchive": "/home/ha-thai/.local/share/oantuti/development/rootfs-context/node.tar.xz",
+  "nodeArchiveSha256": "cc2f601cee82d9a5a233302fe307abc600727035fd7d2c3a3571755989e95008",
+  "archivePath": "/home/ha-thai/.local/share/oantuti/development/native-rootfs-entrypoints-20261026.tar",
+  "archiveBytes": 597509120,
+  "archiveSha256": "626e4e3c7f82a95dfec96954b6909543ef38159833b0ae9a061ce71100de0730",
+  "normalizedTreeSha256": "583027582ce2f76c98eb0317659c7b663ed31bc57cd9c155afc9e5f83aa5705b",
+  "memberCount": 15033,
+  "verifier": "deploy/linux/verify-rootfs.py",
+  "verifierSha256": "241f0df337d7fe59d3bc8d8bcfd47e31705d2d877ef14c51b21d7a89baf233c7",
+  "requiredExecutableSymlinks": {
+    "usr/bin/python3": "python3.12",
+    "usr/bin/node": "../../opt/node/bin/node",
+    "usr/bin/g++": "g++-13"
+  },
+  "chrootProbes": {
+    "pythonVersion": "Python 3.12.3",
+    "nodeVersion": "v24.22.0",
+    "typescriptVersion": "5.9.3",
+    "cppVersion": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "pythonCompile": "exit 0",
+    "nodeSmoke": "NODE_SMOKE_OK",
+    "cpp20Compile": "exit 0",
+    "cppBinaryOutput": "42"
+  },
+  "verification": {
+    "commandScope": "Verifier executed in pinned Ubuntu image against exact exported archive after applying existing promote-compiled-rootfs.py normalization in a fresh rootfs staging directory",
+    "status": "VERIFIED",
+    "exitCode": 0
+  },
+  "tests": {
+    "command": "python3 -m unittest discover -s tests -p rootfs_verification_test.py -v; /bin/bash -n deploy/linux/operator-commission-worker.sh; python3 -m py_compile deploy/linux/promote-toolchain-rootfs.py deploy/linux/verify-rootfs.py tests/rootfs_verification_test.py",
+    "result": "19 tests passed; shell syntax and Python compilation passed",
+    "promoterSha256": "a0680677b3dee99add63ca9ddb035f7adb72a2aa48462544b521f19387b7fde4"
+  },
+  "gvisorMatch": "NOT RUN",
+  "privilegedInstallation": "NOT RUN",
+  "nativeWorkerToolchainDeployment": {
+    "rootfsTarget": "/var/lib/oantuti/development/toolchains/626e4e3c7f82a95dfec96954b6909543ef38159833b0ae9a061ce71100de0730",
+    "runtimeRootfsUnchanged": "/var/lib/oantuti/development/rootfs/fac7d1f7117e77461977305f459487773070d1fd84abfbf876be0c9de0446fbb",
+    "publication": "Staged archive/tree verification and language probes precede a destination-local copied-tree re-verification and atomic renameat2(RENAME_NOREPLACE); existing target is reused only after exact verification",
+    "failureRecovery": "Pre-publication installer paths are tracked by device/inode and removed only if identity still matches. Published content-addressed compiler roots are retained and reused only after exact digest/tree verification, enabling retry without path deletion.",
+    "review": "Helper promotion/recovery mechanics approved; complete installer operation not approved",
+    "status": "SOURCE ONLY; no privileged install or worker start performed"
+  }
+}

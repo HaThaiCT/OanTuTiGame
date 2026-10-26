@@ -4,6 +4,7 @@ COPY node.tar.xz /opt/node.tar.xz
 RUN mkdir -p /opt/node && tar -xJf /opt/node.tar.xz -C /opt/node --strip-components=1 && rm /opt/node.tar.xz
 COPY typescript /opt/typescript
 COPY sdk /opt/oantuti/sdk
-RUN /opt/node/bin/node --version && /opt/node/bin/node /opt/typescript/bin/tsc --version && python3.12 --version && g++-13 --version
+RUN ln -s python3.12 /usr/bin/python3 && ln -s ../../opt/node/bin/node /usr/bin/node && ln -s g++-13 /usr/bin/g++
+RUN /usr/bin/python3 --version && /usr/bin/node --version && /usr/bin/node /opt/typescript/bin/tsc --version && /usr/bin/g++ --version
 ENV PATH="/opt/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 LABEL org.oantuti.purpose="development-trusted-fixtures-only"
