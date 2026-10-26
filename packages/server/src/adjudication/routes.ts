@@ -5,6 +5,9 @@ import type { DisputeService } from './dispute-service.js';
 import type { CorrectionCommand, CorrectionService } from './correction-service.js';
 
 const COOKIE_NAME = 'oantuti_session';
+// Mirror of ratings/routes.ts: the target tables store UUID columns, so a non-UUID identifier
+// would surface PostgreSQL's 22P02 verbatim; callers get a structured 400 instead.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function extractToken(request: FastifyRequest): string | undefined {
   const cookieHeader = request.headers.cookie;
@@ -44,9 +47,16 @@ export function registerAdjudicationRoutes(
       const actor = await requireActor(req, reply);
       if (!actor) return;
 
+      if (!UUID_RE.test(req.params.id)) {
+        return reply.code(400).send({ error: 'INVALID_TOURNAMENT_ID' });
+      }
+
       const body = req.body as { encounterId?: string; teamId?: string; reason?: string };
       if (!body?.encounterId || !body?.teamId || !body?.reason) {
         return reply.code(400).send({ error: 'encounterId, teamId, and reason are required' });
+      }
+      if (!UUID_RE.test(body.encounterId) || !UUID_RE.test(body.teamId)) {
+        return reply.code(400).send({ error: 'INVALID_DISPUTE_TARGET' });
       }
 
       try {
@@ -71,6 +81,9 @@ export function registerAdjudicationRoutes(
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const actor = await requireActor(req, reply);
       if (!actor) return;
+      if (!UUID_RE.test(req.params.id)) {
+        return reply.code(400).send({ error: 'INVALID_TOURNAMENT_ID' });
+      }
       const disputes = await disputeService.listDisputes(req.params.id, actor);
       return reply.code(200).send({ disputes });
     }
@@ -82,8 +95,11 @@ export function registerAdjudicationRoutes(
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const actor = await requireActor(req, reply);
       if (!actor) return;
-      if (actor.role !== 'ADMIN') {
+      if (actor.role !== 'ADMIN' || actor.scope !== 'FULL') {
         return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+      if (!UUID_RE.test(req.params.id)) {
+        return reply.code(400).send({ error: 'INVALID_DISPUTE_ID' });
       }
 
       const body = req.body as { decision?: 'RESOLVED' | 'REJECTED'; note?: string };
@@ -113,8 +129,14 @@ export function registerAdjudicationRoutes(
     async (req: FastifyRequest<{ Params: { id: string; teamId: string } }>, reply: FastifyReply) => {
       const actor = await requireActor(req, reply);
       if (!actor) return;
-      if (actor.role !== 'ADMIN') {
+      if (actor.role !== 'ADMIN' || actor.scope !== 'FULL') {
         return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+      if (!UUID_RE.test(req.params.id)) {
+        return reply.code(400).send({ error: 'INVALID_TOURNAMENT_ID' });
+      }
+      if (!UUID_RE.test(req.params.teamId)) {
+        return reply.code(400).send({ error: 'INVALID_TEAM_ID' });
       }
       // Destructive: voiding a stage's results changes standings and the bracket.
       if (!(await requireRecentReauth(identityService, req, reply))) return;
@@ -147,8 +169,11 @@ export function registerAdjudicationRoutes(
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const actor = await requireActor(req, reply);
       if (!actor) return;
-      if (actor.role !== 'ADMIN') {
+      if (actor.role !== 'ADMIN' || actor.scope !== 'FULL') {
         return reply.code(403).send({ error: 'FORBIDDEN' });
+      }
+      if (!UUID_RE.test(req.params.id)) {
+        return reply.code(400).send({ error: 'INVALID_GAME_ID' });
       }
 
       const body = req.body as CorrectionCommand;
@@ -174,12 +199,15 @@ export function registerAdjudicationRoutes(
     async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const actor = await requireActor(req, reply);
       if (!actor) return;
-      if (actor.role !== 'ADMIN') {
+      if (actor.role !== 'ADMIN' || actor.scope !== 'FULL') {
         return reply.code(403).send({ error: 'FORBIDDEN' });
       }
 
       // Only the *apply* half is guarded: a preview changes nothing, so the operator can inspect the
       // impact first and is asked for the password only when the correction becomes destructive.
+      if (!UUID_RE.test(req.params.id)) {
+        return reply.code(400).send({ error: 'INVALID_GAME_ID' });
+      }
       if (!(await requireRecentReauth(identityService, req, reply))) return;
 
       const body = req.body as { command: CorrectionCommand; previewDigest: string };

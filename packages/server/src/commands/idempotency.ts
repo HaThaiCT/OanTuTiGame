@@ -71,7 +71,19 @@ export async function runIdempotent<T>(
     throw new IdempotencyError(409, 'IDEMPOTENT_IN_FLIGHT: the original request is still running');
   }
 
-  const result = await run();
+  let result: T;
+  try {
+    result = await run();
+  } catch (cause) {
+    // A rejected mutation leaves the claim as a tombstone that would answer every later retry with
+    // IDEMPOTENT_IN_FLIGHT forever. Delete the claim while it is *still* PENDING so the retry can
+    // claim it again; a concurrent delivery that has already flipped it to DONE is left untouched.
+    await db.query(
+      `DELETE FROM command_receipts WHERE id = $1 AND status = 'PENDING'`,
+      [claim.rows[0].id]
+    );
+    throw cause;
+  }
   await db.query(
     `UPDATE command_receipts SET status = 'DONE', receipt = $2, updated_at = clock_timestamp() WHERE id = $1`,
     [claim.rows[0].id, JSON.stringify(result)]

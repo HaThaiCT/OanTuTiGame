@@ -65,7 +65,10 @@ const PENDING_TEST_STATUSES = ['QUEUED', 'COMPILING', 'SMOKE_TESTING', 'RUNNING'
  * Priority of a receipt/snapshot build job. Above GAME (100) so that, if a worker ever claims
  * builds and games in the same slot offer, verifying a receipt wins over playing with it.
  */
-const BUILD_JOB_PRIORITY = 150;
+export const BUILD_JOB_PRIORITY = 150;
+
+/** Quota-pending receipt statuses, exported for the reconciler's stranded-build sweep. */
+export { PENDING_SUBMISSION_STATUSES, PENDING_TEST_STATUSES };
 
 interface SubmissionRow {
   readonly id: string;

@@ -399,16 +399,25 @@ export class TournamentSchedulerService {
         }
       }
 
-      // Update encounter
-      await client.query(
+      // Update encounter. Only an encounter the match actually started (PENDING/RUNNING)
+      // transitions here: a walkover/double-withdrawal/cancellation ruling (withdrawal, DQ or
+      // correction path) is sealed and must not be replaced by the completion of a game whose
+      // section was resolved by the administrative path (claim/withdrawal race, TR-07 §124).
+      const encounterUpdate = await client.query(
         `UPDATE encounters
          SET status = 'COMPLETED',
              winner_team_id = $1,
              points_a = $2,
              points_b = $3
-         WHERE id = $4`,
+         WHERE id = $4 AND status IN ('PENDING', 'RUNNING')
+         RETURNING id`,
         [winnerTeamId, pointsA, pointsB, encounter_id]
       );
+      if (encounterUpdate.rows.length === 0) {
+        // Ruling stands. Round progression is owned by the withdrawal/DQ sweep and the seal
+        // sweep, so a refused overwrite must not re-mark the round or emit progression.
+        return { tournamentId: null, createdGames: [] };
+      }
 
       // Check if all encounters in this round are completed
       const allEncRes = await client.query<{ status: string }>(

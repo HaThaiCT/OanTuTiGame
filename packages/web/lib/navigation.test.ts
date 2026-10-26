@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveWorkspaceDestination, safeReturnTo, tournamentCreateTeamHref } from './navigation';
+import { resolveWorkspaceDestination, safeReturnTo, tournamentCreateTeamHref, tournamentRegistrationHref } from './navigation';
 
 describe('navigation safeReturnTo and workspace destinations', () => {
   it('validates safe relative paths and rejects open-redirect attempts', () => {
@@ -31,5 +31,18 @@ describe('navigation safeReturnTo and workspace destinations', () => {
     expect(returnTo).toBe(`/tournaments/${tournamentId}?tab=registration`);
     expect(resolveWorkspaceDestination(returnTo, 'STUDENT')).toBe(`/tournaments/${tournamentId}?tab=registration`);
     expect(resolveWorkspaceDestination(returnTo, 'ADMIN')).toBe(`/tournaments/${tournamentId}?tab=registration`);
+  });
+
+  it('sends the join-page fragment to the registration tab because the anchor only renders there', () => {
+    // Regression: the join page used to link `/tournaments/:id#registration`, whose div renders
+    // only under `?tab=registration`, so the `<a>` landed silently on top of the overview tab.
+    const href = tournamentRegistrationHref('17d518be-2a9e-458f-9341-2e407156e7ec');
+    expect(href).toBe('/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=registration#registration');
+    // Query must precede the fragment or navigation drops it entirely.
+    expect(href.indexOf('?tab=registration')).toBeLessThan(href.indexOf('#registration'));
+    const parsed = new URL(href, 'http://localhost');
+    expect(parsed.searchParams.get('tab')).toBe('registration');
+    expect(parsed.pathname).toBe('/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec');
+    expect(parsed.hash).toBe('#registration');
   });
 });

@@ -76,6 +76,11 @@ export class SwissFormat {
     teams: readonly TeamEntry[],
     completedEncounters: readonly CompletedEncounterRecord[]
   ): readonly TeamStanding[] {
+    // Sealed results survive withdrawal (TR-07 §124): a COMPLETED encounter whose side has since
+    // lost its active entry still credits the remaining side and feeds opponent tiebreakers.
+    // Every team in the completed history therefore gets a stats row; rows for teams outside the
+    // active (ELIGIBLE) list exist purely as score sources and are filtered out before ranking.
+    const eligible = new Set(teams.map((t) => t.teamId));
     const stats = new Map<string, {
       teamId: string;
       seedOrdinal: number;
@@ -105,6 +110,25 @@ export class SwissFormat {
     }
 
     for (const enc of completedEncounters) {
+      for (const id of [enc.teamAId, enc.teamBId]) {
+        if (id && !stats.has(id)) {
+          stats.set(id, {
+            teamId: id,
+            seedOrdinal: Number.MAX_SAFE_INTEGER,
+            points: 0,
+            matchesPlayed: 0,
+            wins: 0,
+            draws: 0,
+            losses: 0,
+            opponents: [],
+            defeatedOpponents: [],
+            drawnOpponents: [],
+          });
+        }
+      }
+    }
+
+    for (const enc of completedEncounters) {
       const sA = stats.get(enc.teamAId);
       if (!sA) continue;
 
@@ -112,10 +136,12 @@ export class SwissFormat {
       // encounter, no opponent is added to the Buchholz/Sonneborn-Berger lists, and the
       // withdrawn side gains nothing.
       if (enc.status === 'WALKOVER') {
-        if (enc.winnerTeamId === enc.teamAId) {
+        // Unplayed: only an active (ELIGIBLE) team keeps administrative points; a side that has
+        // since lost its entry gains nothing from a resolved-by-default encounter.
+        if (enc.winnerTeamId === enc.teamAId && eligible.has(enc.teamAId)) {
           sA.points += enc.pointsA;
           sA.matchesPlayed += 1;
-        } else if (enc.teamBId && enc.winnerTeamId === enc.teamBId) {
+        } else if (enc.teamBId && enc.winnerTeamId === enc.teamBId && eligible.has(enc.teamBId)) {
           const walkoverWinner = stats.get(enc.teamBId);
           if (walkoverWinner) {
             walkoverWinner.points += enc.pointsB;
@@ -164,32 +190,36 @@ export class SwissFormat {
     }
 
     // Calculate Buchholz and Sonneborn-Berger
-    const rawStandings = Array.from(stats.values()).map((s) => {
-      let buchholz = 0;
-      for (const oppId of s.opponents) {
-        buchholz += stats.get(oppId)?.points ?? 0;
-      }
+    // Only active (ELIGIBLE) teams are ranked; score-source rows stay off the board (their points
+    // remain inside the `stats` map so Buchholz against them still sees sealed results).
+    const rawStandings = Array.from(stats.values())
+      .filter((s) => eligible.has(s.teamId))
+      .map((s) => {
+        let buchholz = 0;
+        for (const oppId of s.opponents) {
+          buchholz += stats.get(oppId)?.points ?? 0;
+        }
 
-      let sonnebornBerger = 0;
-      for (const oppId of s.defeatedOpponents) {
-        sonnebornBerger += stats.get(oppId)?.points ?? 0;
-      }
-      for (const oppId of s.drawnOpponents) {
-        sonnebornBerger += (stats.get(oppId)?.points ?? 0) * 0.5;
-      }
+        let sonnebornBerger = 0;
+        for (const oppId of s.defeatedOpponents) {
+          sonnebornBerger += stats.get(oppId)?.points ?? 0;
+        }
+        for (const oppId of s.drawnOpponents) {
+          sonnebornBerger += (stats.get(oppId)?.points ?? 0) * 0.5;
+        }
 
-      return {
-        teamId: s.teamId,
-        seedOrdinal: s.seedOrdinal,
-        points: s.points,
-        matchesPlayed: s.matchesPlayed,
-        wins: s.wins,
-        draws: s.draws,
-        losses: s.losses,
-        buchholz,
-        sonnebornBerger,
-      };
-    });
+        return {
+          teamId: s.teamId,
+          seedOrdinal: s.seedOrdinal,
+          points: s.points,
+          matchesPlayed: s.matchesPlayed,
+          wins: s.wins,
+          draws: s.draws,
+          losses: s.losses,
+          buchholz,
+          sonnebornBerger,
+        };
+      });
 
     // Sort: points DESC, Buchholz DESC, Sonneborn-Berger DESC, seedOrdinal ASC
     rawStandings.sort((a, b) => {

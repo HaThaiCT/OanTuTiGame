@@ -24,6 +24,8 @@ describe('S15 ContentService & Routes — News & Starter Bots', () => {
   let adminToken: string;
   let studentActor: Actor;
   let studentToken: string;
+  /** Users this suite inserted; a shared sequential database must not keep their rows around. */
+  const ownedUserIds: string[] = [];
 
   beforeAll(async () => {
     tempDir = mkdtempSync(path.join(os.tmpdir(), 'oantuti-content-test-'));
@@ -41,6 +43,7 @@ describe('S15 ContentService & Routes — News & Starter Bots', () => {
         [`content_admin_${runId}`]
       );
       admin = adminRes.rows[0];
+      ownedUserIds.push(admin.id);
     }
     const adminId = admin.id;
     adminActor = { userId: adminId, role: 'ADMIN', scope: 'FULL' };
@@ -57,6 +60,7 @@ describe('S15 ContentService & Routes — News & Starter Bots', () => {
       [`content_student_${runId}`]
     );
     const studentId = studentRes.rows[0].id;
+    ownedUserIds.push(studentId);
     studentActor = { userId: studentId, role: 'STUDENT', scope: 'FULL' };
     studentToken = randomBytes(32).toString('hex');
     await db.query(
@@ -72,6 +76,33 @@ describe('S15 ContentService & Routes — News & Starter Bots', () => {
 
   afterAll(async () => {
     await app.close();
+    // The file runs before suites that reset shared tables wholesale (submission-quotas), so its
+    // news rows would otherwise survive under a user another suite's `DELETE FROM users` must
+    // remove. Only rows this suite inserted are retired — later files keep what was already
+    // there. The app-role grant set (append-only audit_events) may refuse some deletes in a
+    // restricted environment, so each statement fails soft instead of losing the whole sweep.
+    try {
+      const retired = (await db.query(
+        `DELETE FROM news_posts WHERE author_user_id = ANY($1::uuid[])`,
+        [ownedUserIds]
+      )).rowCount ?? 0;
+      for (const statement of [
+        [`DELETE FROM audit_events WHERE actor_user_id = ANY($1::uuid[])`, 'audit events'],
+        [`DELETE FROM sessions WHERE user_id = ANY($1::uuid[])`, 'sessions'],
+        [`DELETE FROM users WHERE id = ANY($1::uuid[])`, 'users'],
+      ] as const) {
+        try {
+          await db.query(statement[0], [ownedUserIds]);
+        } catch (error) {
+          console.warn(`[content-service] could not retire own ${statement[1]}: ${(error as Error).message}`);
+        }
+      }
+      if (retired === 0 && ownedUserIds.length > 0) {
+        console.warn('[content-service] no news rows were retired; shared database may keep fixture users');
+      }
+    } catch (error) {
+      console.warn(`[content-service] shared rows left behind: ${(error as Error).message}`);
+    }
     try {
       rmSync(tempDir, { recursive: true, force: true });
     } catch {
@@ -146,6 +177,98 @@ describe('S15 ContentService & Routes — News & Starter Bots', () => {
       },
     });
     expect(res.statusCode).toBe(403);
+  });
+
+  it('treats a garbage public news ?limit as the default page instead of a server error', async () => {
+    // Seed enough published posts that the default clamp (10, max 50) is observable.
+    const stamp = Date.now().toString(36);
+    for (let index = 0; index < 3; index += 1) {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/v2/organizer/news',
+        headers: { cookie: `oantuti_session=${adminToken}` },
+        payload: {
+          title: `Bản tin giới hạn ${index} ${stamp}`,
+          slug: `limit-news-${index}-${stamp}`,
+          summary: `Tóm tắt bản tin ${index}`,
+          content: 'Nội dung bài viết.',
+          publishNow: true,
+        },
+      });
+      expect(created.statusCode).toBe(201);
+    }
+
+    const nanRes = await app.inject({ method: 'GET', url: '/api/v2/news?limit=abc' });
+    expect(nanRes.statusCode).toBe(200);
+    const nanBody = JSON.parse(nanRes.body);
+    expect(nanBody.posts).toBeInstanceOf(Array);
+    // Default page size, not an unbounded or crashing query.
+    expect(nanBody.posts.length).toBeLessThanOrEqual(10);
+
+    const defaultRes = await app.inject({ method: 'GET', url: '/api/v2/news' });
+    expect(defaultRes.statusCode).toBe(200);
+    expect(JSON.parse(defaultRes.body).posts.length).toBe(nanBody.posts.length);
+
+    // A numeric limit still narrows exactly as before.
+    const oneRes = await app.inject({ method: 'GET', url: '/api/v2/news?limit=1' });
+    expect(oneRes.statusCode).toBe(200);
+    expect(JSON.parse(oneRes.body).posts).toHaveLength(1);
+
+    const absurdRes = await app.inject({ method: 'GET', url: '/api/v2/news?limit=99999' });
+    expect(absurdRes.statusCode).toBe(200);
+
+    const zeroRes = await app.inject({ method: 'GET', url: '/api/v2/news?limit=0' });
+    expect(zeroRes.statusCode).toBe(200);
+    expect(JSON.parse(zeroRes.body).posts).toHaveLength(1);
+  });
+
+  it('coerces a PUT news update without a usable JSON body instead of crashing', async () => {
+    const slug = `put-coerce-${Date.now().toString(36)}`;
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v2/organizer/news',
+      headers: { cookie: `oantuti_session=${adminToken}` },
+      payload: {
+        title: 'Bản tin cơ bản',
+        slug,
+        summary: 'Bản tóm tắt gốc',
+        content: 'Nội dung gốc',
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const postId: string = JSON.parse(created.body).post.id;
+
+    // No body at all: the update lands as a no-op touch, not a 500 TypeError.
+    const emptyRes = await app.inject({
+      method: 'PUT',
+      url: `/api/v2/organizer/news/${postId}`,
+      headers: { cookie: `oantuti_session=${adminToken}` },
+    });
+    expect(emptyRes.statusCode).toBe(200);
+    expect(JSON.parse(emptyRes.body).post.title).toBe('Bản tin cơ bản');
+
+    // Non-string fields cannot reach the service as values: they are dropped, not dereferenced.
+    const junkRes = await app.inject({
+      method: 'PUT',
+      url: `/api/v2/organizer/news/${postId}`,
+      headers: { cookie: `oantuti_session=${adminToken}` },
+      payload: { title: null, summary: 42, content: { nested: true } },
+    });
+    expect(junkRes.statusCode).toBe(200);
+    const kept = JSON.parse(junkRes.body).post;
+    expect(kept.title).toBe('Bản tin cơ bản');
+    expect(kept.summary).toBe('Bản tóm tắt gốc');
+    expect(kept.content).toBe('Nội dung gốc');
+
+    // Real string edits still go through with the same coercion path.
+    const editRes = await app.inject({
+      method: 'PUT',
+      url: `/api/v2/organizer/news/${postId}`,
+      headers: { cookie: `oantuti_session=${adminToken}` },
+      payload: { title: 'Bản tin đã sửa' },
+    });
+    expect(editRes.statusCode).toBe(200);
+    expect(JSON.parse(editRes.body).post.title).toBe('Bản tin đã sửa');
   });
 
   it('uploads, downloads, and archives starter bot templates', async () => {

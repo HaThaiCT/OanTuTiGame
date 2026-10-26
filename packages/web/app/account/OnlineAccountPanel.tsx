@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiRequest } from '../../lib/client';
 import { probeAuthProfile, requestEmailChange, reauth, type AuthProfile } from '../../lib/api';
+import { passwordLengthProblem } from '../../lib/password-policy';
 import UetLogo from '../_components/UetLogo';
 
 type UserAccount = {
@@ -91,10 +92,11 @@ export default function OnlineAccountPanel() {
     setPasswordBusy(true);
     setPasswordNotice(null);
 
-    if (newPassword.length < 12) {
+    const passwordProblem = passwordLengthProblem(newPassword);
+    if (passwordProblem) {
       setPasswordNotice({
         type: 'error',
-        message: 'Mật khẩu mới phải có ít nhất 12 ký tự.',
+        message: passwordProblem,
       });
       setPasswordBusy(false);
       return;
@@ -133,7 +135,7 @@ export default function OnlineAccountPanel() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 p-12 text-[var(--text-secondary)]">
+      <div role="status" className="flex flex-col items-center justify-center gap-3 p-12 text-[var(--text-secondary)]">
         <span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--border-control)] border-t-[var(--action)]" />
         <span className="text-xs">Đang tải thông tin tài khoản…</span>
       </div>
@@ -219,7 +221,7 @@ export default function OnlineAccountPanel() {
             Đổi mật khẩu
           </h2>
           <p className="mt-1 text-xs text-[var(--text-secondary)]">
-            Mật khẩu mới phải có tối thiểu 12 ký tự để đảm bảo an toàn tài khoản.
+            Mật khẩu mới phải có 12–128 ký tự để đảm bảo an toàn tài khoản.
           </p>
         </div>
 
@@ -239,7 +241,7 @@ export default function OnlineAccountPanel() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex flex-col gap-1.5 text-xs font-medium text-[var(--text-secondary)]">
-              <span>Mật khẩu mới (tối thiểu 12 ký tự)</span>
+              <span>Mật khẩu mới (12–128 ký tự)</span>
               <input
                 name="newPassword"
                 type="password"
@@ -268,6 +270,7 @@ export default function OnlineAccountPanel() {
 
           {passwordNotice ? (
             <div
+              role={passwordNotice.type === 'success' ? 'status' : 'alert'}
               className={`rounded-xl px-3.5 py-2.5 text-xs border ${
                 passwordNotice.type === 'success'
                   ? 'border-[var(--success-text)] bg-[var(--success-tint)] text-[var(--success-text)]'
@@ -332,6 +335,7 @@ export default function OnlineAccountPanel() {
 
             {emailNotice ? (
               <div
+                role={emailNotice.type === 'success' ? 'status' : 'alert'}
                 className={`rounded-xl px-3.5 py-2.5 text-xs border ${
                   emailNotice.type === 'success'
                     ? 'border-[var(--success-text)] bg-[var(--success-tint)] text-[var(--success-text)]'

@@ -61,7 +61,7 @@ export default async function OrganizerPage({ searchParams }: {
           </ul>
         </section>
       ) : (
-        <OrganizerConsole section={section} tournaments={[]} maps={maps} authProfile={authProfile} accountsScope
+        <OrganizerConsole section={section} tournaments={[]} maps={maps} authProfile={authProfile} accountsScope={true}
           entriesByTournament={{}} commitmentsByTournament={{}} poolsByTournament={{}} />
       )}
     </div>

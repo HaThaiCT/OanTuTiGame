@@ -107,11 +107,11 @@ export class TournamentLifecycleService {
         [tournamentId]
       );
       if (parseInt(pendingCheck.rows[0].count, 10) > 0) {
-        // If there are still pending submissions compiling, transition to VALIDATING_SUBMISSIONS
-        await client.query(
-          `UPDATE tournaments SET state = 'VALIDATING_SUBMISSIONS', updated_at = clock_timestamp() WHERE id = $1`,
-          [tournamentId]
-        );
+        // Still draining: the caller is told to retry, the real drain hand-off to
+        // VALIDATING_SUBMISSIONS stays with closeRegistration/deadline sweeps
+        // (control-plane 'deadlines', auto-runner), which emit version bumps and
+        // TOURNAMENT_DRAINING events. Any write here would be rolled back together with
+        // the throw by withTransaction — so nothing is written on this path.
         throw new TournamentError(
           409,
           'INTAKE_DRAINING: Submissions are currently compiling; wait for drain before locking'
@@ -468,21 +468,37 @@ export class TournamentLifecycleService {
         );
       }
 
-      const now = new Date();
-      if (tourney.registration_closes_at && now >= tourney.registration_closes_at) {
+      // Both cutoff comparisons run on the database clock: the transaction's `clock_timestamp()`
+      // is the same clock every other mutation and sweep uses, so an app/platform clock skew
+      // cannot decide cutoff races (extension vs. sweep close).
+      const guard = await client.query<{
+        cutoff_passed: boolean;
+        before_new: boolean;
+        before_current: boolean;
+      }>(
+        `SELECT
+           registration_closes_at IS NOT NULL AND clock_timestamp() >= registration_closes_at AS cutoff_passed,
+           $2::timestamptz <= clock_timestamp() AS before_new,
+           registration_closes_at IS NOT NULL AND $2::timestamptz <= registration_closes_at AS before_current
+         FROM tournaments WHERE id = $1 FOR UPDATE`,
+        [tournamentId, newClosesAt]
+      );
+      if (!guard.rows.length) {
+        throw new TournamentError(404, `Tournament not found: ${tournamentId}`);
+      }
+      if (guard.rows[0].cutoff_passed) {
         throw new TournamentError(
           409,
           'EXTENSION_DENIED: Current registration cutoff has already passed; cannot reopen closed intake'
         );
       }
-
-      if (newClosesAt <= now || (tourney.registration_closes_at && newClosesAt <= tourney.registration_closes_at)) {
+      if (guard.rows[0].before_new || guard.rows[0].before_current) {
         throw new TournamentError(400, 'New registration closing time must be strictly after current cutoff');
       }
 
       await client.query(
         `UPDATE tournaments
-         SET registration_closes_at = $1, updated_at = clock_timestamp()
+         SET registration_closes_at = $1, version = version + 1, updated_at = clock_timestamp()
          WHERE id = $2`,
         [newClosesAt, tournamentId]
       );

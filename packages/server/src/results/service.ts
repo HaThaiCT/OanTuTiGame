@@ -39,6 +39,39 @@ export class ResultAlreadyAcceptedError extends Error {
   }
 }
 
+/**
+ * Raised when an administrative ruling on the game's encounter (withdrawal walkover, double
+ * withdrawal, downstream cancellation) outranks the completion attempt of a late-claimed job.
+ * Accepting a played result after such a ruling would overwrite the sealed outcome; the caller
+ * treats this as terminal — the job's own fence should already refuse the attempt.
+ */
+export class ResultRejectedError extends Error {
+  readonly code = 'RESULT_REJECTED';
+
+  constructor(
+    readonly gameId: string,
+    readonly reason: string
+  ) {
+    super(`RESULT_REJECTED: game ${gameId} refused (${reason})`);
+    this.name = 'ResultRejectedError';
+  }
+}
+
+const ADMIN_RESOLVED_ENCOUNTER_STATUSES: Record<string, true> = {
+  CANCELLED: true,
+  WALKOVER: true,
+  DOUBLE_WITHDRAWAL: true,
+};
+
+/** Why a result may not land on this game; null when the game is open. */
+function resultRejectionReason(gameStatus: string | null, encounterStatus: string | null): string | null {
+  if (gameStatus === 'CANCELLED') return 'GAME_CANCELLED';
+  if (encounterStatus !== null && ADMIN_RESOLVED_ENCOUNTER_STATUSES[encounterStatus]) {
+    return `ENCOUNTER_${encounterStatus}`;
+  }
+  return null;
+}
+
 /** The accepted result of a game, plus the evidence a job completion pins for it. */
 export interface AcceptedResultSummary {
   readonly resultVersionId: string;
@@ -97,6 +130,28 @@ export class ResultService {
       );
     }
 
+    // Fast-path refusal before staging replay bytes. A withdrawal, disqualification or correction
+    // that already resolved this encounter has the final word over any late-claimed completion;
+    // the authoritative re-check below runs again inside the write transaction's row locks, so a
+    // ruling landing between the two reads still cannot be overwritten.
+    const precheckRow = (
+      await statementRunner(input.client ?? this.db)<{ status: string | null; encounter_status: string | null }>(
+        `SELECT g.status, e.status AS encounter_status
+         FROM games g LEFT JOIN encounters e ON e.id = g.encounter_id
+         WHERE g.id = $1`,
+        [gameId]
+      )
+    ).rows[0];
+    if (precheckRow) {
+      const precheckReason = resultRejectionReason(
+        precheckRow.status,
+        precheckRow.encounter_status ?? null
+      );
+      if (precheckReason) {
+        throw new ResultRejectedError(gameId, precheckReason);
+      }
+    }
+
     if (evidence.gameId !== gameId) throw new ResultIntegrityError('EVIDENCE_GAME_ID_MISMATCH');
     // Rust is the rules authority; trace prefixes cannot certify runtime faults.
     const nativeExecution = input.nativeExecution;
@@ -152,12 +207,29 @@ export class ResultService {
     const stagingKey = `replays/${gameId}_${attemptId}_${Date.now()}.oantuti`;
     const staged = this.replayStore.stageReplay(stagingKey, replayBuffer);
     const storedReplay = this.replayStore.promoteStagedReplay(staged.stagingPath, staged.digest);
-      const gameCheck = await client.query<{ id: string; status: string }>(
-        'SELECT id, status FROM games WHERE id = $1 FOR UPDATE',
+      const gameCheck = await client.query<{ id: string; status: string; encounter_id: string | null }>(
+        'SELECT id, status, encounter_id FROM games WHERE id = $1 FOR UPDATE',
         [gameId]
       );
       if (gameCheck.rows.length === 0) {
         throw new Error(`Game not found: ${gameId}`);
+      }
+      // Authoritative refusal under the games row lock: the administrative ruling on this
+      // game/encounter (withdrawal walkover/double-withdrawal, downstream cancellation)
+      // outranks the completion attempt of a late-claimed job (claim/withdrawal race, TR-07 §124).
+      const gameRow = gameCheck.rows[0];
+      let encounterStatus: string | null = null;
+      if (gameRow.encounter_id) {
+        encounterStatus = (
+          await client.query<{ status: string }>(
+            'SELECT status FROM encounters WHERE id = $1',
+            [gameRow.encounter_id]
+          )
+        ).rows[0]?.status ?? null;
+      }
+      const authoritativeReason = resultRejectionReason(gameRow.status, encounterStatus);
+      if (authoritativeReason) {
+        throw new ResultRejectedError(gameId, authoritativeReason);
       }
 
       // The row lock above serialises recorders for this game, so this check is authoritative

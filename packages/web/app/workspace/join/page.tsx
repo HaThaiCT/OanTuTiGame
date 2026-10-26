@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { getAuthProfile, getOrganizerSession, listTournaments } from '../../../lib/api';
+import { tournamentRegistrationHref } from '../../../lib/navigation';
 import TournamentRegistrationPanel from '../../tournaments/[id]/TournamentRegistrationPanel';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,6 @@ export default async function JoinTournamentPage({ searchParams }: { searchParam
     </form>
     {tournaments.length === 0 ? <p className="text-sm text-[var(--text-secondary)]">Chưa có giải công khai để chọn. <Link href="/tournaments" className="underline">Xem danh sách giải</Link></p> : null}
     {query.tournament && !selected ? <p role="alert" className="text-sm">Không tìm thấy giải đã chọn. Hãy chọn lại từ danh sách.</p> : null}
-    {selected ? <><Link href={`/tournaments/${encodeURIComponent(selected.id)}#registration`} className="self-start text-sm text-[var(--action)] underline">Trang giải và điều kiện đăng ký →</Link><div id="registration"><TournamentRegistrationPanel key={selected.id} tournamentId={selected.id} state={selected.state} registrationClosesAt={selected.registrationClosesAt} /></div></> : null}
+    {selected ? <><Link href={tournamentRegistrationHref(selected.id)} className="self-start text-sm text-[var(--action)] underline">Trang giải và điều kiện đăng ký →</Link><div id="registration"><TournamentRegistrationPanel key={selected.id} tournamentId={selected.id} state={selected.state} registrationClosesAt={selected.registrationClosesAt} /></div></> : null}
   </section>;
 }

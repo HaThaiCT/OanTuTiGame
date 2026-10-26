@@ -5,6 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GlobalLeaderboardDto, PublicTeamProfileDto } from '@oantuti/protocol';
 import { RatingBadge, RatingHistoryChart, TeamRatingName } from './TeamRatingName';
 
+/**
+ * `CŨ` column of the publication history. A row whose `oldPublicRating` is `null` is the team's
+ * first rated contest: there is no arithmetic predecessor, so the cell shows `—` instead of the
+ * previously substituted `0` (which printed "CŨ=0, MỚI=1500+Δ" and looked inconsistent with Δ).
+ */
+export function historyOldRatingDisplay(row: { oldRating: number; oldPublicRating: number | null }): string | number {
+  return row.oldPublicRating === null ? '—' : row.oldRating;
+}
+
 /** One request owns one complete generation dataset; obsolete requests never replace it. */
 export function useRatingData<T>(path: string, initial: T | null) {
   const [state, setState] = useState<{ data: T | null; error: string | null }>({ data: initial, error: null });
@@ -296,7 +305,7 @@ export function LiveTeamProfile({ teamId, initial }: { teamId: string; initial: 
                   {row.rankEnd > row.rank ? `–#${row.rankEnd}` : ''}
                 </td>
                 <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono text-[var(--text-secondary)]">
-                  {row.oldPublicRating === null ? 0 : row.oldRating}
+                  {historyOldRatingDisplay(row)}
                 </td>
                 <td className="p-2.5 border-b border-[var(--border-subtle)] font-mono font-bold">
                   {row.delta > 0 ? (

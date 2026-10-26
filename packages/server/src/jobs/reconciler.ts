@@ -1,11 +1,15 @@
 import type { Database } from '../persistence/db.js';
+import type { PoolClient } from 'pg';
 import type { ReconcilerIdentity } from '@oantuti/protocol';
 import { failPrivateTestSnapshotExhausted } from '../builds/private-test-result-service.js';
+import { BUILD_JOB_PRIORITY, PENDING_SUBMISSION_STATUSES, PENDING_TEST_STATUSES } from '../submissions/service.js';
 import { JobBroker } from './broker.js';
 
 export interface ReconcileReport {
   readonly expiredLeasesReclaimed: number;
   readonly blockedJobsCount: number;
+  /** BUILD/TEST_BUILD jobs inserted by the orphan sweep for rows no job ever pointed at. */
+  readonly orphanBuildJobsInserted: number;
   readonly orphanedCompletionsAccepted: number;
 }
 
@@ -85,7 +89,15 @@ export class JobReconciler {
         }
       }
 
-      return { expiredLeasesReclaimed, blockedJobsCount, orphanedCompletionsAccepted: 0 };
+      // 2. Requeue build work stranded before its job could exist. A receipt commits its row in
+      // one transaction and enqueues its BUILD/TEST_BUILD job right after; a crash between the
+      // two leaves a receipt that is committed, consumes its team's pending quota, blocks
+      // lifecycle `lock()` drains (that wait never resolves), yet has no job at any state —
+      // step 1 only requeues jobs that exist. Rows still covered by a real job are untouched
+      // here even when that job is BLOCKED: the lease/backoff policy above owns those.
+      const orphanBuildJobsInserted = await this.requeueStrandedBuilds(client);
+
+      return { expiredLeasesReclaimed, blockedJobsCount, orphanBuildJobsInserted, orphanedCompletionsAccepted: 0 };
     });
     const pending = await this.db.query<{ id: string; evidence_digest: string; deployment_generation: number }>(`SELECT id,evidence_digest,deployment_generation FROM job_completions WHERE state='PENDING' AND (deployment_generation=$1 OR restore_recovery) ORDER BY created_at`, [this.currentDeploymentGeneration]);
     let accepted = 0;
@@ -102,5 +114,43 @@ export class JobReconciler {
       }
     }
     return { ...report, orphanedCompletionsAccepted: accepted };
+  }
+
+  /**
+   * Inserts the missing BUILD/TEST_BUILD job for every non-terminal receipt/snapshot that has no
+   * job row of its own type at all. Finalized rows (READY/REJECTED, COMPLETED/FAILED) and a
+   * snapshot already executing its test (`RUNNING`) need no future build; anything carrying a
+   * real job — QUEUED, leased, blocked, retried — is left to the claim path and step 1, so the
+   * sweep can only ever file exactly the one job a stranded receipt was promised.
+   */
+  private async requeueStrandedBuilds(client: PoolClient): Promise<number> {
+    // The look-then-insert is racy across processes, and `jobs` has no unique key on
+    // `(job_type, target_id)` to lean on: a database-scoped advisory lock (like the migration
+    // applier's) serializes sweeps instead, and the transaction spans the whole reconcile pass.
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended(current_database() || ':oantuti-orphan-build-sweep', 0))");
+
+    const runnableSnapshotStatuses = PENDING_TEST_STATUSES.filter((status) => status !== 'RUNNING');
+    const inserted = await client.query<{ job_type: string; target_id: string }>(
+      `INSERT INTO jobs (job_type, target_id, priority, state, deployment_generation, payload)
+       SELECT stranded.kind,
+              stranded.id,
+              $3,
+              'QUEUED',
+              $4,
+              jsonb_build_object('tournamentId', stranded.tournament_id, 'teamId', stranded.team_id)
+       FROM (
+         SELECT 'BUILD'::text AS kind, s.id, s.tournament_id, s.team_id
+         FROM submissions s
+         WHERE s.status = ANY($1::text[])
+           AND NOT EXISTS (SELECT 1 FROM jobs j WHERE j.job_type = 'BUILD' AND j.target_id = s.id)
+         UNION ALL
+         SELECT 'TEST_BUILD'::text AS kind, n.id, n.tournament_id, n.team_id
+         FROM test_snapshots n
+         WHERE n.status = ANY($2::text[])
+           AND NOT EXISTS (SELECT 1 FROM jobs j WHERE j.job_type = 'TEST_BUILD' AND j.target_id = n.id)
+       ) AS stranded(kind, id, tournament_id, team_id)`,
+      [[...PENDING_SUBMISSION_STATUSES], [...runnableSnapshotStatuses], BUILD_JOB_PRIORITY, this.currentDeploymentGeneration]
+    );
+    return inserted.rowCount ?? inserted.rows.length;
   }
 }

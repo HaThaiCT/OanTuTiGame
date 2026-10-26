@@ -2,7 +2,7 @@ import Link from 'next/link';
 import FeaturedRanking from './_components/FeaturedRanking';
 import NewsSection from './_components/NewsSection';
 import { getBracket, getGlobalTeamLeaderboard, listNews, listTournaments, type TournamentSummary } from '../lib/api';
-import { formatLabel, stateLabel } from '../lib/labels';
+import { encounterStatusLabel, formatLabel, stateLabel } from '../lib/labels';
 import { selectHomepageTournaments } from '../lib/homepage-tournaments';
 
 export const dynamic = 'force-dynamic';
@@ -60,6 +60,11 @@ export default async function HomePage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-8 items-start">
         {/* PRIMARY MAIN COLUMN: News & Announcements Blog Feed */}
         <main className="min-w-0 space-y-6" id="news">
+          {!newsResult.ok ? (
+            <p role="alert" className="rounded-xl border border-[var(--warning-text)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--warning-text)]">
+              Không tải được bản tin từ máy chủ — hãy thử tải lại trang. {newsResult.message ? `(${newsResult.message})` : null}
+            </p>
+          ) : null}
           <NewsSection posts={newsResult.ok && newsResult.data ? newsResult.data.posts : []} />
         </main>
 
@@ -206,7 +211,7 @@ export default async function HomePage() {
                   >
                     <div className="flex items-center justify-between text-[10.5px] font-mono text-[var(--text-faint)]">
                       <span className="truncate max-w-[180px]">{m.tournamentName}</span>
-                      <span className="text-[10px] uppercase">{m.status}</span>
+                      <span className="text-[10px] uppercase">{encounterStatusLabel[m.status] ?? m.status}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span

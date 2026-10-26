@@ -74,7 +74,7 @@ export default function SiteHeader() {
         <button
           className="arena-menu-toggle"
           type="button"
-          aria-label="Mở điều hướng"
+          aria-label={expanded ? 'Đóng điều hướng' : 'Mở điều hướng'}
           aria-expanded={expanded}
           aria-controls="arena-mobile-nav"
           onClick={() => setExpanded(!expanded)}

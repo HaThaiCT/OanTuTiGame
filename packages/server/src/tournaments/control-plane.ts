@@ -45,11 +45,80 @@ export class TournamentControlPlane {
     await this.activeTick;
   }
 
+  /** Cap of failed delivery attempts for one result outbox event (payload-stamped, restart-proof). */
+  private static readonly RESULT_OUTBOX_MAX_ATTEMPTS = 5;
+
   private scheduleTick(): void {
     if (this.activeTick) return;
     const active = this.tick();
     this.activeTick = active;
     void active.finally(() => { if (this.activeTick === active) this.activeTick = undefined; });
+  }
+
+  /**
+   * Delivers one unplayed result event per game, then marks it, in that order — one failing
+   * event must never stall the next (a deterministic failure would otherwise re-fail the same
+   * oldest row every tick and block round advancement, sealing and job enqueueing platform-wide).
+   *
+   * Each failure stamps an attempt counter into the payload, so the retry budget is durable
+   * without a schema change; after `RESULT_OUTBOX_MAX_ATTEMPTS` failures (or a malformed
+   * payload, which can never succeed) the event is delivered with a loud warning so the
+   * pipeline keeps advancing. A pending event whose attempt failed transiently stays
+   * undelivered and is retried on the next tick, ordered after the ones that advance now.
+   */
+  private async deliverResultOutbox(): Promise<void> {
+    const pending = await this.db.query<{ id: string; topic: string; payload: { gameId?: unknown; deliveryFailures?: unknown; lastDeliveryError?: unknown } }>(
+      `SELECT id, topic, payload FROM outbox_events WHERE delivered_at IS NULL
+       AND topic IN ('GAME_RESULT_ACCEPTED', 'RESULT_CORRECTED') ORDER BY created_at, id LIMIT 100`
+    );
+    for (const event of pending.rows) {
+      const gameId = event.payload?.gameId;
+      if (typeof gameId !== 'string') {
+        // Malformed payload: never deliverable, so release the pipeline and keep the marker on the row.
+        console.warn(`[control-plane:result-outbox] ${event.id} (${event.topic}) has no gameId payload; marking delivered`);
+        await this.db.query(
+          `UPDATE outbox_events
+              SET delivered_at = clock_timestamp(),
+                  payload = payload || $2::jsonb
+            WHERE id = $1 AND delivered_at IS NULL`,
+          [event.id, JSON.stringify({ deliveryFailures: -1, lastDeliveryError: 'MALFORMED_PAYLOAD' })]
+        );
+        continue;
+      }
+      try {
+        await this.scheduler.handleGameCompletion(gameId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const previous = Number(event.payload?.deliveryFailures ?? 0) || 0;
+        const failures = previous + 1;
+        const capped = failures >= TournamentControlPlane.RESULT_OUTBOX_MAX_ATTEMPTS;
+        console.warn(
+          `[control-plane:result-outbox] ${event.id} (${event.topic}, game ${gameId}) delivery attempt ` +
+          `${failures}/${TournamentControlPlane.RESULT_OUTBOX_MAX_ATTEMPTS} failed${capped ? '; giving up' : ''}: ${message}`
+        );
+        if (capped) {
+          await this.db.query(
+            `UPDATE outbox_events
+                SET delivered_at = clock_timestamp(),
+                    payload = payload || $2::jsonb
+              WHERE id = $1 AND delivered_at IS NULL`,
+            [event.id, JSON.stringify({ deliveryFailures: failures, lastDeliveryError: message })]
+          );
+        } else {
+          await this.db.query(
+            `UPDATE outbox_events
+                SET payload = payload || $2::jsonb
+              WHERE id = $1 AND delivered_at IS NULL`,
+            [event.id, JSON.stringify({ deliveryFailures: failures, lastDeliveryError: message })]
+          );
+        }
+        continue;
+      }
+      await this.db.query(
+        'UPDATE outbox_events SET delivered_at = clock_timestamp() WHERE id = $1 AND delivered_at IS NULL',
+        [event.id]
+      );
+    }
   }
 
   async tick(): Promise<void> {
@@ -73,17 +142,7 @@ export class TournamentControlPlane {
           }
         }
       }));
-      await perform('result-outbox', async () => {
-        const pending = await this.db.query<{ id: string; payload: { gameId?: unknown } }>(
-          `SELECT id, payload FROM outbox_events WHERE delivered_at IS NULL
-           AND topic IN ('GAME_RESULT_ACCEPTED', 'RESULT_CORRECTED') ORDER BY created_at, id LIMIT 100`
-        );
-        for (const event of pending.rows) {
-          if (typeof event.payload.gameId !== 'string') throw new Error(`Invalid result outbox event ${event.id}`);
-          await this.scheduler.handleGameCompletion(event.payload.gameId);
-          await this.db.query('UPDATE outbox_events SET delivered_at = clock_timestamp() WHERE id = $1 AND delivered_at IS NULL', [event.id]);
-        }
-      });
+      await perform('result-outbox', () => this.deliverResultOutbox());
       await perform('seal', () => this.scheduler.sealEligibleRounds());
       await perform('enqueue', () => enqueueMissingGameJobs(this.db, this.broker, { limit: 1_000 }));
       this.ratingService?.kickRebuild();

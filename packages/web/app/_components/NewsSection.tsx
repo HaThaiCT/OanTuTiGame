@@ -1,9 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { NewsPostDto } from '../../lib/api';
+import type { MarkdownBlock } from './MarkdownRenderer';
+import { copyText } from '../../lib/clipboard';
 import MarkdownRenderer, { parseMarkdownBlocks } from './MarkdownRenderer';
+
+/**
+ * The preview renders at most `maxBlocks={4}` blocks (`MarkdownRenderer` slices blocks only, it
+ * never applies a character cap), so a post is cut off precisely when its block count exceeds
+ * that cap. A length-based guess used to fabricate a "Còn tiếp..." footer for fully rendered posts.
+ */
+export function newsPostIsTruncated(blocks: readonly MarkdownBlock[]): boolean {
+  return blocks.length > 4;
+}
 
 function formatUtcInstant(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -13,29 +24,38 @@ function formatUtcInstant(iso: string | null | undefined): string {
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (typeof window !== 'undefined' && navigator.clipboard) {
-      const url = `${window.location.origin}/news/${encodeURIComponent(slug)}`;
-      navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin}/news/${encodeURIComponent(slug)}`;
+    void copyText(url).then((confirmed) => {
+      clearTimeout(timer.current);
+      setCopied(confirmed);
+      setFailed(!confirmed);
+      if (confirmed) {
+        timer.current = window.setTimeout(() => setCopied(false), 2000);
+      }
+    });
   };
+
+  const failing = failed && !copied;
 
   return (
     <button
       type="button"
       onClick={handleCopy}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-subtle)] text-[11px] font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-control)] transition-all cursor-pointer active:scale-95"
-      title="Sao chép liên kết bài viết"
+      title={failing ? 'Trình duyệt không cho phép tự sao chép (HTTP LAN) — hãy copy địa chỉ bài viết thủ công.' : 'Sao chép liên kết bài viết'}
     >
       <svg className="w-3.5 h-3.5 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
       </svg>
-      <span>{copied ? '✓ Đã chép link' : 'Chia sẻ'}</span>
+      <span>{copied ? '✓ Đã chép link' : failing ? 'Chép tay' : 'Chia sẻ'}</span>
     </button>
   );
 }
@@ -84,7 +104,7 @@ export default function NewsSection({ posts = [], className = '' }: NewsSectionP
                 : 'Ban tổ chức';
             const publishedDate = post.publishedAt ?? post.createdAt;
             const blocks = parseMarkdownBlocks(post.content);
-            const isLongPost = blocks.length > 4 || post.content.length > 600;
+            const isLongPost = newsPostIsTruncated(blocks);
 
             return (
               <article

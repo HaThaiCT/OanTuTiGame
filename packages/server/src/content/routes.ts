@@ -25,6 +25,28 @@ function sendError(reply: FastifyReply, err: unknown, fallbackCode = 'REQUEST_FA
   return reply.status(status).send({ code, message });
 }
 
+interface NewsPatchBody {
+  title?: unknown;
+  summary?: unknown;
+  content?: unknown;
+}
+
+/**
+ * The update service dereferences `input.<field>.trim()` for every field that arrived, so the
+ * route normalizes the body first: only real strings count as "provided", and a missing (no
+ * JSON body), `null`, or mis-typed field is dropped (a no-op touch) instead of reaching the
+ * service as a TypeError.
+ */
+function coerceNewsPatch(body: NewsPatchBody | null | undefined): { title?: string; summary?: string; content?: string } {
+  const patch: { title?: string; summary?: string; content?: string } = {};
+  if (body && typeof body === 'object') {
+    for (const field of ['title', 'summary', 'content'] as const) {
+      if (typeof body[field] === 'string') patch[field] = body[field];
+    }
+  }
+  return patch;
+}
+
 export function registerContentRoutes(
   app: FastifyInstance,
   contentService: ContentService,
@@ -52,7 +74,10 @@ export function registerContentRoutes(
   // GET /api/v2/news
   app.get<{ Querystring: { limit?: string } }>('/api/v2/news', async (request, reply) => {
     try {
-      const limit = request.query.limit ? parseInt(request.query.limit, 10) : 10;
+      // `parseInt` hands back NaN for any non-numeric query, and Postgres refuses a NaN LIMIT with
+      // a raw 22P02 — so the route only ever hands the service a real integer.
+      const parsed = Number.parseInt(request.query.limit ?? '', 10);
+      const limit = Number.isSafeInteger(parsed) ? parsed : 10;
       const result = await contentService.listPublishedNews(limit);
       return reply.send(result);
     } catch (err) {
@@ -111,7 +136,7 @@ export function registerContentRoutes(
       try {
         const actor = await requireActor(request);
         reply.header('Cache-Control', 'private, no-store');
-        const post = await contentService.adminUpdateNews(request.params.id, request.body, actor);
+        const post = await contentService.adminUpdateNews(request.params.id, coerceNewsPatch(request.body), actor);
         return reply.send({ post });
       } catch (err) {
         return sendError(reply, err);

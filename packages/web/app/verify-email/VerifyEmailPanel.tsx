@@ -60,7 +60,7 @@ export default function VerifyEmailPanel() {
 
   if (verified) {
     return (
-      <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+      <section role="status" className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
         <h2 className="text-base font-semibold text-[var(--success-text)]">Email đã được xác minh</h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
           Server đã chấp nhận token và xác minh tài khoản. Bạn có thể đăng nhập ngay bây giờ.
@@ -95,9 +95,9 @@ export default function VerifyEmailPanel() {
     <section className="flex flex-col gap-5 border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-7 rounded-2xl shadow-sm">
       <p className="text-xs text-[var(--text-secondary)]">Token trong liên kết ở phần #token= được giữ trong trình duyệt; chưa có yêu cầu gửi đến máy chủ. Bấm nút xác nhận bên dưới để xác minh.</p>
 
-      {busy ? <p className="text-xs text-[var(--text-secondary)]">Đang xác minh token...</p> : null}
+      {busy ? <p role="status" className="text-xs text-[var(--text-secondary)]">Đang xác minh token...</p> : null}
       {error ? (
-        <div className="border-l-2 border-[var(--danger-text)] bg-[var(--danger-tint)] px-3 py-2 font-mono text-xs text-[var(--danger-text)]">
+        <div role="alert" className="border-l-2 border-[var(--danger-text)] bg-[var(--danger-tint)] px-3 py-2 font-mono text-xs text-[var(--danger-text)]">
           {error}
           {code ? <span className="ml-2 font-mono text-xs break-all text-[var(--text-secondary)]">[{code}]</span> : null}
         </div>

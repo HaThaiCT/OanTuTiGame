@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { errorText } from '../../lib/client';
 import { isProfileDisabled, registerAccount, type RegisterReceipt } from '../../lib/api';
+import { passwordLengthProblem, PASSWORD_RULE_HINT } from '../../lib/password-policy';
 import { OnlineOnlyNotice, ProfileProbeNotice, useAuthProfile } from '../_components/AuthProfile';
 import UetLogo from '../_components/UetLogo';
 
 /** Client-side mirror of the server rules (`packages/server/src/identity/service.ts`). */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 12;
 const MAX_USERNAME_LENGTH = 50;
 const MAX_DISPLAY_NAME_LENGTH = 100;
 
@@ -36,9 +36,8 @@ function validationProblem(values: FormValues): string | null {
     return `Tên hiển thị tối đa ${MAX_DISPLAY_NAME_LENGTH} ký tự.`;
   }
   if (!EMAIL_PATTERN.test(values.email.trim())) return 'Email không đúng định dạng.';
-  if (values.password.length < MIN_PASSWORD_LENGTH) {
-    return `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`;
-  }
+  const passwordProblem = passwordLengthProblem(values.password);
+  if (passwordProblem) return passwordProblem;
   if (values.password !== values.confirm) return 'Xác nhận mật khẩu không khớp.';
   return null;
 }
@@ -113,7 +112,7 @@ export default function RegisterPage() {
       {profile === undefined ? <ProfileProbeNotice /> : null}
 
       {receipt ? (
-        <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+        <section role="status" className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
           <h2 className="text-base font-semibold text-[var(--success-text)]">Đăng ký đã được ghi nhận</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             Tài khoản{' '}
@@ -186,7 +185,7 @@ export default function RegisterPage() {
               onChange={(event) => update('password', event.target.value)}
               className={FIELD_CLASS}
             />
-            <span className="text-xs text-[var(--text-secondary)]">Tối thiểu {MIN_PASSWORD_LENGTH} ký tự.</span>
+            <span className="text-xs text-[var(--text-secondary)]">{PASSWORD_RULE_HINT}</span>
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
@@ -204,7 +203,7 @@ export default function RegisterPage() {
           </label>
 
           {error ? (
-            <p className="rounded-md border border-[var(--danger-text)] px-3 py-2 text-sm text-[var(--danger-text)]">
+            <p role="alert" className="rounded-md border border-[var(--danger-text)] px-3 py-2 text-sm text-[var(--danger-text)]">
               {error}
               {code ? <span className="ml-2 font-mono text-xs break-all text-[var(--text-secondary)]">{code}</span> : null}
             </p>

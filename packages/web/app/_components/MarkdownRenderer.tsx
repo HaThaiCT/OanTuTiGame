@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { copyText } from '../../lib/clipboard';
 
 export interface MarkdownBlock {
   type: 'code' | 'heading' | 'blockquote' | 'ul' | 'ol' | 'hr' | 'paragraph';
@@ -223,13 +224,13 @@ function parseInlineTokens(text: string): React.ReactNode[] {
 
 function CodeBlockView({ language, code }: { language?: string; code: string }) {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const handleCopy = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    void copyText(code).then((confirmed) => {
+      setCopied(confirmed);
+      setFailed(!confirmed);
+    });
   };
 
   return (
@@ -242,9 +243,9 @@ function CodeBlockView({ language, code }: { language?: string; code: string }) 
           type="button"
           onClick={handleCopy}
           className="hover:text-[var(--text-primary)] transition-colors px-2 py-0.5 rounded text-[10px] font-mono border border-[var(--border-subtle)] bg-[var(--surface)] active:scale-95 cursor-pointer"
-          title="Sao chép khối mã"
+          title={failed && !copied ? 'Trình duyệt không cho phép tự sao chép — hãy chọn mã và copy thủ công.' : 'Sao chép khối mã'}
         >
-          {copied ? '✓ Đã chép' : 'Sao chép'}
+          {copied ? '✓ Đã chép' : failed && !copied ? 'Chép tay' : 'Sao chép'}
         </button>
       </div>
       <pre className="p-4 overflow-x-auto text-xs sm:text-[13px] font-mono leading-relaxed text-[var(--text-primary)]">

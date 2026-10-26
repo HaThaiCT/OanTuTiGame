@@ -237,21 +237,28 @@ export class MapService {
       return res.rows;
     }
 
-    // Public maps list at their current version. A hidden map is public only through what a
-    // tournament actually revealed, so it lists at its newest *revealed* version and is omitted
-    // while no version has been revealed.
+    // Public maps list at their current version (same content `getMap` serves the same caller).
+    // A hidden map is public only through what a tournament actually revealed, so it lists at its
+    // newest *revealed* version and is omitted while no version has been revealed.
     const res = await this.db.query<MapRow>(
-      `SELECT m.id, m.slug, m.display_name, v.descriptor, m.visibility, v.validation_warnings,
+      `SELECT m.id, m.slug, m.display_name,
+              coalesce(v.descriptor, m.descriptor) AS descriptor,
+              m.visibility, coalesce(v.validation_warnings, m.validation_warnings) AS validation_warnings,
               m.revealed_at, m.created_at, m.current_version AS "currentVersion"
          FROM maps m
-         JOIN LATERAL (
+         LEFT JOIN LATERAL (
            SELECT descriptor, validation_warnings
              FROM map_versions mv
-            WHERE mv.map_id = m.id AND mv.revealed_at IS NOT NULL
+            WHERE mv.map_id = m.id
+              AND ((m.visibility = 'HIDDEN' AND mv.revealed_at IS NOT NULL)
+                   OR (m.visibility <> 'HIDDEN' AND mv.version = m.current_version))
             ORDER BY mv.version DESC
             LIMIT 1
          ) v ON true
-        WHERE m.visibility = 'PUBLIC' OR m.revealed_at IS NOT NULL
+        WHERE (m.visibility = 'PUBLIC' OR m.revealed_at IS NOT NULL)
+          -- An inconsistent HIDDEN map whose level seal exists but has no revealed version row must
+          -- not surface; PUBLIC maps coalesce onto the map's own current descriptor.
+          AND (m.visibility <> 'HIDDEN' OR v.descriptor IS NOT NULL)
         ORDER BY m.created_at DESC`
     );
     return res.rows;

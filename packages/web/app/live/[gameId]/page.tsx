@@ -19,7 +19,7 @@ export default async function LivePage({ params }: { params: Promise<{ gameId: s
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <nav className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-        <Link className="hover:text-[var(--text-primary)]" href="/">
+        <Link className="hover:text-[var(--text-primary)]" href="/tournaments">
           Giải đấu
         </Link>
         <span>/</span>

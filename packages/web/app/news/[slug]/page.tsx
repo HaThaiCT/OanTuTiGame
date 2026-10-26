@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ApiResult } from '../../../lib/client';
+import type { NewsPostDto } from '../../../lib/api';
 import { getNewsPost } from '../../../lib/api';
 import MarkdownRenderer from '../../_components/MarkdownRenderer';
 
@@ -11,11 +13,34 @@ function formatUtcInstant(iso: string | null | undefined): string {
   return match ? `${match[1]}-${match[2]}-${match[3]} ${match[4]}:${match[5]} UTC` : iso;
 }
 
+/**
+ * A transport failure (`ok: false`) must not be conflated with an unpublished/deleted slug:
+ * an outage during the API hiccup renders an explicit retryable notice, while a request that
+ * completed but carries no post still serves the shared 404.
+ */
+export function classifyNewsFetch(result: ApiResult<{ post: NewsPostDto } | null>): 'transport-refusal' | 'missing' | 'present' {
+  if (!result.ok) return 'transport-refusal';
+  return result.data?.post ? 'present' : 'missing';
+}
+
 export default async function NewsDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const result = await getNewsPost(slug);
 
-  if (!result.ok || !result.data?.post) {
+  if (classifyNewsFetch(result) === 'transport-refusal') {
+    return (
+      <section role="alert" className="mx-auto max-w-3xl space-y-3 rounded-2xl border border-[var(--warning-text)] bg-[var(--surface)] p-6 text-sm">
+        <h1 className="text-lg font-semibold text-[var(--text-primary)]">Không tải được bản tin</h1>
+        <p className="text-[var(--text-secondary)]">
+          Máy chủ thông báo tạm thời không phản hồi cho bài viết này. Hãy thử tải lại trang.
+          {result.message ? ` (${result.message})` : null}
+        </p>
+        <Link href="/#news" className="inline-block underline text-[var(--action)]">← Về danh sách bản tin</Link>
+      </section>
+    );
+  }
+
+  if (classifyNewsFetch(result) === 'missing' || !result.data?.post) {
     notFound();
   }
 

@@ -14,6 +14,18 @@ export const MAX_REGULAR_FILES = 128;
 export const MAX_FILE_BYTES = 256 * 1024; // 256 KiB
 export const MAX_EXPANDED_BYTES = 4 * 1024 * 1024; // 4 MiB
 
+/**
+ * zlib wraps its honest "output will not fit `maxOutputLength`" refusal in a coded Error rather
+ * than an `ArtifactError`. Current Node throws `ERR_BUFFER_TOO_LARGE`; older minors used
+ * `ERR_BUFFER_TOO_SHORT`. The stream itself is fine — the real decompressed size is what failed
+ * the cap — so callers map this to the quota refusal, not a corruption verdict.
+ */
+function isInflateLimitExceeded(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const coded = err as NodeJS.ErrnoException; // zlib raises an Error subclass whose `.code` the typed Error lacks
+  return coded.code === 'ERR_BUFFER_TOO_LARGE' || coded.code === 'ERR_BUFFER_TOO_SHORT';
+}
+
 export class ArtifactError extends Error {
   constructor(readonly statusCode: number, message: string) {
     super(message);
@@ -157,8 +169,16 @@ export function parseAndValidateZip(
       data = compressedData;
     } else if (method === 8) {
       try {
-        data = inflateRawSync(compressedData);
+        // The declared sizes arrive unverified from the uploader's central directory, so the limit
+        // must be enforced on the *actual* inflate: without it a ≤2 MiB upload can decompress into
+        // gigabytes before the size-mismatch check below ever sees the result.
+        data = inflateRawSync(compressedData, { maxOutputLength: MAX_FILE_BYTES + 1 });
       } catch (err: unknown) {
+        // zlib refuses the run once the output would pass the per-file cap; surface that as the
+        // same 413 wording the declared-size check uses, instead of a bare zlib message.
+        if (isInflateLimitExceeded(err)) {
+          throw new ArtifactError(413, `File ${normalized} exceeds single-file limit of ${MAX_FILE_BYTES} bytes`);
+        }
         throw new ArtifactError(400, `Failed to decompress ${normalized}: ${err instanceof Error ? err.message : 'corrupt stream'}`);
       }
     } else {

@@ -77,7 +77,7 @@ export class CorrectionService {
   ) {}
 
   private validateCommand(command: CorrectionCommand, ctx: CommandContext): void {
-    if (ctx.actor.role !== 'ADMIN') throw new CorrectionError(403, 'Only administrators can correct results');
+    if (ctx.actor.role !== 'ADMIN' || ctx.actor.scope !== 'FULL') throw new CorrectionError(403, 'Only fully authenticated administrators can correct results');
     if (!command || !['VOID', 'REJUDGE'].includes(command.action) || typeof command.reason !== 'string' ||
         command.reason.trim().length < 3 || command.reason.length > 500 ||
         !Number.isSafeInteger(command.expectedRevision) || command.expectedRevision < 1) {
@@ -224,8 +224,8 @@ export class CorrectionService {
     command: DisqualificationCommand,
     ctx: CommandContext
   ): Promise<DisqualificationResult> {
-    if (ctx.actor.role !== 'ADMIN') {
-      throw new CorrectionError(403, 'Only administrators can disqualify a team');
+    if (ctx.actor.role !== 'ADMIN' || ctx.actor.scope !== 'FULL') {
+      throw new CorrectionError(403, 'Only fully authenticated administrators can disqualify a team');
     }
     const reason = typeof command.reason === 'string' ? command.reason.trim() : '';
     if (reason.length < 3 || reason.length > 500) {

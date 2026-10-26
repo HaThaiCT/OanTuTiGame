@@ -126,7 +126,9 @@ export class ContentService {
    * ------------------------------------------------------------------------------------------- */
 
   async listPublishedNews(limit = 10): Promise<{ posts: NewsPostDto[] }> {
-    const safeLimit = Math.max(1, Math.min(50, limit));
+    // The caller passes a parsed integer; a non-integer slips past only from stale call sites, so
+    // it resolves to the same default a garbled ?limit= gets at the route.
+    const safeLimit = Math.max(1, Math.min(50, Number.isSafeInteger(limit) ? limit : 10));
     const result = await this.db.query<{
       id: string;
       slug: string;

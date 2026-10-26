@@ -225,6 +225,7 @@ describe('S05 Submission quotas (official receipts & private tests)', () => {
       await client.query('DELETE FROM submissions');
       await client.query(`DELETE FROM submission_sources s WHERE NOT EXISTS (SELECT 1 FROM starter_bot_templates t WHERE t.source_digest = s.digest)`);
       await client.query('DELETE FROM tournament_admissions');
+      await client.query(`DELETE FROM encounters e USING tournaments t WHERE e.tournament_id = t.id`);
       await client.query('DELETE FROM team_memberships');
       await client.query('DELETE FROM teams');
       await client.query('DELETE FROM tournaments');

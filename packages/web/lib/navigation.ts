@@ -49,3 +49,12 @@ export function resolveWorkspaceDestination(
 export function tournamentCreateTeamHref(tournamentId: string): string {
   return `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}`;
 }
+
+/**
+ * Link to the registration console of a tournament page. The `#registration` anchor is only
+ * rendered inside the `?tab=registration` view, so a bare `/tournaments/:id#registration` fragment
+ * would land on the top of the overview tab; the query must travel with the fragment.
+ */
+export function tournamentRegistrationHref(tournamentId: string): string {
+  return `/tournaments/${encodeURIComponent(tournamentId)}?tab=registration#registration`;
+}

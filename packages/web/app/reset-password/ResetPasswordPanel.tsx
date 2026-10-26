@@ -4,14 +4,13 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { errorText } from '../../lib/client';
 import { isProfileDisabled, resetPasswordWithToken } from '../../lib/api';
+import { passwordLengthProblem, PASSWORD_RULE_HINT } from '../../lib/password-policy';
 import { OnlineOnlyNotice, ProfileProbeNotice, useAuthProfile } from '../_components/AuthProfile';
-
-/** Client-side mirror of the server rule (`packages/server/src/identity/service.ts`). */
-const MIN_PASSWORD_LENGTH = 12;
 
 /** Vietnamese explanation per reset failure code; unknown codes fall back to `errorText`. */
 const RESET_FAILURE: Record<string, string> = {
-  WEAK_PASSWORD: `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`,
+  // The server's WEAK_PASSWORD covers the full 12–128 range, not just the minimum.
+  WEAK_PASSWORD: PASSWORD_RULE_HINT,
   PASSWORD_RESET_INVALID: 'Token đặt lại mật khẩu không hợp lệ.',
   PASSWORD_RESET_EXPIRED: 'Token đặt lại mật khẩu đã hết hạn (token chỉ sống 30 phút) — hãy yêu cầu lại.',
   PASSWORD_RESET_CONSUMED: 'Token đặt lại mật khẩu đã được dùng trước đó.',
@@ -37,8 +36,9 @@ export default function ResetPasswordPanel() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`);
+    const passwordProblem = passwordLengthProblem(password);
+    if (passwordProblem) {
+      setError(passwordProblem);
       setCode(null);
       return;
     }
@@ -71,7 +71,7 @@ export default function ResetPasswordPanel() {
 
   if (done) {
     return (
-      <section className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+      <section role="status" className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
         <h2 className="text-base font-semibold text-[var(--success-text)]">Mật khẩu đã được đặt lại</h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
           Server đã đổi mật khẩu và thu hồi mọi phiên đăng nhập cũ của tài khoản. Hãy đăng nhập lại bằng mật khẩu mới.
@@ -120,7 +120,7 @@ export default function ResetPasswordPanel() {
           onChange={(event) => setPassword(event.target.value)}
           className={FIELD_CLASS}
         />
-        <span className="text-xs text-[var(--text-secondary)]">Tối thiểu {MIN_PASSWORD_LENGTH} ký tự.</span>
+        <span className="text-xs text-[var(--text-secondary)]">{PASSWORD_RULE_HINT}</span>
       </label>
       <label className="flex flex-col gap-2 text-sm">
         <span className="font-medium">Xác nhận mật khẩu mới</span>
@@ -136,7 +136,7 @@ export default function ResetPasswordPanel() {
       </label>
 
       {error ? (
-        <p className="rounded-md border border-[var(--danger-text)] px-3 py-2 text-sm text-[var(--danger-text)]">
+        <p role="alert" className="rounded-md border border-[var(--danger-text)] px-3 py-2 text-sm text-[var(--danger-text)]">
           {error}
           {code ? <span className="ml-2 font-mono text-xs break-all text-[var(--text-secondary)]">{code}</span> : null}
         </p>

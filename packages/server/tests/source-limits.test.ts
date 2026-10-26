@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { randomBytes } from 'node:crypto';
+import { deflateRawSync } from 'node:zlib';
 import {
   ArtifactError,
   MAX_EXPANDED_BYTES,
@@ -96,6 +97,27 @@ describe('S05: source upload limits', () => {
       () => parseAndValidateZip(createZip({ 'bot.py': incompressible }), 'PYTHON', 'bot.py'),
       413,
       `ZIP exceeds maximum allowed size of ${MAX_ZIP_BYTES}`
+    );
+  });
+
+  it('caps the real inflate of a lying central directory at the declared per-file limit', () => {
+    // The per-file and total checks only see the central directory's *declared* sizes, so a
+    // forged archive can claim a tiny field while its deflate stream expands far past the cap —
+    // the actual decompression must hit the same wall instead of trusting the metadata.
+    const bombPayload = Buffer.alloc(3 * 256 * 1024, 0x61); // 768 KiB of near-incompressible filler
+    const deflateStream = deflateRawSync(bombPayload);
+    expect(deflateStream.length).toBeLessThan(64 * 1024);
+
+    const zip = createZip({ 'bot.py': bombPayload });
+    const nameLength = Buffer.byteLength('bot.py', 'utf8');
+    const centralOffset = 30 + nameLength + deflateStream.length;
+    zip.writeUInt32LE(120, 22); // local header: lie about the uncompressed size
+    zip.writeUInt32LE(120, centralOffset + 24); // central directory: the same lie
+
+    expectArtifactError(
+      () => parseAndValidateZip(zip, 'PYTHON', 'bot.py'),
+      413,
+      `single-file limit of ${MAX_FILE_BYTES}`
     );
   });
 });
