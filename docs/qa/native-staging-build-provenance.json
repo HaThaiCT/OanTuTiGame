@@ -18,6 +18,26 @@
   "buildSucceeded": true,
   "wrapperExit": 1,
   "reason": "All three artifact hashes differ from historical pins; preflight rejected them. Root cause of historical-vs-rebuilt byte difference is not proven.",
+  "readOnlyArtifactInvestigation": {
+    "observedFacts": {
+    "workerElf": "x86-64 PIE dynamically linked, not stripped; no DWARF debug sections; GNU build ID 6ef2eac05f9b686f46bf5e202a3f3b25afb5acf0",
+    "elfComment": "rustc 1.99.1 (58cf8f9c3 2026-10-13); GCC Debian 12.2.0-14+deb12u1; LLD 23.1.1 LLVM 1b9c0d5ff9bbe7634aead059efe6b11a7eeba145",
+    "cargoFingerprintRustflags": [],
+    "embeddedPaths": ["/tmp/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bytes-1.12.1/src/bytes_mut.rs", "/tmp/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.154/src/value/index.rs", "/work/target/release/build/arena-execution-a5976fabc1e6a51f/out/oantuti.execution.v2.rs"],
+      "cargoHome": "Current wrapper sets CARGO_HOME=/tmp/cargo; inspected base image defaults to /usr/local/cargo."
+    },
+    "hypothesisNotProven": "Different source/cache/OUT_DIR paths can change embedded path bytes. This is a plausible explanation only; no historical artifact/environment comparison establishes the cause of the old/new mismatch.",
+    "subsequentControlledExperiment": "See native-cargohome-experiment.json. Two clean source-copy builds changed only CARGO_HOME; broker/worker hashes changed, reaper did not. /tmp/cargo reproduced current hashes, but neither home matched historical pins. Path variance is demonstrated in current builds, not established as the historical mismatch cause.",
+    "searchScopeAndLimitations": "Historical binaries are not currently available at checked /tmp/oantuti-native-bin/*; checkout target contained debug artifacts before current preparation. These checks are not an exhaustive search or proof no copy exists elsewhere. No historical byte/section comparison was performed. Modification timestamps do not prove embedded timestamp changes. Initial metadata investigation performed no rebuild; subsequent isolated experiment is separately recorded. No repin or installation performed.",
+    "historicalHashReceipt": {
+      "transcript": "/home/ha-thai/.omp/agent/sessions/-OanTuTi/2026-10-20T22-14-23-765Z_01a15b61-4515-7129-aa27-21ca8753e4e9/commissioning-review.jsonl:359-367",
+      "timeUtc": "2026-10-26T04:18:17Z to 2026-10-26T04:18:26Z",
+      "corroboration": "Line361 records a peer summary of release build exit0. Lines365-367 record sha256sum invocation and successful output for the three /tmp/oantuti-native-bin artifacts matching historical broker4e22abba..., worker62b9ee89..., reaper942d2ff9... pins. Thus historical hashes were observed against staged bytes, not merely asserted in release metadata.",
+      "notEstablished": "Receipt does not recover old artifact bytes, raw compiler invocation, exact source state, toolchain image identity or build environment; it cannot explain the byte delta.",
+      "jobReferenceCaveat": "proc://bg_10 is no longer available; job labels are process/session-local. Another session's bg_10 reference was a web build, so that label alone cannot identify a Rust build log."
+    },
+    "candidateRecipeNotValidated": "Use a retained exact derived-image ID or fully snapshot-pinned OS package inputs; fixed /work source path and /tmp/cargo cache path; clean dedicated target directory; exact rustc/cargo/protoc/linker versions, Cargo.lock and full source identity; explicit recorded environment and RUSTFLAGS. Consider --remap-path-prefix only as a separately reviewed new release recipe. Two independent clean builds and byte/hash comparisons are required before calling the recipe reproducible."
+  },
   "artifactOwner": "ha-thai:ha-thai",
   "artifacts": {
     "arena-job-broker": "923ede433cea27e7b85491d469c5805704b9c430e61ecdaf7d30798b40e43cf6",

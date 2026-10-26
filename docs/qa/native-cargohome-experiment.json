@@ -1,0 +1,90 @@
+{
+  "sourceCommit": "2604fa9f1f4abb7a34abe176f59dedf8ed6f81d3",
+  "imageId": "sha256:3987d347ae5f8ea3100381d07fe552e2131c78d8a869923c244f53e2ae3dd8ad",
+  "sourcePreparation": "git archive exact sourceCommit extracted into two separate temporary trees, each clean target; both mounted /work",
+  "cacheControlLimitation": "Host directories named tmp-cargo/default-cargo contain source checkouts mounted at /work, not cache mounts. Cargo caches remain container-local at their chosen CARGO_HOME; default image may include prepopulated cache contents whereas /tmp/cargo starts empty. Package versions are lockfile-controlled, but cache contents were not independently normalized or compared. The experiment isolates the selected CARGO_HOME configuration, not every byte of its initial cache state.",
+  "heldFixed": [
+    "source commit",
+    "image ID",
+    "UID:GID 1000:1000",
+    "/work mount/workdir",
+    "default clean target/release",
+    "locked release command"
+  ],
+  "buildCommand": "cargo build --release --locked -p arena-supervisor --bin arena-job-broker --bin arena-worker --bin arena-reaper",
+  "variants": {
+    "tmp-cargo": {
+      "cargoHome": "/tmp/cargo",
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--user",
+        "1000:1000",
+        "--env",
+        "CARGO_HOME=/tmp/cargo",
+        "--mount",
+        "type=bind,src=/tmp/oantuti-cargohome-c1f71kz_/tmp-cargo,dst=/work",
+        "--workdir",
+        "/work",
+        "3987d347ae5f8ea3100381d07fe552e2131c78d8a869923c244f53e2ae3dd8ad",
+        "cargo",
+        "build",
+        "--release",
+        "--locked",
+        "-p",
+        "arena-supervisor",
+        "--bin",
+        "arena-job-broker",
+        "--bin",
+        "arena-worker",
+        "--bin",
+        "arena-reaper"
+      ],
+      "job": "bg_6",
+      "exit": 0,
+      "output": "Finished `release` profile [optimized] target(s) in 1m 01s",
+      "hashes": {
+        "arena-job-broker": "923ede433cea27e7b85491d469c5805704b9c430e61ecdaf7d30798b40e43cf6",
+        "arena-worker": "95c56d5a0e501c1aeede5bb619329f09512f9ac6129b4ce194b95e5319385464",
+        "arena-reaper": "0b4cf3a2e1af689b0848ddc7a4439f19f0779880f5916f29054810fc4ff18bec"
+      }
+    },
+    "default-cargo": {
+      "cargoHome": "/usr/local/cargo",
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--user",
+        "1000:1000",
+        "--mount",
+        "type=bind,src=/tmp/oantuti-cargohome-c1f71kz_/default-cargo,dst=/work",
+        "--workdir",
+        "/work",
+        "3987d347ae5f8ea3100381d07fe552e2131c78d8a869923c244f53e2ae3dd8ad",
+        "cargo",
+        "build",
+        "--release",
+        "--locked",
+        "-p",
+        "arena-supervisor",
+        "--bin",
+        "arena-job-broker",
+        "--bin",
+        "arena-worker",
+        "--bin",
+        "arena-reaper"
+      ],
+      "job": "bg_7",
+      "exit": 0,
+      "output": "Finished `release` profile [optimized] target(s) in 1m 01s",
+      "hashes": {
+        "arena-job-broker": "205944e0d971ef03f731c41064843109767673cce4cc9f6052fbc0cd650a5f8b",
+        "arena-worker": "710eec4da504ff5eb332d8c6b87e390ac4d77cbaa2b0d68644033037f65a5396",
+        "arena-reaper": "0b4cf3a2e1af689b0848ddc7a4439f19f0779880f5916f29054810fc4ff18bec"
+      }
+    }
+  },
+  "conclusion": "CARGO_HOME change demonstrably changes broker/worker bytes and embedded registry paths, not reaper bytes. /tmp variant reproduces all current hashes; neither variant matches any historical pin. This does not explain historical mismatch. No claim of fully reproducible recipe; only one fresh clean build per variant, plus prior nonclean current build match. No gate/pin/installation changes."
+}

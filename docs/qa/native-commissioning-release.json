@@ -4,8 +4,8 @@
   "build": "cargo build --release -p arena-supervisor --bin arena-job-broker --bin arena-worker --bin arena-reaper",
   "compilerImage": "rust:1.99.1-slim-bookworm",
   "buildExit": 0,
-  "rawBuildOutput": "Delivered bash job bg_10 transcript (not a repository log)",
-  "historicalEvidenceCaveat": "The preceding build fields and binaries below are historical claims/pins, not a verified reproduction. Prior raw build log is not available in this repository. See native-staging-build-provenance.json for the observed new build.",
+  "rawBuildOutput": "Historical record cites bg_10; raw Rust compiler output is not currently recovered and process-local job label alone is ambiguous",
+  "historicalEvidenceCaveat": "Recovered commissioning-review transcript at 2026-10-26T04:18:26Z records sha256sum of staged binaries matching the pins below. This corroborates historical bytes/hash receipt, not a reproduced build or recovered source/toolchain/environment. See native-staging-build-provenance.json for exact transcript citation and observed new build.",
   "userReportedInstallerFailure": "FileNotFoundError in embedded Python at line6 opening /tmp/oantuti-native-bin/arena-worker (reported by user; full raw traceback not supplied)",
   "failureRootCause": "Installer opened external transient binary inputs without any preceding build/population step; rollback only cleaned its separate root-private stage.",
   "binaries": {
