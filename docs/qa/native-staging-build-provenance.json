@@ -28,6 +28,12 @@
     },
     "hypothesisNotProven": "Different source/cache/OUT_DIR paths can change embedded path bytes. This is a plausible explanation only; no historical artifact/environment comparison establishes the cause of the old/new mismatch.",
     "subsequentControlledExperiment": "See native-cargohome-experiment.json. Two clean source-copy builds changed only CARGO_HOME; broker/worker hashes changed, reaper did not. /tmp/cargo reproduced current hashes, but neither home matched historical pins. Path variance is demonstrated in current builds, not established as the historical mismatch cause.",
+    "protobufFactorInspection": "arena-execution/build.rs invokes prost_build::compile_protos for execution.proto. prost/prost-build are fixed at 0.14.4, but the external protoc executable is not pinned there. Current retained image has protobuf-compiler/libprotoc32/libprotobuf32 3.21.12-3+deb12u1. Historical protoc version and image digest are unknown; inspected local Rust image inventory has no separately identified historical image. No arbitrary protoc experiments were performed; this is an untested factor, not a causal explanation.",
+    "releaseWorkItem": {
+      "item": "Establish authorized reproducible release artifact hash set or safe explanation",
+      "status": "BLOCKED",
+      "requiredMaintainerInput": "Either explicit maintainer signoff authorizing a reviewed new release artifact/hash set and its build recipe, or delivery of historical broker/worker/reaper artifact bytes plus exact source revision and build environment/command (image digest, toolchain/protoc/linker versions, flags and paths). No further experiments or repinning without that input."
+    },
     "searchScopeAndLimitations": "Historical binaries are not currently available at checked /tmp/oantuti-native-bin/*; checkout target contained debug artifacts before current preparation. These checks are not an exhaustive search or proof no copy exists elsewhere. No historical byte/section comparison was performed. Modification timestamps do not prove embedded timestamp changes. Initial metadata investigation performed no rebuild; subsequent isolated experiment is separately recorded. No repin or installation performed.",
     "historicalHashReceipt": {
       "transcript": "/home/ha-thai/.omp/agent/sessions/-OanTuTi/2026-10-20T22-14-23-765Z_01a15b61-4515-7129-aa27-21ca8753e4e9/commissioning-review.jsonl:359-367",
