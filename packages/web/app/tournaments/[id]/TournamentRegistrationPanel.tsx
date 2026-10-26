@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cancelTournamentRegistration, fetchAuthMe, joinTournamentWithCode, listTournamentEntries, listTournamentRegistrations, onlineTeams, probeAuthProfile, requestTournamentRegistration, type AuthMe, type AuthProfile, type TeamDto, type TournamentEntry, type TournamentRegistration } from '../../../lib/api';
 import { registrationActions, registrationErrorText, registrationStatusLabel } from '../../../lib/tournament-registration';
 import { entryStatusLabel } from '../../../lib/labels';
+import { tournamentCreateTeamHref } from '../../../lib/navigation';
 
 const INPUT_CLASS = 'h-12 w-full min-w-0 rounded-md border border-[var(--border-control)] bg-[var(--canvas)] px-3.5 text-base text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--action)]';
 const BUTTON_CLASS = 'min-h-12 rounded-md bg-[var(--action)] px-5 py-2.5 text-base font-semibold text-[var(--action-text)] disabled:opacity-60 cursor-pointer';
@@ -78,7 +79,7 @@ export default function TournamentRegistrationPanel({ tournamentId, state, regis
   const disabled = loading || pending !== null || Boolean(context?.error);
   const open = state === 'REGISTRATION_OPEN' && (registrationClosesAt === null || (now !== null && Date.parse(registrationClosesAt) > now));
   const teamBase = `/workspace/tournaments/${encodeURIComponent(tournamentId)}/teams/${encodeURIComponent(teamId)}`;
-  const createTeamHref = `/workspace?tournament=${encodeURIComponent(tournamentId)}#create-team`;
+  const createTeamHref = tournamentCreateTeamHref(tournamentId);
 
   async function request(usingCode = false) {
     if (!team || !actions.canRequest || disabled) return;

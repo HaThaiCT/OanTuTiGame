@@ -32,3 +32,20 @@ export function safeReturnTo(url: string | null | undefined): string | null {
     return null;
   }
 }
+
+/**
+ * Determines the destination after workspace login/auth based on user role and sanitized returnTo.
+ */
+export function resolveWorkspaceDestination(
+  returnTo: string | null | undefined,
+  role: string | null | undefined
+): string {
+  return safeReturnTo(returnTo) ?? (role === 'ADMIN' ? '/organizer' : '/tournaments');
+}
+
+/**
+ * Generates the safe returnTo link for creating a team from within a tournament registration tab.
+ */
+export function tournamentCreateTeamHref(tournamentId: string): string {
+  return `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}`;
+}

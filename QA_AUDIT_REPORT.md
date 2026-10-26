@@ -1,9 +1,65 @@
 # BÁO CÁO KIỂM THỬ UX/A11Y — OANTUTI ARENA
 
-**Ngày:** 22/10/2026  
-**Preview:** `http://127.0.0.1:14300` (Docker Compose, production web image)  
-**Source workspace:** `/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2`, `develop/online-v2-2`, base `626429e2e6d5a76b0122cfd46fdde72a47816e4c`  
-**Verdict:** **Incomplete** — source build/test pass; isolated browser smoke confirms rendered home/catalog/projector but has API proxy failure; official Docker preview still uses old image. Full workflow and post-fix authenticated smoke remain unverified.
+**Cập nhật chốt phiên:** 26/10/2026  
+**Trạng thái phiên:** **DỪNG TOÀN BỘ PHIÊN LIVE NATIVE COMMISSIONING / TEST THEO YÊU CẦU NGƯỜI DÙNG.** Không thực hiện thêm bất kỳ thao tác runtime, sudo, build, hay sửa đổi database/service nào.  
+**Source workspace:** `/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2` (`develop/online-v2-2`)  
+**Final Verdict:** **Incomplete** — Control plane, team/member ACL, registration request/approval, bot upload intake, news publishing, Monaco IDE, và các sửa đổi UI contrast/CTA đã được kiểm tra trên stack riêng; luồng thi đấu chính thức (BUILD→READY→GAME, lock, start, accepted results, appeal, rating, archive) **chưa hoàn thành** và bị chặn fail-closed bởi bài toán provenance/hash của native worker.
+
+---
+
+## TỔNG HỢP KIỂM THỬ VÀ TRẠNG THÁI CUỐI (26/10/2026)
+
+### 1. Kết quả kiểm thử tự động (không cộng dồn các suite trùng lặp)
+
+- **Latest Server Default Suite:** **121 files passed, 5 skipped; 744 tests passed, 43 skipped, exit 0** (`native-commissioning-default-suite.log`) sau các bổ sung grantGid và sửa fixture test.
+- **Prior Post-Fix Default Suite:** **120 files passed, 5 skipped; 734 tests passed, 43 skipped, exit 0** (`post-fix-fresh/`) cùng 5 migration/rating suites chạy riêng: **5 files / 42 tests passed** (`gated-suites-fixed/`); Native TCP smoke xác nhận 409 `RATING_PAGE_STALE`.
+- **Older Clean Schema-v32 Server Suite:** **83 files passed, 4 skipped; 570 tests passed, 33 skipped** (`arena_tournament_verify_test`).
+- **Web Vitest Suite:** **12 files passed, 38 tests passed, exit 0** (`npm run test:web`), bao gồm các unit test điều hướng `safeReturnTo` và `resolveWorkspaceDestination`; TypeScript typecheck `packages/web` đạt 0 lỗi (`npx tsc --noEmit`).
+- **Staging & Rootfs Regression Suite:** **22 tests passed trong 0.081s, OK** (`python3 -m unittest discover -s tests -p rootfs_verification_test.py -v`); cú pháp shell `bash -n` cho cả hai script commissioning và biên dịch Python đều đạt exit 0.
+- **Unit & Sandbox Regressions (không phải kernel runtime certification):** 19 rootfs entrypoint tests, 136 Rust reviewer tests (`crates/arena-supervisor`), 34 native grant/acceptance tests (`native-commissioning-acceptance.log`), 10 native grant permission tests.
+
+### 2. Luồng Live Isolated đã thực hiện vs. Chưa thực hiện
+
+- **Đã thực hiện trên stack riêng biệt (DB `arena_isolated_20261026_lifecycle_test`, API 15621, Web 15622, TLS 15623, tournament `17d518be-2a9e-458f-9341-2e407156e7ec`):**
+  - Quản trị viên tạo giải (SINGLE_ELIMINATION), map commitment (`standard-8x8`), knockout pool 4 map, bật Rated, mở đăng ký qua UI / browser-origin API.
+  - Sinh viên Alice tạo đội, mời Bob; Bob đăng nhập chấp nhận lời mời (member ACL xác nhận). Carol tạo đội thứ hai qua API.
+  - Đăng ký tham gia gửi qua nút bấm giao diện (với override `window.confirm=()=>true` để xử lý chính sách dialog của automation); Quản trị viên duyệt đăng ký của cả hai đội thành công (status `APPROVED`).
+  - Nộp starter bot ZIP hợp lệ cho cả hai đội qua file input thật của giao diện; hai receipt trả về `VALIDATING`.
+  - Đóng đăng ký yêu cầu và vượt qua xác thực mật khẩu lại (reauth 403 -> UI reauth 200 -> retry 200).
+- **Dừng lại / Chưa thực hiện (fail-closed / blocked):**
+  - Hai submission lưu trong DB ở trạng thái `QUEUED`, **zero job_attempts**.
+  - Lệnh khóa giải (lock) trên UI bị từ chối 409 `INTAKE_DRAINING: Submissions are currently compiling; wait for drain before locking`.
+  - Lệnh bắt đầu giải (start) bị từ chối 503 `NATIVE_EXECUTION_NOT_READY: authenticated game and build workers are required`.
+  - Các bước BUILD→READY, thi đấu chính thức (GAME), sinh kết quả trận đấu, khiếu nại (appeal), cập nhật rating và lưu trữ (archive) **hoàn toàn chưa chạy**.
+
+### 3. Trình tự sự cố Native Commissioning & Kết quả Provenance
+
+1. **Lần chạy installer đầu tiên:** Người dùng chạy installer bằng sudo; thất bại trong chroot do thiếu các liên kết thực thi `/usr/bin/python3`, `/usr/bin/node`, `/usr/bin/g++` trong compiler rootfs. Đã sửa trong commit `2604fa9` (bổ sung symlinks, tách compiler rootfs `626e4e3c...` khỏi runtime rootfs `fac7d1f...`, 19 tests pass).
+2. **Lần chạy installer thứ hai:** Người dùng chạy lại installer bằng sudo; thất bại với lỗi `FileNotFoundError` tại embedded Python dòng 6 khi mở `/tmp/oantuti-native-bin/arena-worker` (do installer giả định sẵn file build ở `/tmp` mà không có bước chuẩn bị trước).
+3. **Khắc phục staging:** Tạo wrapper chuẩn bị phía user thông thường `prepare-native-worker.sh` biên dịch vào `target/release/{arena-job-broker, arena-worker, arena-reaper}` bằng Docker image dẫn xuất từ `rust:1.99.1-slim-bookworm@sha256:f48da6dc...` có cài `protobuf-compiler` (`3987d347...`), bổ sung kiểm tra preflight `--check-inputs` trước khi yêu cầu quyền root.
+4. **Kết quả biên dịch thực tế:** Lệnh build chạy thành công trong 9.78s dưới user 1000:1000, nhưng 3 mã băm (hash) SHA-256 sinh ra khác biệt hoàn toàn so với các mã pin lịch sử:
+   - Rebuilt: broker `923ede43...`, worker `95c56d5a...`, reaper `0b4cf3a2...`
+   - Pinned: broker `4e22abba...`, worker `62b9ee89...`, reaper `942d2ff9...`
+   - Preflight của installer từ chối cài đặt với mã thoát exit 1. Hệ thống giữ nguyên fail-closed, không tự ý cập nhật pin hay cài đặt quyền root.
+5. **Điều tra Provenance & Thử nghiệm A/B CARGO_HOME:**
+   - Biên bản kiểm thử lịch sử `commissioning-review.jsonl:359-367` (26/10/2026 04:18Z) xác nhận có lệnh `sha256sum` khớp với các mã pin cũ đối với các file tạm ở `/tmp`, nhưng không lưu giữ raw compiler command, môi trường hay byte nhị phân cũ.
+   - Thử nghiệm A/B có kiểm soát trên commit `2604fa9`: Thay đổi biến `CARGO_HOME` giữa `/tmp/cargo` và `/usr/local/cargo` làm thay đổi mã băm của broker và worker cùng đường dẫn nhúng registry trong file ELF, trong khi reaper giữ nguyên mã băm. Cả hai biến thể đều không khớp với các mã pin lịch sử, chứng minh `CARGO_HOME` là một yếu tố gây biến thiên nhưng chưa đủ để giải thích sai lệch lịch sử.
+   - **Mục công việc BLOCKED:** Cần maintainer chính thức phê duyệt bộ hash / recipe mới hoặc cung cấp đầy đủ binary cũ và môi trường build gốc.
+
+### 4. Sửa lỗi Giao diện (UI Fixes) & Giới hạn
+
+- **Guest Login CTA:** Đã sửa từ trước trong source (`TournamentRegistrationPanel.tsx` dòng 120 sử dụng `returnTo`) và được xác nhận qua preview smoke A01/A02 (`docs/qa/2026-10-23-browser-audit.md`), đưa khách quay lại đúng giải đấu và tab `?tab=registration`.
+- **Create-Team CTA (sửa trong phiên này theo mô hình Gemini 3.8 flash high):** Liên kết `createTeamHref` trước đó gửi `/workspace?tournament=${tournamentId}#create-team` bị trang workspace bỏ qua và chuyển hướng sinh viên về `/tournaments`. Đã sửa qua TDD sử dụng `tournamentCreateTeamHref(tournamentId)` với đích an toàn `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}`; bộ test web 12 files (38 tests) pass. Hành vi click trực tiếp trên trình duyệt thật đối với link này chưa được kiểm tra lại do phiên test đã dừng.
+- **Selected Tab Contrast:** Đã sửa chỉ định màu cho tab đang chọn trên light mode đạt 6.43:1 (vượt chuẩn WCAG 4.5:1), axe 0 lỗi.
+
+### 5. Hiện trạng Hạ tầng & Giới hạn Kiểm thử
+
+- **Shared Demo Database:** Database `arena` trên `oantuti-demo-20261022-postgres` có 30/32 checksum di chuyển được lưu vết; khoảng cách 2 migration chưa được baseline và không được reset.
+- **Readiness Baseline:** Endpoint `/api/health/ready` trả về HTTP 503 degraded do tắt dev executor (`OANTUTI_DEV_EXECUTION=0`) và chưa có worker daemon được ủy quyền.
+- **Backup / Restore:** Khôi phục toàn bộ đối tượng tham chiếu được kiểm chứng cục bộ trên snapshot demo (616/616 replay, 12/12 source archive); sao lưu thảm họa off-host và WAL archiving chưa được chứng nhận.
+- **UX/A11Y/Perf Matrix:** Các bài test toàn diện cho screen reader, keyboard-only toàn flow, zoom 200%, matrix độ phân giải và metrics hiệu năng chưa hoàn tất.
+
+---
 
 ## Phạm vi và phương pháp đã thực sự chạy
 
@@ -146,7 +202,7 @@ Fixture cho release rehearsal: 1 ADMIN, 4 verified student captains + 2 invited 
 - Negative/stale/concurrent/backup/reauth/archive: `online-tournament-registration.test.ts`, `tournament-archive.test.ts`, `tournament-lifecycle.test.ts`, `four-formats.test.ts`, `bulk-enrollment.test.ts`, `pairing-blocker.test.ts`, `reauth.test.ts`, `backup-fence.test.ts`, `online-team-lifecycle.test.ts`: **9 files, 74 tests passed** on isolated DB.
 - Full broad matrix on a fresh v32 DB is **not yet green**: last run `104 passed, 27 skipped, 1 failed; 4 files failed`. Distinct known failures/errors are listed below and must not be relabeled as passes.
 - Browser journeys verified in real session: homepage centered news renders formatted Markdown; news detail; guest projector; guest registration page/tab; registration message to login preserves URL at header/alternate link; account login gate; authenticated student registration via newly created fixture (`qa_test_akui`) and successful redirect to original tournament. Existing team fixture creation inside tournament hub rendered correctly; state-changing test of that team was performed on the prior demo session. Starter library listed 3 templates and guest ZIP fetch returned HTTP 200 + `application/zip` + bytes. Python template downloaded, unpacked and ran `npm run match:play` to 10-ply game, replay `/tmp/test-match.oantuti` 605 bytes.
-- Actual browser-discovered defect: within guest ONLINE `TournamentRegistrationPanel` at `/tournaments/9628ef7a-b9e5-404f-8760-40af96c60666?tab=registration`, the anchor labelled `Đăng nhập →` still points to bare `/workspace`. The header login anchor on the same page includes safe `returnTo`. Clicking the CTA demonstrably navigates to `/workspace` with no `returnTo`, losing tournament/tab intent. Precise fix: change this guest CTA only to `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}`. Tool schema rejected every subagent attempt with explicit `model` field (`sourceSession only accepted for seance`); no subagent completed this narrow UI fix. This item remains unresolved; do not claim fixed.
+- Prior browser-discovered defect on guest CTA: within guest ONLINE `TournamentRegistrationPanel`, the anchor labelled `Đăng nhập →` previously pointed to bare `/workspace`. This was corrected in source to `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}` and verified in preview browser smoke (receipts A01/A02 in `docs/qa/2026-10-23-browser-audit.md`), preserving the tournament and registration tab. A separate distinct defect observed during the later isolated lifecycle rerun (`docs/qa/isolated-rerun-evidence.md:20`) was that `createTeamHref` sent `/workspace?tournament=${tournamentId}#create-team`, but `/workspace` ignored those query/hash params and redirected authenticated students to `/tournaments`. This create-team CTA has now been corrected via TDD using `tournamentCreateTeamHref(tournamentId)` targeting `/workspace?returnTo=${encodeURIComponent(`/tournaments/${tournamentId}?tab=registration`)}`; 12 web test files (38 tests) pass including navigation regressions, while live browser re-verification remains unexercised in this stopped session.
 
 ### Full-suite failures and confirmed defect
 
@@ -166,7 +222,7 @@ Fixture cho release rehearsal: 1 ADMIN, 4 verified student captains + 2 invited 
 | 04:53 | Run ONLINE registration, content, replay and public-route suites | 5 files / 34 tests passed | NOTE | Continue edge/error coverage |
 | 04:58 | Run 9 error, concurrency, backup, reauth/archive suites | 9 files / 74 tests passed | NOTE | Full matrix |
 | 05:12 | Run broad matrix in fresh schema v31 | 104 passed, 27 skipped; full pass blocked by seed author FK, fixtures and permissions | BUG / RISK | Add migration 032; run clean v32 with grants |
-| 05:19 | Guest clicks registration CTA on `?tab=registration` | CTA ends at `/workspace`, loses return target; header link works | BUG | Change anchor and retest end-to-end |
+| 05:19 | Guest clicks registration CTA on `?tab=registration` | CTA ends at `/workspace`, loses return target; header link works | BUG | Fixed in source & verified preview A01/A02; separate create-team CTA fixed in source under model Gemini 3.8 flash high |
 
 
 ### Kết quả kiểm thử bổ sung (fresh schema v32)
