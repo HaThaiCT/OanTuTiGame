@@ -93,6 +93,7 @@ describe('S05 Submission Source Pipeline & Private Workspace Tests (T3a)', () =>
       await client.query('DELETE FROM submissions');
       await client.query(`DELETE FROM submission_sources WHERE NOT EXISTS (SELECT 1 FROM starter_bot_templates WHERE source_digest = submission_sources.digest)`);
       await client.query('DELETE FROM tournament_admissions');
+      await client.query(`DELETE FROM encounters e USING tournaments t WHERE e.tournament_id = t.id`);
       await client.query('DELETE FROM team_memberships');
       await client.query('DELETE FROM teams');
       await client.query('DELETE FROM tournaments');
