@@ -11,7 +11,7 @@ describe('operator native execution configuration', () => {
       const file = join(root, 'native.json');
       const toolchains = ['PYTHON', 'TYPESCRIPT', 'CPP'].map(language => ({ language, imageDigest: 'a'.repeat(64), version: 'pinned', flags: [] }));
       const config = { executable: '/opt/arena/broker', socketPath: '/run/arena/jobs.sock', workerUid: 1001, socketGid: 1001,
-        deploymentGeneration: 2, runtimeProfileDigest: 'b'.repeat(64), maxBuildSlots: 2, maxGameSlots: 4,
+        grantGid: process.getgid?.() ?? 0, deploymentGeneration: 2, runtimeProfileDigest: 'b'.repeat(64), maxBuildSlots: 2, maxGameSlots: 4,
         spoolRoot: '/var/lib/arena/spool', compiledArtifactsDir: '/var/lib/arena/compiled', toolchains };
       writeFileSync(file, JSON.stringify(config), { mode: 0o600 });
       expect(nativeGatewayConfig({ OANTUTI_NATIVE_CONFIG: file })?.deploymentGeneration).toBe(2);

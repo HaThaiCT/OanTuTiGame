@@ -1,0 +1,94 @@
+COMMAND: ['docker', 'run', '--rm', '-v', '/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2:/work', '-w', '/work', 'rust:1.99.1-slim-bookworm', 'cargo', 'test', '-p', 'arena-supervisor', '--test', 'worker_materialize']
+EXIT_CODE: 101
+
+running 12 tests
+test a_build_grant_that_does_not_match_its_pinned_bytes_writes_nothing ... ok
+test build_materialization_refuses_an_unusable_toolchain_or_output_root ... ok
+test refuses_operator_paths_it_cannot_trust ... ok
+test refuses_to_reuse_an_attempt_directory ... ok
+test a_grant_that_does_not_match_its_pinned_bytes_is_refused_before_any_write ... ok
+test a_typescript_build_has_no_compile_step_but_still_probes_the_toolchain ... ok
+test creates_nested_source_directories ... ok
+test a_compile_side_materializes_the_granted_artifact_instead_of_compiling ... ok
+test a_cpp_build_writes_a_writable_output_directory_and_operator_commands ... FAILED
+test a_python_build_compiles_the_entrypoint_and_smokes_the_source ... ok
+test dropping_the_attempt_removes_the_whole_workspace ... ok
+test writes_a_private_attempt_and_the_run_bundle ... ok
+
+failures:
+
+---- a_cpp_build_writes_a_writable_output_directory_and_operator_commands stdout ----
+
+thread 'a_cpp_build_writes_a_writable_output_directory_and_operator_commands' (130) panicked at crates/arena-supervisor/tests/worker_materialize.rs:337:5:
+assertion `left == right` failed
+  left: Number(8)
+ right: 10
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    a_cpp_build_writes_a_writable_output_directory_and_operator_commands
+
+test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+info: syncing channel updates for 1.99.1-x86_64-unknown-linux-gnu
+info: latest update on 2026-10-15 for version 1.99.1 (58cf8f9c3 2026-10-13)
+info: downloading component rust-std
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded block-buffer v0.12.1
+  Downloaded heck v0.5.0
+  Downloaded itoa v1.0.18
+  Downloaded cfg-if v1.0.5
+  Downloaded multimap v0.10.1
+  Downloaded cpufeatures v0.3.1
+  Downloaded equivalent v1.0.3
+  Downloaded errno v0.3.14
+  Downloaded foldhash v0.1.5
+  Downloaded fastrand v2.5.0
+  Downloaded fixedbitset v0.5.7
+  Downloaded crypto-common v0.2.2
+  Downloaded quote v1.0.47
+  Downloaded sha2 v0.11.1
+  Downloaded either v1.19.0
+  Downloaded prost-derive v0.14.4
+  Downloaded zmij v1.0.23
+  Downloaded bitflags v2.13.2
+  Downloaded digest v0.11.3
+  Downloaded unicode-ident v1.0.27
+  Downloaded hybrid-array v0.4.15
+  Downloaded prost-build v0.14.4
+  Downloaded prost v0.14.4
+  Downloaded tempfile v3.27.0
+  Downloaded bytes v1.12.1
+  Downloaded anyhow v1.0.104
+  Downloaded log v0.4.34
+  Downloaded prost-types v0.14.4
+  Downloaded const-oid v0.10.2
+  Downloaded once_cell v1.21.4
+  Downloaded serde_derive v1.0.229
+  Downloaded proc-macro2 v1.0.107
+  Downloaded prettyplease v0.2.37
+  Downloaded serde_core v1.0.229
+  Downloaded serde v1.0.229
+  Downloaded indexmap v2.14.2
+  Downloaded memchr v2.8.3
+  Downloaded typenum v1.20.1
+  Downloaded hashbrown v0.17.1
+  Downloaded serde_json v1.0.154
+  Downloaded aho-corasick v1.1.5
+  Downloaded hashbrown v0.15.5
+  Downloaded itertools v0.14.0
+  Downloaded regex v1.13.1
+  Downloaded syn v3.0.9
+  Downloaded syn v2.0.119
+  Downloaded regex-syntax v0.8.11
+  Downloaded rustix v1.1.5
+  Downloaded regex-automata v0.4.18
+  Downloaded petgraph v0.8.3
+  Downloaded libc v0.2.190
+  Downloaded linux-raw-sys v0.12.1
+   Compiling arena-supervisor v0.1.0 (/work/crates/arena-supervisor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.31s
+     Running tests/worker_materialize.rs (target/debug/deps/worker_materialize-6a08fbae64666203)
+error: test failed, to rerun pass `-p arena-supervisor --test worker_materialize`

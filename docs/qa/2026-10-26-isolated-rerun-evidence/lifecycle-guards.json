@@ -1,0 +1,16 @@
+[
+  {
+    "action": "lock",
+    "status": 409,
+    "body": {
+      "error": "INTAKE_DRAINING: Submissions are currently compiling; wait for drain before locking"
+    }
+  },
+  {
+    "action": "start",
+    "status": 503,
+    "body": {
+      "error": "NATIVE_EXECUTION_NOT_READY: authenticated game and build workers are required"
+    }
+  }
+]

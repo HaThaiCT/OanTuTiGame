@@ -1,0 +1,1002 @@
+[
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=SjEsqRgWsg3iHou7",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=SjEsqRgWsg3iHou7",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/projector/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=SjEsqRgWsg3iHou7",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=overview&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/projector/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=team&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=registration&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=starter-bots&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/workspace",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/logo-uet.svg",
+    "status": 304
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/39xvloif4s8--.css",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/1x6obpmlu1_c2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2r4s4h5xul1n-.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2khxl0v1q4i6n.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2e268anpfvdoc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/09hdqawbp6kp2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/256qf-pk2qki_.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/11yws5qlcll9o.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/profile",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=v67lk4E8a3YfLt6y",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/register?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/forgot-password?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/register?_rsc=CSc8ncUQKeNyEZ0M",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/forgot-password?_rsc=tzE4_8LGXg8Ncv1K",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=v67lk4E8a3YfLt6y",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/18d4lacc9ttzi.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/0n8gqms0wn8ay.js",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/auth/login",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=KFQ5nkihY44f6qpS",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=KFQ5nkihY44f6qpS",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/0rtn4-c43l7b5.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3l-v9oiq03ud1.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=KesW-mb2zPYB7OrU",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=tournaments&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=create&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=teams&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=maps&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=news&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/logo-uet.svg",
+    "status": 304
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/39xvloif4s8--.css",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/1x6obpmlu1_c2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2r4s4h5xul1n-.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2khxl0v1q4i6n.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2e268anpfvdoc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/09hdqawbp6kp2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/256qf-pk2qki_.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2vh-otpuqe0qm.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3l-v9oiq03ud1.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/team-ratings",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/starter-bots",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations/fb218d86-1eec-4301-b4d8-4a86ae48aaa6/review",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations/41805576-0ca5-4002-be51-dc37dd812a58/review",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/workspace",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/logo-uet.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/39xvloif4s8--.css",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/1x6obpmlu1_c2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2r4s4h5xul1n-.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2khxl0v1q4i6n.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2e268anpfvdoc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/09hdqawbp6kp2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/256qf-pk2qki_.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/11yws5qlcll9o.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/profile",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=v67lk4E8a3YfLt6y",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/register?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/forgot-password?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/register?_rsc=CSc8ncUQKeNyEZ0M",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/forgot-password?_rsc=tzE4_8LGXg8Ncv1K",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=v67lk4E8a3YfLt6y",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/18d4lacc9ttzi.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/0n8gqms0wn8ay.js",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/auth/login",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=PT7zYLOnm4p2_Elc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=OkKx-hd-HXOGH6jE",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/147efd0-xrh4y.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/account?_rsc=_nNpHJd5A_AP-Ykq",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=_nNpHJd5A_AP-Ykq",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/account?_rsc=10Or9_Nz6R07fk3P",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=B1FRaN3h7Q_SUwDM",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2hmjhhfognror.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=submissions",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/logo-uet.svg",
+    "status": 304
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/39xvloif4s8--.css",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/1x6obpmlu1_c2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2r4s4h5xul1n-.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2khxl0v1q4i6n.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2e268anpfvdoc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/09hdqawbp6kp2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/256qf-pk2qki_.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/04p_vbrqf_cr7.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/4269kb_j6g1st.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2xce_unwwkocc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3l-v9oiq03ud1.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3_fk9gplx5ejh.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/submissions?teamId=856081fc-5250-4467-8801-c23486deabd8",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/entries/me?teamId=856081fc-5250-4467-8801-c23486deabd8",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/team-ratings",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=SjEsqRgWsg3iHou7",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=SjEsqRgWsg3iHou7",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/projector/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=SjEsqRgWsg3iHou7",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=overview&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/projector/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=team&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=registration&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?tab=starter-bots&_rsc=S9yEfm94iIRUQQUg",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/submissions",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/submissions?teamId=856081fc-5250-4467-8801-c23486deabd8",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/entries/me?teamId=856081fc-5250-4467-8801-c23486deabd8",
+    "status": 200
+  }
+]

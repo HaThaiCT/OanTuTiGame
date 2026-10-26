@@ -56,6 +56,8 @@ export interface LocalJobBrokerOptions {
   readonly completionRoot?: string;
   /** Operator-declared toolchain identity, one entry per supported language. */
   readonly toolchains: readonly BuildToolchain[];
+  /** Operator-declared grant GID for group-accessible spool attempts (required for distinct worker UID). */
+  readonly grantGid: number;
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new JobBrokerError('INVALID_REQUEST', 'Expected object');
@@ -104,7 +106,7 @@ export class LocalJobBrokerTransport {
     if (process.platform !== 'linux' || !isAbsolute(options.executable) || !isAbsolute(options.socketPath)) throw new Error('Local broker requires Linux and absolute executable/socket paths');
     if (!isAbsolute(options.spoolRoot) || !isAbsolute(options.compiledArtifactsDir)) throw new Error('Native spool and compiled artifact roots must be absolute paths');
     if (!Array.isArray(options.toolchains) || options.toolchains.length === 0) throw new Error('Runtime profile must declare at least one toolchain');
-    for (const value of [options.workerUid, options.socketGid, options.deploymentGeneration, options.maxBuildSlots, options.maxGameSlots]) integer(value);
+    for (const value of [options.workerUid, options.socketGid, options.grantGid, options.deploymentGeneration, options.maxBuildSlots, options.maxGameSlots]) integer(value);
     if (options.workerUid === process.getuid?.()) throw new Error('Native worker must have a separate UID');
     if (options.deploymentGeneration === 0) throw new Error('Deployment generation must be positive');
     digest(options.runtimeProfileDigest);

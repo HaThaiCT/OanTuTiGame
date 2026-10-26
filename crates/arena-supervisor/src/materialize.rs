@@ -23,12 +23,11 @@
 //! * GAME — two sides. An interpreted language materializes the granted source ZIP and runs it
 //!   through the operator rootfs interpreter; a compile language (CPP) never compiles here, it runs
 //!   the granted compiled artifact from a read-only `/out` mount, which is
-//!   `<attempt root>/<attempt id>/<side>/output/` (mode 0733 inside the 0700 attempt tree).
+//!   `<attempt root>/<attempt id>/<side>/output/` (mode 0700).
 //! * BUILD/TEST_BUILD — one side plus a *compile bundle* whose process is the operator-fixed
 //!   toolchain command and whose `/out` mount is the only writable path: the artifact directory is
-//!   `<artifact output root>/<attempt id>/1/`, a fresh 0700 directory owned by this attempt with a
-//!   0733 leaf, so the unprivileged sandbox uid can create the artifact there and no other identity
-//!   can even reach the path. The directory is removed with the attempt.
+//!   `<artifact output root>/<attempt id>/1/`, a fresh 0700 directory. Namespace root maps to the
+//!   supervisor host identity, so no other host identity needs access. Removed with the attempt.
 
 use arena_runner::manifest::{parse_manifest, ParsedManifest};
 use serde_json::Value;
@@ -67,9 +66,9 @@ const WORKSPACE_DIR: &str = "workspace";
 const OUTPUT_DIR: &str = "output";
 const BUNDLE_DIR: &str = "bundle";
 const STATE_DIR: &str = "state";
-const RUN_BUNDLE: &str = "run.json";
-const COMPILE_BUNDLE: &str = "compile.json";
-const TOOLCHAIN_BUNDLE: &str = "toolchain.json";
+const RUN_BUNDLE: &str = "run";
+const COMPILE_BUNDLE: &str = "compile";
+const TOOLCHAIN_BUNDLE: &str = "toolchain";
 
 /// Container-absolute paths the bundles are built from. The sandbox sees only these.
 pub const WORKSPACE_MOUNT: &str = "/workspace";
@@ -77,9 +76,8 @@ pub const OUTPUT_MOUNT: &str = "/out";
 /// Name of the compiled artifact inside the output directory, mirroring the dev pipeline's
 /// `<workDir>/bot`.
 pub const ARTIFACT_NAME: &str = "bot";
-/// Output directory mode: the sandbox runs as an unprivileged uid and must be able to create the
-/// artifact there. The directory lives inside a 0700 attempt tree, so only that uid can reach it.
-const OUTPUT_DIR_MODE: u32 = 0o733;
+/// Rootless sandbox identity maps to the supervisor; output stays host-private.
+const OUTPUT_DIR_MODE: u32 = 0o700;
 
 /// Structured validation/materialization failure. The code is a stable identifier for logs and
 /// for the agent that owns the attempt; the message is never derived from Bot input.
@@ -1324,8 +1322,7 @@ fn create_private_directory(path: &Path) -> io::Result<()> {
 
 fn create_output_directory(path: &Path) -> io::Result<()> {
     DirBuilder::new().mode(OUTPUT_DIR_MODE).create(path)?;
-    // `mkdir` is filtered through the process umask, and this directory's "write for others" bit is
-    // exactly what lets the unprivileged sandbox create the artifact. Set it explicitly.
+    // Preserve the private mode even under an operator-provided umask.
     fs::set_permissions(path, fs::Permissions::from_mode(OUTPUT_DIR_MODE))
 }
 
@@ -1344,6 +1341,7 @@ fn bundle_document(
     rootfs: &Path,
     cgroup: &Path,
 ) -> Result<Vec<u8>, MaterializeError> {
+    let limits = if compile_env { crate::control::WorkloadLimits::COMPILE } else { crate::control::WorkloadLimits::BOT };
     let mut mounts = vec![
         serde_json::json!({
             "destination": "/proc",
@@ -1366,11 +1364,10 @@ fn bundle_document(
     ];
     if let Some(output) = output {
         let options = if writable_output {
-            // The artifact directory is the only writable mount and it is never executable in the
-            // read-only case, so a Bot can never execute something it wrote.
+            // Only the compile bundle writes output; game artifact mounts remain read-only.
             vec!["bind", "rw", "nosuid", "nodev"]
         } else {
-            vec!["bind", "ro", "nosuid", "nodev", "noexec"]
+            vec!["bind", "ro", "nosuid", "nodev"]
         };
         mounts.push(serde_json::json!({
             "destination": OUTPUT_MOUNT,
@@ -1404,7 +1401,8 @@ fn bundle_document(
         "root": { "path": rootfs, "readonly": true },
         "process": {
             "terminal": false,
-            "user": { "uid": 65534, "gid": 65534, "additionalGids": [] },
+            // Namespace root maps only to the supervisor's unprivileged host identity.
+            "user": { "uid": 0, "gid": 0, "additionalGids": [] },
             "args": args,
             "env": environment,
             "cwd": WORKSPACE_MOUNT,
@@ -1417,9 +1415,9 @@ fn bundle_document(
                 "ambient": [],
             },
             "rlimits": [
-                { "type": "RLIMIT_CPU", "hard": 8, "soft": 8 },
-                { "type": "RLIMIT_NOFILE", "hard": 128, "soft": 128 },
-                { "type": "RLIMIT_NPROC", "hard": 64, "soft": 64 },
+                { "type": "RLIMIT_CPU", "hard": if compile_env { 10 } else { 8 }, "soft": if compile_env { 10 } else { 8 } },
+                { "type": "RLIMIT_NOFILE", "hard": limits.files, "soft": limits.files },
+                { "type": "RLIMIT_NPROC", "hard": limits.pids, "soft": limits.pids },
             ],
             "maskedPaths": [
                 "/proc/kcore",
@@ -1433,14 +1431,23 @@ fn bundle_document(
         "mounts": mounts,
         "linux": {
             "cgroupsPath": cgroup,
+            "uidMappings": [{ "containerID": 0, "hostID": unsafe { libc::geteuid() }, "size": 1 }],
+            "gidMappings": [{ "containerID": 0, "hostID": unsafe { libc::getegid() }, "size": 1 }],
             "namespaces": [
+                { "type": "user" },
                 { "type": "pid" },
                 { "type": "ipc" },
                 { "type": "uts" },
                 { "type": "mount" },
                 { "type": "network" },
             ],
-            "resources": { "devices": [{ "allow": false, "access": "rwm" }] },
+            "resources": {
+                "devices": [{ "allow": false, "access": "rwm" }],
+                "cpu": { "quota": 100000, "period": 100000 },
+                // OCI swap is memory+swap; equal values prohibit swap.
+                "memory": { "limit": limits.memory, "swap": limits.memory },
+                "pids": { "limit": limits.pids },
+            },
         },
     });
     serde_json::to_vec_pretty(&document).map_err(|error| MaterializeError::new("BUNDLE", format!("{error}")))
@@ -1572,6 +1579,8 @@ fn materialize_game_into(
             // Compile language: the granted artifact runs; the granted source stays verified proof
             // of what was built and never becomes a workspace file.
             Some(artifact) => {
+                create_private_directory(&workspace)
+                    .map_err(|error| MaterializeError::new("WORKSPACE", format!("{workspace:?}: {error}")))?;
                 let output = base.join(OUTPUT_DIR);
                 create_output_directory(&output)
                     .map_err(|error| MaterializeError::new("WORKSPACE", format!("{output:?}: {error}")))?;
@@ -1695,6 +1704,9 @@ fn materialize_artifact(output: &Path, entrypoint: &str, bytes: &[u8]) -> Result
 }
 
 fn write_bundle(path: &Path, document: &[u8]) -> Result<(), MaterializeError> {
+    create_private_directory(path).map_err(|error| MaterializeError::new("BUNDLE", error.to_string()))?;
+    let config = path.join("config.json");
+    let path = config.as_path();
     atomic_write(path, document, 0o600).map_err(|error| MaterializeError::new("BUNDLE", format!("{path:?}: {error}")))?;
     let written = fs::read(path).map_err(|error| MaterializeError::new("BUNDLE", format!("{error}")))?;
     if written != document {

@@ -1,0 +1,1002 @@
+[
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/profile",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 401
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/register?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/forgot-password?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=v67lk4E8a3YfLt6y",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments?_rsc=v67lk4E8a3YfLt6y",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/register?_rsc=CSc8ncUQKeNyEZ0M",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/forgot-password?_rsc=tzE4_8LGXg8Ncv1K",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/18d4lacc9ttzi.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/0n8gqms0wn8ay.js",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/auth/login",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=KFQ5nkihY44f6qpS",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=KFQ5nkihY44f6qpS",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=Xsk9VVY3wQvHYMzX",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/0rtn4-c43l7b5.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3l-v9oiq03ud1.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=tournaments&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=create&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=teams&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=maps&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=news&_rsc=qlVFulvVvg3ZcBO5",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?tab=create&_rsc=FwMbp1s3y5uagUY-",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMjAgM2gtMVYxaC0ydjJIN1YxSDV2Mkg0Yy0xLjEgMC0yIC45LTIgMnYxNmMwIDEuMS45IDIgMiAyaDE2YzEuMSAwIDItLjkgMi0yVjVjMC0xLjEtLjktMi0yLTJ6bTAgMThINFY4aDE2djEzeiIvPjxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0wIDBoMjR2MjRIMHoiLz48L3N2Zz4=",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/courses",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments",
+    "status": 201
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=jpAMPT9Aj6twcRzV",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2vh-otpuqe0qm.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/team-ratings",
+    "status": 404
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/starter-bots",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/maps",
+    "status": 201
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/logo-uet.svg",
+    "status": 304
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/39xvloif4s8--.css",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/1x6obpmlu1_c2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2r4s4h5xul1n-.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2khxl0v1q4i6n.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2e268anpfvdoc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/09hdqawbp6kp2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/256qf-pk2qki_.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2vh-otpuqe0qm.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3l-v9oiq03ud1.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/team-ratings",
+    "status": 404
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/starter-bots",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/map-commitment",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/rated",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/publish",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMjAgM2gtMVYxaC0ydjJIN1YxSDV2Mkg0Yy0xLjEgMC0yIC45LTIgMnYxNmMwIDEuMS45IDIgMiAyaDE2YzEuMSAwIDItLjkgMi0yVjVjMC0xLjEtLjktMi0yLTJ6bTAgMThINFY4aDE2djEzeiIvPjxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0wIDBoMjR2MjRIMHoiLz48L3N2Zz4=",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/maps/qa-isolated-standard",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/maps/qa-isolated-standard",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/maps",
+    "status": 201
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/maps",
+    "status": 201
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/maps",
+    "status": 201
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/logo-uet.svg",
+    "status": 304
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/39xvloif4s8--.css",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/1x6obpmlu1_c2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2r4s4h5xul1n-.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2khxl0v1q4i6n.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2e268anpfvdoc.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/turbopack-3-ry682tkyiqk.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/09hdqawbp6kp2.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/256qf-pk2qki_.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/2vh-otpuqe0qm.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/_next/static/chunks/3l-v9oiq03ud1.js",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yyygA.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMjAgM2gtMVYxaC0ydjJIN1YxSDV2Mkg0Yy0xLjEgMC0yIC45LTIgMnYxNmMwIDEuMS45IDIgMiAyaDE2YzEuMSAwIDItLjkgMi0yVjVjMC0xLjEtLjktMi0yLTJ6bTAgMThINFY4aDE2djEzeiIvPjxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0wIDBoMjR2MjRIMHoiLz48L3N2Zz4=",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/team-ratings",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/starter-bots",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=1pZVUiFLcKXlJ_Sm",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/map-pool",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/map-pool",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/map-pool",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/map-pool",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "url": "https://127.0.0.1:15623/api/v2/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/open-registration",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=0nOn2_C6W80Uaqqc",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/organizer?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/?_rsc=n32gF0gWFIUlb1DN",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/api/v2/tournaments/17d518be-2a9e-458f-9341-2e407156e7ec/registrations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico?favicon.30waopgpjo1oz.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/icon.svg",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "https://127.0.0.1:15623/favicon.ico",
+    "status": 200
+  }
+]

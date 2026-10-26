@@ -1,0 +1,83 @@
+COMMAND: ['docker', 'run', '--rm', '-v', '/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2:/work', '-w', '/work', 'rust:1.99.1-slim-bookworm', 'cargo', 'test', '-p', 'arena-supervisor', '--lib', 'command_cpu_budget']
+EXIT_CODE: 101
+
+running 1 test
+test sandbox::runtime_tests::command_cpu_budget_is_pinned_and_enforced_at_the_boundary ... FAILED
+
+failures:
+
+---- sandbox::runtime_tests::command_cpu_budget_is_pinned_and_enforced_at_the_boundary stdout ----
+
+thread 'sandbox::runtime_tests::command_cpu_budget_is_pinned_and_enforced_at_the_boundary' (197) panicked at crates/arena-supervisor/src/sandbox.rs:803:9:
+assertion `left == right` failed
+  left: 18446744073709551615
+ right: 10000000
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sandbox::runtime_tests::command_cpu_budget_is_pinned_and_enforced_at_the_boundary
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.00s
+
+info: syncing channel updates for 1.99.1-x86_64-unknown-linux-gnu
+info: latest update on 2026-10-15 for version 1.99.1 (58cf8f9c3 2026-10-13)
+info: downloading component rust-std
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded block-buffer v0.12.1
+  Downloaded heck v0.5.0
+  Downloaded errno v0.3.14
+  Downloaded cfg-if v1.0.5
+  Downloaded equivalent v1.0.3
+  Downloaded cpufeatures v0.3.1
+  Downloaded multimap v0.10.1
+  Downloaded crypto-common v0.2.2
+  Downloaded itoa v1.0.18
+  Downloaded fixedbitset v0.5.7
+  Downloaded zmij v1.0.23
+  Downloaded fastrand v2.5.0
+  Downloaded sha2 v0.11.1
+  Downloaded quote v1.0.47
+  Downloaded digest v0.11.3
+  Downloaded foldhash v0.1.5
+  Downloaded either v1.19.0
+  Downloaded prost-derive v0.14.4
+  Downloaded anyhow v1.0.104
+  Downloaded prost v0.14.4
+  Downloaded hybrid-array v0.4.15
+  Downloaded prost-build v0.14.4
+  Downloaded unicode-ident v1.0.27
+  Downloaded bitflags v2.13.2
+  Downloaded once_cell v1.21.4
+  Downloaded prost-types v0.14.4
+  Downloaded bytes v1.12.1
+  Downloaded serde_core v1.0.229
+  Downloaded const-oid v0.10.2
+  Downloaded log v0.4.34
+  Downloaded proc-macro2 v1.0.107
+  Downloaded tempfile v3.27.0
+  Downloaded serde_derive v1.0.229
+  Downloaded prettyplease v0.2.37
+  Downloaded serde v1.0.229
+  Downloaded indexmap v2.14.2
+  Downloaded memchr v2.8.3
+  Downloaded typenum v1.20.1
+  Downloaded aho-corasick v1.1.5
+  Downloaded hashbrown v0.15.5
+  Downloaded serde_json v1.0.154
+  Downloaded regex v1.13.1
+  Downloaded itertools v0.14.0
+  Downloaded hashbrown v0.17.1
+  Downloaded syn v2.0.119
+  Downloaded syn v3.0.9
+  Downloaded regex-syntax v0.8.11
+  Downloaded rustix v1.1.5
+  Downloaded regex-automata v0.4.18
+  Downloaded petgraph v0.8.3
+  Downloaded libc v0.2.190
+  Downloaded linux-raw-sys v0.12.1
+   Compiling arena-supervisor v0.1.0 (/work/crates/arena-supervisor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.28s
+     Running unittests src/lib.rs (target/debug/deps/arena_supervisor-8cba2cd71de7ace5)
+error: test failed, to rerun pass `-p arena-supervisor --lib`

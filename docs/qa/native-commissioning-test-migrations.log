@@ -1,0 +1,165 @@
+/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2/node_modules/pg-protocol/src/parser.ts:395
+      : new DatabaseError(messageValue, LATEINIT_LENGTH, name)
+        ^
+
+error: password authentication failed for user "arena_owner"
+    at parseErrorMessage (/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2/node_modules/pg-protocol/src/parser.ts:395:9)
+    at Parser.handlePacket (/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2/node_modules/pg-protocol/src/parser.ts:212:19)
+    at Parser.parse (/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2/node_modules/pg-protocol/src/parser.ts:105:30)
+    at Socket.<anonymous> (/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2/node_modules/pg-protocol/src/index.ts:7:48)
+    at Socket.emit (node:events:514:28)
+    at addChunk (node:internal/streams/readable:568:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)
+    at Readable.push (node:internal/streams/readable:399:5)
+    at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+  length: 107,
+  severity: 'FATAL',
+  code: '28P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'auth.c',
+  line: '331',
+  routine: 'auth_failed'
+}
+
+Node.js v24.21.0
+
+exit=1
+
+## Correct container owner credential file (not logged)
+fresh database arena_native_permissions_20261026_test: applying every migration from 001
+applied 001-control-plane.sql
+applied 002-submissions.sql
+applied 003-jobs.sql
+applied 004-results.sql
+applied 005-maps-and-stages.sql
+applied 006-tournament-rounds.sql
+applied 007-disputes-and-corrections.sql
+applied 008-private-tests.sql
+applied 009-build-evidence.sql
+applied 010-map-versions.sql
+applied 011-private-test-results.sql
+applied 012-appeal-window.sql
+applied 013-entry-codes.sql
+applied 014-encounter-bye-status.sql
+applied 015-round-grace.sql
+applied 016-session-reauth.sql
+applied 017-walkover-encounters.sql
+applied 018-round-slot-count.sql
+applied 019-test-create-attempts.sql
+applied 020-map-pool-version.sql
+applied 021-command-receipts.sql
+applied 022-lan-identity.sql
+applied 023-map-version-reveal.sql
+applied 024-durable-completion.sql
+applied 025-lan-temporary-credentials.sql
+applied 026-backup-integrity.sql
+applied 027-global-team-ratings.sql
+applied 028-online-identity-mail.sql
+applied 029-online-team-lifecycle.sql
+applied 030-tournament-registrations.sql
+applied 031-tournament-centered-content.sql
+applied 032-starter-bot-seed-author.sql
+schema_migrations max = 32
+Migration apply complete.
+
+exit=0
+
+## Fresh uncontaminated arena_native_clean_20261026_test
+fresh database arena_native_clean_20261026_test: applying every migration from 001
+applied 001-control-plane.sql
+applied 002-submissions.sql
+applied 003-jobs.sql
+applied 004-results.sql
+applied 005-maps-and-stages.sql
+applied 006-tournament-rounds.sql
+applied 007-disputes-and-corrections.sql
+applied 008-private-tests.sql
+applied 009-build-evidence.sql
+applied 010-map-versions.sql
+applied 011-private-test-results.sql
+applied 012-appeal-window.sql
+applied 013-entry-codes.sql
+applied 014-encounter-bye-status.sql
+applied 015-round-grace.sql
+applied 016-session-reauth.sql
+applied 017-walkover-encounters.sql
+applied 018-round-slot-count.sql
+applied 019-test-create-attempts.sql
+applied 020-map-pool-version.sql
+applied 021-command-receipts.sql
+applied 022-lan-identity.sql
+applied 023-map-version-reveal.sql
+applied 024-durable-completion.sql
+applied 025-lan-temporary-credentials.sql
+applied 026-backup-integrity.sql
+applied 027-global-team-ratings.sql
+applied 028-online-identity-mail.sql
+applied 029-online-team-lifecycle.sql
+applied 030-tournament-registrations.sql
+applied 031-tournament-centered-content.sql
+applied 032-starter-bot-seed-author.sql
+schema_migrations max = 32
+Migration apply complete.
+
+exit=0
+
+## Final unique DB arena_native_final_20261026_110951_test official migration and disposable test grants
+fresh database arena_native_final_20261026_110951_test: applying every migration from 001
+applied 001-control-plane.sql
+applied 002-submissions.sql
+applied 003-jobs.sql
+applied 004-results.sql
+applied 005-maps-and-stages.sql
+applied 006-tournament-rounds.sql
+applied 007-disputes-and-corrections.sql
+applied 008-private-tests.sql
+applied 009-build-evidence.sql
+applied 010-map-versions.sql
+applied 011-private-test-results.sql
+applied 012-appeal-window.sql
+applied 013-entry-codes.sql
+applied 014-encounter-bye-status.sql
+applied 015-round-grace.sql
+applied 016-session-reauth.sql
+applied 017-walkover-encounters.sql
+applied 018-round-slot-count.sql
+applied 019-test-create-attempts.sql
+applied 020-map-pool-version.sql
+applied 021-command-receipts.sql
+applied 022-lan-identity.sql
+applied 023-map-version-reveal.sql
+applied 024-durable-completion.sql
+applied 025-lan-temporary-credentials.sql
+applied 026-backup-integrity.sql
+applied 027-global-team-ratings.sql
+applied 028-online-identity-mail.sql
+applied 029-online-team-lifecycle.sql
+applied 030-tournament-registrations.sql
+applied 031-tournament-centered-content.sql
+applied 032-starter-bot-seed-author.sql
+schema_migrations max = 32
+Migration apply complete.
+GRANT
+GRANT
+GRANT
+ERROR:  relation "transactional_outbox" does not exist
+
+grant-exit=1
+
+## Actual outbox_events name; grants only on arena_native_final_20261026_110951_test
+GRANT
+GRANT
+GRANT
+ALTER TABLE
+
+exit=0

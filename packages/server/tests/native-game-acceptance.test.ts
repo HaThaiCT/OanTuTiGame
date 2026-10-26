@@ -147,6 +147,7 @@ describe('native gateway accepts an official game only through a server-built as
       socketPath: '/does-not-exist/broker.sock',
       workerUid,
       socketGid: process.getgid?.() ?? 0,
+      grantGid: process.getgid?.() ?? 0,
       deploymentGeneration: 731,
       runtimeProfileDigest: capacity.runtimeProfileDigest,
       maxBuildSlots: 0,
@@ -170,6 +171,7 @@ describe('native gateway accepts an official game only through a server-built as
       spoolRoot: policy.spoolRoot,
       toolchains: policy.toolchains,
       compiledArtifacts: new CompiledArtifactStore(policy.compiledArtifactsDir),
+      grantGid: policy.grantGid,
     });
     transport = new LocalJobBrokerTransport(db, broker, policy, assignments);
     await assignments.start();
@@ -273,7 +275,7 @@ describe('native gateway accepts an official game only through a server-built as
       expect(bot.artifact).toBeUndefined();
       expect(bot.source.path.startsWith(`${attemptDirectory}/`)).toBe(true);
       const info = await stat(bot.source.path);
-      expect(info.mode & 0o777).toBe(0o600);
+      expect(info.mode & 0o777).toBe(0o640);
       expect(info.size).toBe(bot.source.sizeBytes);
       expect(sha256(await readFile(bot.source.path))).toBe(bot.source.digest);
     }

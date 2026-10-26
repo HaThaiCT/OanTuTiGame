@@ -1,0 +1,81 @@
+COMMAND: ['docker', 'run', '--rm', '-v', '/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2:/work', '-w', '/work', 'rust:1.99.1-slim-bookworm', 'cargo', 'test', '-p', 'arena-supervisor', '--lib', 'command_leaf_can_be_reused']
+EXIT_CODE: 101
+
+running 1 test
+test worker::tests::command_leaf_can_be_reused_for_init_only_when_private_and_empty ... FAILED
+
+failures:
+
+---- worker::tests::command_leaf_can_be_reused_for_init_only_when_private_and_empty stdout ----
+
+thread 'worker::tests::command_leaf_can_be_reused_for_init_only_when_private_and_empty' (191) panicked at crates/arena-supervisor/src/worker.rs:2303:9:
+assertion failed: prepare_workload_leaf(&leaf).is_ok()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    worker::tests::command_leaf_can_be_reused_for_init_only_when_private_and_empty
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s
+
+info: syncing channel updates for 1.99.1-x86_64-unknown-linux-gnu
+info: latest update on 2026-10-15 for version 1.99.1 (58cf8f9c3 2026-10-13)
+info: downloading component rust-std
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded block-buffer v0.12.1
+  Downloaded cpufeatures v0.3.1
+  Downloaded multimap v0.10.1
+  Downloaded cfg-if v1.0.5
+  Downloaded equivalent v1.0.3
+  Downloaded itoa v1.0.18
+  Downloaded crypto-common v0.2.2
+  Downloaded heck v0.5.0
+  Downloaded digest v0.11.3
+  Downloaded either v1.19.0
+  Downloaded errno v0.3.14
+  Downloaded fastrand v2.5.0
+  Downloaded foldhash v0.1.5
+  Downloaded quote v1.0.47
+  Downloaded fixedbitset v0.5.7
+  Downloaded prost-derive v0.14.4
+  Downloaded zmij v1.0.23
+  Downloaded hybrid-array v0.4.15
+  Downloaded tempfile v3.27.0
+  Downloaded prost v0.14.4
+  Downloaded once_cell v1.21.4
+  Downloaded anyhow v1.0.104
+  Downloaded sha2 v0.11.1
+  Downloaded unicode-ident v1.0.27
+  Downloaded log v0.4.34
+  Downloaded prost-types v0.14.4
+  Downloaded bitflags v2.13.2
+  Downloaded serde_derive v1.0.229
+  Downloaded bytes v1.12.1
+  Downloaded proc-macro2 v1.0.107
+  Downloaded prost-build v0.14.4
+  Downloaded const-oid v0.10.2
+  Downloaded serde_core v1.0.229
+  Downloaded prettyplease v0.2.37
+  Downloaded serde v1.0.229
+  Downloaded indexmap v2.14.2
+  Downloaded memchr v2.8.3
+  Downloaded typenum v1.20.1
+  Downloaded hashbrown v0.15.5
+  Downloaded hashbrown v0.17.1
+  Downloaded regex v1.13.1
+  Downloaded aho-corasick v1.1.5
+  Downloaded serde_json v1.0.154
+  Downloaded itertools v0.14.0
+  Downloaded syn v2.0.119
+  Downloaded syn v3.0.9
+  Downloaded regex-syntax v0.8.11
+  Downloaded rustix v1.1.5
+  Downloaded regex-automata v0.4.18
+  Downloaded petgraph v0.8.3
+  Downloaded libc v0.2.190
+  Downloaded linux-raw-sys v0.12.1
+   Compiling arena-supervisor v0.1.0 (/work/crates/arena-supervisor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.91s
+     Running unittests src/lib.rs (target/debug/deps/arena_supervisor-8cba2cd71de7ace5)
+error: test failed, to rerun pass `-p arena-supervisor --lib`

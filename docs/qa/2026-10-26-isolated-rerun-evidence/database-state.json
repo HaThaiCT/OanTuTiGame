@@ -1,0 +1,179 @@
+{
+  "capturedAt": "2026-10-26T04:14:47.900Z",
+  "database": "arena_isolated_20261026_lifecycle_test",
+  "tournaments": [
+    {
+      "id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "course_id": "4d2c60df-2d60-43ca-9fbd-46e6a4664287",
+      "name": "Isolated Native Lifecycle 2026",
+      "format": "SINGLE_ELIMINATION",
+      "state": "VALIDATING_SUBMISSIONS",
+      "version": 5,
+      "rules_revision": "ArenaGameplay/v2",
+      "max_teams": 2,
+      "min_team_size": 1,
+      "max_team_size": 3,
+      "registration_opens_at": "2026-10-26T04:09:21.676Z",
+      "registration_closes_at": null,
+      "started_at": null,
+      "finalized_at": null,
+      "created_at": "2026-10-26T04:08:10.187Z",
+      "updated_at": "2026-10-26T04:14:19.641Z",
+      "locked_at": null,
+      "final_appeal_window_minutes": 1440,
+      "provisional_at": null,
+      "grace_period_minutes": 10,
+      "is_rated": true,
+      "global_rating_policy": "ArenaContestRating/v1"
+    }
+  ],
+  "tournament_registrations": [
+    {
+      "id": "fb218d86-1eec-4301-b4d8-4a86ae48aaa6",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "team_id": "856081fc-5250-4467-8801-c23486deabd8",
+      "requested_by_user_id": "d5f4919e-2d23-4deb-bb17-1cbc7ada74d2",
+      "reviewed_by_user_id": "30e7f30c-4916-4ffd-bbb7-46983ad58ed4",
+      "status": "APPROVED",
+      "version": 2,
+      "reason": null,
+      "requested_at": "2026-10-26T04:11:51.095Z",
+      "reviewed_at": "2026-10-26T04:13:01.589Z",
+      "updated_at": "2026-10-26T04:13:01.589Z",
+      "entry_code_id": null,
+      "entry_code_revision": null,
+      "cancelled_entry_id": null
+    },
+    {
+      "id": "41805576-0ca5-4002-be51-dc37dd812a58",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "team_id": "6d4b6e36-a3ab-4390-8040-6ff0cd9254bf",
+      "requested_by_user_id": "bc5e7b90-964c-4dac-b09b-8b59da8b7ce1",
+      "reviewed_by_user_id": "30e7f30c-4916-4ffd-bbb7-46983ad58ed4",
+      "status": "APPROVED",
+      "version": 2,
+      "reason": null,
+      "requested_at": "2026-10-26T04:11:37.764Z",
+      "reviewed_at": "2026-10-26T04:13:05.088Z",
+      "updated_at": "2026-10-26T04:13:05.088Z",
+      "entry_code_id": null,
+      "entry_code_revision": null,
+      "cancelled_entry_id": null
+    }
+  ],
+  "tournament_entries": [
+    {
+      "id": "6effaa25-d058-45b1-b9b2-33d809fcb466",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "team_id": "856081fc-5250-4467-8801-c23486deabd8",
+      "status": "ELIGIBLE",
+      "seed_ordinal": null,
+      "created_at": "2026-10-26T04:13:01.588Z",
+      "frozen_submission_id": null,
+      "global_rating_participant": false,
+      "global_rating_exclusion": null
+    },
+    {
+      "id": "893d6506-66e3-4708-856f-7fea79ce0430",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "team_id": "6d4b6e36-a3ab-4390-8040-6ff0cd9254bf",
+      "status": "ELIGIBLE",
+      "seed_ordinal": null,
+      "created_at": "2026-10-26T04:13:05.087Z",
+      "frozen_submission_id": null,
+      "global_rating_participant": false,
+      "global_rating_exclusion": null
+    }
+  ],
+  "team_members": {
+    "error": "relation \"team_members\" does not exist"
+  },
+  "team_invitations": [
+    {
+      "id": "a2849000-6d57-4506-82ae-ae53dc9b1b5f",
+      "team_id": "856081fc-5250-4467-8801-c23486deabd8",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "recipient_user_id": "ed456c2e-2137-4daa-b11a-d9702df30070",
+      "invited_by_user_id": "d5f4919e-2d23-4deb-bb17-1cbc7ada74d2",
+      "status": "ACCEPTED",
+      "created_at": "2026-10-26T04:10:23.009Z",
+      "expires_at": "2026-10-28T04:10:23.009Z",
+      "responded_at": "2026-10-26T04:10:40.718Z"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "883045bc-9b73-48d2-8c8c-c6862292975d",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "team_id": "856081fc-5250-4467-8801-c23486deabd8",
+      "submitted_by_user_id": "d5f4919e-2d23-4deb-bb17-1cbc7ada74d2",
+      "receipt_ordinal": 1,
+      "source_digest": "1b03359e4c9e9decb7e0fbbb1e3a36e458808db4b2f61a7769e0d463804215f4",
+      "language": "PYTHON",
+      "entrypoint": "starter_bot.py",
+      "status": "VALIDATING",
+      "reject_reason": null,
+      "received_at": "2026-10-26T04:13:17.290Z",
+      "created_at": "2026-10-26T04:13:17.290Z",
+      "build_error": null,
+      "built_at": null
+    },
+    {
+      "id": "6a3bcb0a-02e6-4f00-89a1-d870c9fd23cd",
+      "tournament_id": "17d518be-2a9e-458f-9341-2e407156e7ec",
+      "team_id": "6d4b6e36-a3ab-4390-8040-6ff0cd9254bf",
+      "submitted_by_user_id": "bc5e7b90-964c-4dac-b09b-8b59da8b7ce1",
+      "receipt_ordinal": 1,
+      "source_digest": "1b03359e4c9e9decb7e0fbbb1e3a36e458808db4b2f61a7769e0d463804215f4",
+      "language": "PYTHON",
+      "entrypoint": "starter_bot.py",
+      "status": "VALIDATING",
+      "reject_reason": null,
+      "received_at": "2026-10-26T04:13:37.119Z",
+      "created_at": "2026-10-26T04:13:37.119Z",
+      "build_error": null,
+      "built_at": null
+    }
+  ],
+  "jobs": [
+    {
+      "id": "bc0cba3e-5268-4907-b78e-999cd4f1564e",
+      "job_type": "BUILD",
+      "target_id": "883045bc-9b73-48d2-8c8c-c6862292975d",
+      "priority": 150,
+      "state": "QUEUED",
+      "deployment_generation": 1,
+      "attempt_count": 0,
+      "max_attempts": 3,
+      "active_lease_id": null,
+      "available_at": "2026-10-26T04:13:17.295Z",
+      "payload": {
+        "teamId": "856081fc-5250-4467-8801-c23486deabd8",
+        "tournamentId": "17d518be-2a9e-458f-9341-2e407156e7ec"
+      },
+      "created_at": "2026-10-26T04:13:17.295Z",
+      "updated_at": "2026-10-26T04:13:17.295Z"
+    },
+    {
+      "id": "b4197821-f1da-419b-ac2e-929622d0205c",
+      "job_type": "BUILD",
+      "target_id": "6a3bcb0a-02e6-4f00-89a1-d870c9fd23cd",
+      "priority": 150,
+      "state": "QUEUED",
+      "deployment_generation": 1,
+      "attempt_count": 0,
+      "max_attempts": 3,
+      "active_lease_id": null,
+      "available_at": "2026-10-26T04:13:37.123Z",
+      "payload": {
+        "teamId": "6d4b6e36-a3ab-4390-8040-6ff0cd9254bf",
+        "tournamentId": "17d518be-2a9e-458f-9341-2e407156e7ec"
+      },
+      "created_at": "2026-10-26T04:13:37.123Z",
+      "updated_at": "2026-10-26T04:13:37.123Z"
+    }
+  ],
+  "job_attempts": [],
+  "accepted_results": [],
+  "rating_events": []
+}

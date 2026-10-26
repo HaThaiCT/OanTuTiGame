@@ -54,6 +54,8 @@ pub struct Observation {
 pub enum CommandOutcome {
     /// The command ran and exited by itself. `status` is its exit status.
     Exited { status: i32, diagnostic: Vec<u8>, truncated: bool },
+    /// The aggregate command cgroup exceeded the pinned compile CPU budget and was reaped.
+    CpuExpired { diagnostic: Vec<u8>, truncated: bool },
     /// The command exceeded the wall limit and was killed; the workload is confirmed gone.
     WallExpired { diagnostic: Vec<u8>, truncated: bool },
     /// The command produced more output than the sandbox bounds and was killed.
@@ -64,7 +66,7 @@ impl CommandOutcome {
     /// The retained diagnostic prefix, whatever the outcome.
     pub fn diagnostic(&self) -> &[u8] {
         match self {
-            Self::Exited { diagnostic, .. } | Self::WallExpired { diagnostic, .. } => diagnostic,
+            Self::Exited { diagnostic, .. } | Self::WallExpired { diagnostic, .. } | Self::CpuExpired { diagnostic, .. } => diagnostic,
             Self::OutputLimit { diagnostic } => diagnostic,
         }
     }
@@ -279,7 +281,7 @@ struct Attempt {
 fn runtime_command(runsc: &Path, state: &Path) -> Command {
     let mut command = Command::new(runsc);
     command.arg("--root").arg(state)
-        .args(["--network=none", "--overlay2=none", "--platform=systrap",
+        .args(["--rootless", "--network=none", "--overlay2=none", "--platform=systrap",
             "--gofer-network-namespace=new", "--host-settings=check", "--host-uds=none",
             "--host-fifo=none", "--sidecar-usage-policy=STRICT",
             "--sidecar-release-enforcement-policy=ALWAYS"])
@@ -404,6 +406,14 @@ impl Prepared {
         if snapshot.populated {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "workload cgroup must start empty"));
         }
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(bundle.join("config.json"))?)?;
+        let memory = document["linux"]["resources"]["memory"]["limit"].as_u64();
+        let limits = match memory {
+            Some(268435456) => crate::control::WorkloadLimits::BOT,
+            Some(1073741824) => crate::control::WorkloadLimits::COMPILE,
+            _ => return Err(io::Error::other("unknown workload resource profile")),
+        };
+        limits.apply(cgroup)?;
         Ok(Self {
             runsc: runsc.to_owned(),
             bundle: bundle.to_owned(),
@@ -531,6 +541,9 @@ impl Runtime {
             if let Err(error) = self.control.kill_and_wait(CLEANUP) {
                 if failure.is_none() { failure = Some(error); }
             }
+            if let Err(error) = self.control.freeze(CLEANUP) {
+                if failure.is_none() { failure = Some(error); }
+            }
         }
         if let Err(error) = self.reaper.finish() { failure = Some(error); }
         match failure { Some(error) => Err(io::Error::other(CleanupFailure(error.to_string()))), None => Ok(()) }
@@ -581,16 +594,21 @@ impl Sandbox {
         })
     }
 
+    fn command_budget(wall: Duration) -> Budget {
+        Budget { cpu_usec: 10_000_000, wall }
+    }
+
     /// Run one operator-fixed command inside the operator's toolchain rootfs and report what it did.
     ///
     /// A returned `Ok` is a fact about the command; a returned `Err` is always an infrastructure
     /// fault (launch, cgroup, counter, termination), which callers must never turn into evidence.
     pub fn run_command(runsc: &Path, bundle: &Path, state: &Path, id: &str, cgroup: &Path, wall: Duration) -> io::Result<CommandOutcome> {
         let prepared = Prepared::new(runsc, bundle, state, id, cgroup)?;
+        let baseline = prepared.baseline;
         let diagnostics = Arc::new(Diagnostics::new());
         let started = Instant::now();
-        // A compile has no CPU budget of its own: the assignment bounds it by wall time only.
-        let watchdog = arm_watchdog(cgroup, prepared.baseline, started, Budget { cpu_usec: u64::MAX, wall }, Arc::clone(&prepared.shared))?;
+        // Aggregate CPU is measured from the frozen cgroup baseline, including compiler children.
+        let watchdog = arm_watchdog(cgroup, prepared.baseline, started, Self::command_budget(wall), Arc::clone(&prepared.shared))?;
         let mut runtime = prepared.spawn(Sink::Diagnostic(Arc::clone(&diagnostics)))?;
 
         let mut populated = false;
@@ -623,6 +641,11 @@ impl Sandbox {
         if watchdog.finish().is_err() && fault.is_none() {
             fault = Some(io::Error::other("watchdog thread panicked"));
         }
+        // Close the gap between the final watchdog sample and a short command's exit.
+        let terminal_cpu = runtime.control.freeze(TRANSITION).and_then(|snapshot| {
+            snapshot.usage_usec.checked_sub(baseline)
+                .ok_or_else(|| io::Error::other("command CPU counter regressed"))
+        });
         let diagnostic = diagnostics.snapshot();
         let truncated = diagnostics.truncated.load(Ordering::Acquire);
         let teardown = runtime.teardown(true);
@@ -632,9 +655,12 @@ impl Sandbox {
         if kill_failed {
             return Err(io::Error::other(CleanupFailure("watchdog could not confirm workload termination".into())));
         }
+        let cpu_expired = terminal_cpu? > Self::command_budget(wall).cpu_usec;
+        if cpu_expired { return Ok(CommandOutcome::CpuExpired { diagnostic, truncated }); }
         match alarm {
             // A counter the accounting path cannot read is never attributed to the command.
             3 => return Err(io::Error::other("cgroup accounting unavailable during the command")),
+            1 => return Ok(CommandOutcome::CpuExpired { diagnostic, truncated }),
             2 => return Ok(CommandOutcome::WallExpired { diagnostic, truncated }),
             _ => {}
         }
@@ -781,3 +807,24 @@ impl Sandbox {
 impl Drop for Sandbox {
     fn drop(&mut self) { let _ = self.stop(); }
 }
+
+#[cfg(test)]
+mod runtime_tests {
+    use super::*;
+    #[test]
+    fn command_cpu_budget_is_pinned_and_enforced_at_the_boundary() {
+        let budget = Sandbox::command_budget(Duration::from_secs(30));
+        assert_eq!(budget.cpu_usec, 10_000_000);
+        let snapshot = |usage_usec| CgroupSnapshot { usage_usec, frozen: true, populated: true };
+        assert!(accept_frozen_response(123, &snapshot(10_000_123), Duration::from_secs(1), budget).is_ok());
+        assert!(matches!(accept_frozen_response(123, &snapshot(10_000_124), Duration::from_secs(1), budget), Err(ResponseFailure::CpuTimeout)));
+    }
+    #[test]
+    fn runtime_uses_rootless_without_ignoring_cgroups() {
+        let command = runtime_command(Path::new("/runsc"), Path::new("/state"));
+        let args: Vec<_> = command.get_args().collect();
+        assert!(args.contains(&std::ffi::OsStr::new("--rootless")));
+        assert!(!args.contains(&std::ffi::OsStr::new("--ignore-cgroups")));
+    }
+}
+

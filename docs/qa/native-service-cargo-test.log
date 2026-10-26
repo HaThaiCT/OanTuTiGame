@@ -1,0 +1,332 @@
+COMMAND: docker run --rm -v /home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2:/work -w /work rust:1.99.1-slim-bookworm cargo test -p arena-supervisor
+EXIT_CODE: 0
+
+STDOUT
+
+running 23 tests
+test control::tests::confirmed_freeze_counter_includes_cpu_until_freezer_completion ... ok
+test control::tests::fixed_workload_limits_match_the_pinned_runtime_profile ... ok
+test materialize::tests::artifact_entrypoints_are_plain_file_names ... ok
+test materialize::tests::artifact_key_follows_the_frozen_preimage_construction ... ok
+test materialize::tests::crc32_matches_known_answers ... ok
+test control::tests::populated_or_missing_controller_parent_is_refused ... ok
+test materialize::tests::extracts_stored_and_deflated_members ... ok
+test materialize::tests::diagnostics_are_bounded_and_stripped_of_control_characters ... ok
+test control::tests::workload_limits_are_written_and_verified_without_creating_kernel_files ... ok
+test materialize::tests::language_commands_are_operator_fixed ... ok
+test materialize::tests::refuses_a_member_that_expands_past_its_declared_length ... ok
+test materialize::tests::refuses_a_source_whose_entrypoint_is_missing_or_mismatched ... ok
+test materialize::tests::inflates_fixed_stored_and_dynamic_blocks ... ok
+test worker::tests::smoke_classification_separates_verdicts_from_infrastructure ... ok
+test worker::tests::config_requires_every_operator_prerequisite_for_builds ... ok
+test worker::tests::base64_encoding_matches_the_wire_format ... ok
+test worker::tests::smoke_manifest_parses_into_a_non_terminal_board ... ok
+test worker::tests::artifacts_of_interpreted_languages_use_the_source_identity ... ok
+test sandbox::runtime_tests::runtime_uses_rootless_without_ignoring_cgroups ... ok
+test worker::tests::toolchain_identity_must_match_the_assignment ... ok
+test worker::tests::toolchain_documents_are_strict_and_explicit ... ok
+test materialize::tests::refuses_the_intake_rules_the_control_plane_enforces ... ok
+test materialize::tests::inflate_refuses_truncated_and_oversized_streams ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+test malformed_utf8_and_truncated_line_are_protocol_errors ... ok
+test fragmented_utf8_line_is_delivered_once_without_losing_bytes ... ok
+test stdout_eof_cannot_be_reopened_but_stderr_can_finish_draining ... ok
+test exact_wire_line_limit_accepts_its_newline ... ok
+test newline_free_output_hits_line_cap_and_failure_stays_terminal ... ok
+test stderr_truncation_keeps_draining_and_combined_bytes_enforced ... ok
+test combined_limit_counts_both_streams_after_stderr_truncation ... ok
+test total_stdout_cap_counts_utf8_bytes_and_newlines ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 3 tests
+test control_does_not_create_missing_kernel_files ... ok
+test successful_freeze_write_without_confirmation_is_not_success ... ok
+test cleanup_requires_no_remaining_descendants ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 8 tests
+test clean_eof_is_distinct_from_truncated_header ... ok
+test empty_and_oversized_writes_emit_no_bytes ... ok
+test oversized_header_is_rejected_without_payload_read_or_buffer_growth ... ok
+test wire_prefix_is_big_endian ... ok
+test truncated_payload_is_not_a_complete_message ... ok
+test zero_length_header_is_invalid ... ok
+test fragmented_header_and_payload_are_reassembled ... ok
+test max_frame_and_following_frame_cross_actual_unix_socket ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 1 test
+test generated_envelope_preserves_uint64_above_javascript_safe_integer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+test native_client_binds_all_operations_to_kernel_identity ... ok
+test oversized_request_is_rejected_without_terminating_the_gateway ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+
+running 2 tests
+test measured_faults_retain_their_counters_in_typed_errors ... ok
+test every_measured_fault_completes_as_a_forfeit_not_an_infrastructure_retry ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+
+
+running 4 tests
+test cleanup_failure_is_not_reported_as_reaped ... ok
+test supervisor_disconnect_reaps_once ... ok
+test disconnected_supervisor_does_not_release_populated_slot ... ok
+test silent_or_invalid_supervisor_cannot_keep_workload_alive ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 3 tests
+test response_at_wall_deadline_is_rejected ... ok
+test response_cannot_win_race_against_watchdog_with_excess_final_cpu ... ok
+test unconfirmed_freeze_or_counter_rollback_is_infrastructure_not_bot_timeout ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+test maximum_sequence_is_accepted_once_without_wrapping ... ok
+test foreign_attempt_and_manifest_cannot_enter_session ... ok
+test missing_payload_unknown_version_and_invalid_request_are_rejected ... ok
+test replay_and_recovery_after_rejection_are_forbidden ... ok
+test observations_are_only_accepted_from_supervisor ... ok
+test unfrozen_observation_cannot_advance_session ... ok
+test unknown_side_and_wrong_state_digest_are_rejected ... ok
+test request_payload_cannot_smuggle_multiple_lines_or_exceed_cap ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 4 tests
+test aggregate_cpu_uses_exact_u64_and_strict_budget_boundary ... ok
+test counter_rollback_is_infrastructure_error_not_zero_cpu ... ok
+test freezer_and_population_require_unambiguous_boolean_values ... ok
+test missing_duplicate_or_overflowed_counter_is_not_accepted ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 5 tests
+test exact_cpu_budget_is_allowed_but_one_usec_more_is_timeout ... ok
+test wall_deadline_is_inclusive_and_counter_rollback_is_infrastructure ... ok
+test counter_failure_invokes_terminal_callback_on_independent_thread ... ok
+test cancelled_watchdog_does_not_emit_late_terminal_event ... ok
+test wall_expiration_calls_terminal_without_waiting_on_owner ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 13 tests
+test accepts_the_control_plane_build_assignment ... ok
+test accepts_a_cpp_assignment_that_ships_the_compiled_artifact ... ok
+test build_limits_are_bounded_and_required ... ok
+test accepts_the_control_plane_game_assignment ... ok
+test path_and_artifact_helpers_are_strict ... ok
+test a_compile_language_must_ship_its_artifact_and_only_it_may ... ok
+test rejects_a_version_or_manifest_it_cannot_verify ... ok
+test refuses_a_profile_game_or_turn_bound_that_disagrees ... ok
+test build_assignments_are_refused_when_anything_disagrees ... ok
+test receipt_provenance_is_accepted_and_covered_by_the_manifest_digest ... ok
+test requires_exactly_two_bots_on_sides_one_and_two ... ok
+test grants_must_be_absolute_regular_files_with_a_bounded_size ... ok
+test requires_every_field_of_both_shapes ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 16 tests
+test a_build_worker_without_its_operator_prerequisites_refuses_to_start ... ok
+test a_build_claim_that_does_not_match_the_lease_is_refused ... ok
+test a_probe_that_does_not_report_the_declared_version_is_an_operator_fault ... ok
+test a_compile_that_writes_no_artifact_aborts_without_evidence ... ok
+test a_refused_build_teardown_quarantines_the_worker ... ok
+test a_toolchain_that_disagrees_with_the_operator_profile_is_refused ... ok
+test the_build_artifact_key_is_the_one_the_control_plane_recomputes ... ok
+test a_gateway_that_does_not_confirm_staging_blocks_the_completion ... ok
+test the_production_command_runner_provisions_the_cgroup_and_fails_closed ... ok
+test a_cpp_build_reports_the_artifact_digest_it_measured_itself ... ok
+test a_scripted_compile_failure_is_source_rejected_at_the_compile_stage ... ok
+test a_probe_or_compile_sandbox_fault_submits_nothing ... ok
+test an_interpreted_build_reports_the_source_it_already_verified ... ok
+test the_init_smoke_uses_the_assignment_limits_and_the_engine_session ... ok
+test an_init_that_cannot_greet_is_source_rejected_at_the_init_smoke_stage ... ok
+test a_large_artifact_is_staged_in_ascending_chunks ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+
+running 14 tests
+test configuration_requires_explicit_operator_values ... ok
+test evidence_must_agree_with_the_engine_trace ... ok
+test refuses_a_lease_that_does_not_match_the_assignment ... ok
+test refuses_an_assignment_it_cannot_verify ... ok
+test a_double_forfeit_is_reported_instead_of_mislabelled ... ok
+test refuses_to_launch_without_a_delegated_cgroup ... ok
+test unreadable_or_inconsistent_engine_evidence_is_refused ... ok
+test reports_idle_when_the_gateway_has_nothing_assignable ... ok
+test a_measured_protocol_violation_is_a_forfeit_not_a_forgery ... ok
+test claims_materializes_observes_and_completes ... ok
+test an_illegal_move_forfeits_with_the_measured_response_kept ... ok
+test a_refused_teardown_quarantines_the_worker ... ok
+test a_cpp_game_runs_the_granted_artifact_and_never_compiles ... ok
+test a_sandbox_fault_without_measured_counters_aborts_the_attempt ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+
+
+running 12 tests
+test build_materialization_refuses_an_unusable_toolchain_or_output_root ... ok
+test a_build_grant_that_does_not_match_its_pinned_bytes_writes_nothing ... ok
+test refuses_operator_paths_it_cannot_trust ... ok
+test refuses_to_reuse_an_attempt_directory ... ok
+test a_grant_that_does_not_match_its_pinned_bytes_is_refused_before_any_write ... ok
+test a_typescript_build_has_no_compile_step_but_still_probes_the_toolchain ... ok
+test creates_nested_source_directories ... ok
+test a_python_build_compiles_the_entrypoint_and_smokes_the_source ... ok
+test a_compile_side_materializes_the_granted_artifact_instead_of_compiling ... ok
+test dropping_the_attempt_removes_the_whole_workspace ... ok
+test writes_a_private_attempt_and_the_run_bundle ... ok
+test a_cpp_build_writes_a_writable_output_directory_and_operator_commands ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+
+running 6 tests
+test an_unknown_claim_job_type_is_refused_before_anything_starts ... ok
+test a_private_test_assignment_is_parsed_strictly_and_bound_to_its_queue ... ok
+test a_private_test_materializes_the_pinned_source_and_artifact_on_disk ... ok
+test a_tampered_private_test_grant_aborts_with_nothing_written ... ok
+test a_private_test_runs_both_pinned_bots_and_submits_the_game_evidence_shape ... ok
+test private_tests_share_the_game_slot_budget ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+
+running 2 tests
+test independent_reaper_refuses_cleanup_ack_when_runtime_delete_is_unavailable ... ok
+test independent_reaper_cleans_up_after_its_exclusive_worker_writer_disappears ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+STDERR
+info: syncing channel updates for 1.99.1-x86_64-unknown-linux-gnu
+info: latest update on 2026-10-15 for version 1.99.1 (58cf8f9c3 2026-10-13)
+info: downloading component rust-std
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded block-buffer v0.12.1
+  Downloaded errno v0.3.14
+  Downloaded cpufeatures v0.3.1
+  Downloaded heck v0.5.0
+  Downloaded multimap v0.10.1
+  Downloaded itoa v1.0.18
+  Downloaded crypto-common v0.2.2
+  Downloaded equivalent v1.0.3
+  Downloaded cfg-if v1.0.5
+  Downloaded fastrand v2.5.0
+  Downloaded either v1.19.0
+  Downloaded fixedbitset v0.5.7
+  Downloaded prost-derive v0.14.4
+  Downloaded quote v1.0.47
+  Downloaded anyhow v1.0.104
+  Downloaded digest v0.11.3
+  Downloaded foldhash v0.1.5
+  Downloaded bitflags v2.13.2
+  Downloaded once_cell v1.21.4
+  Downloaded tempfile v3.27.0
+  Downloaded zmij v1.0.23
+  Downloaded prost-build v0.14.4
+  Downloaded sha2 v0.11.1
+  Downloaded unicode-ident v1.0.27
+  Downloaded hybrid-array v0.4.15
+  Downloaded proc-macro2 v1.0.107
+  Downloaded prost v0.14.4
+  Downloaded prost-types v0.14.4
+  Downloaded serde_derive v1.0.229
+  Downloaded serde_core v1.0.229
+  Downloaded const-oid v0.10.2
+  Downloaded log v0.4.34
+  Downloaded prettyplease v0.2.37
+  Downloaded serde v1.0.229
+  Downloaded bytes v1.12.1
+  Downloaded memchr v2.8.3
+  Downloaded typenum v1.20.1
+  Downloaded indexmap v2.14.2
+  Downloaded hashbrown v0.15.5
+  Downloaded regex v1.13.1
+  Downloaded itertools v0.14.0
+  Downloaded hashbrown v0.17.1
+  Downloaded serde_json v1.0.154
+  Downloaded aho-corasick v1.1.5
+  Downloaded syn v2.0.119
+  Downloaded syn v3.0.9
+  Downloaded regex-syntax v0.8.11
+  Downloaded rustix v1.1.5
+  Downloaded regex-automata v0.4.18
+  Downloaded petgraph v0.8.3
+  Downloaded libc v0.2.190
+  Downloaded linux-raw-sys v0.12.1
+   Compiling arena-supervisor v0.1.0 (/work/crates/arena-supervisor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.42s
+     Running unittests src/lib.rs (target/debug/deps/arena_supervisor-8cba2cd71de7ace5)
+     Running unittests src/bin/arena-job-broker.rs (target/debug/deps/arena_job_broker-8fa0d2dd35abdf8a)
+     Running unittests src/bin/arena-reaper.rs (target/debug/deps/arena_reaper-6487120e93311111)
+     Running unittests src/bin/arena-worker.rs (target/debug/deps/arena_worker-f0d52e6ae58e1b06)
+     Running tests/bot_output.rs (target/debug/deps/bot_output-0b032863ab255b6c)
+     Running tests/cgroup_control.rs (target/debug/deps/cgroup_control-027ec910fc853190)
+     Running tests/engine_ipc.rs (target/debug/deps/engine_ipc-9efd5088a2dcc2b2)
+     Running tests/execution_wire.rs (target/debug/deps/execution_wire-81dc9feb91080537)
+     Running tests/job_broker.rs (target/debug/deps/job_broker-5432d0f0ebc9baab)
+     Running tests/measured_fault.rs (target/debug/deps/measured_fault-8eafeaddb25c9c78)
+     Running tests/reaper.rs (target/debug/deps/reaper-969e550ffa142849)
+     Running tests/response_budget.rs (target/debug/deps/response_budget-098babd7e205e9bb)
+     Running tests/session.rs (target/debug/deps/session-247c991fb8598a1a)
+     Running tests/timing_profile.rs (target/debug/deps/timing_profile-032de737fb3b55ff)
+     Running tests/watchdog.rs (target/debug/deps/watchdog-4b2380b6697655f9)
+     Running tests/worker_assignment.rs (target/debug/deps/worker_assignment-81f433faf49e10b1)
+     Running tests/worker_build.rs (target/debug/deps/worker_build-76e73448ae607f98)
+     Running tests/worker_loop.rs (target/debug/deps/worker_loop-e549cae0177fd76d)
+     Running tests/worker_materialize.rs (target/debug/deps/worker_materialize-6a08fbae64666203)
+     Running tests/worker_private_test.rs (target/debug/deps/worker_private_test-edd1871c83ea59b5)
+     Running tests/worker_reaper.rs (target/debug/deps/worker_reaper-14629676d934e200)
+Error: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+   Doc-tests arena_supervisor

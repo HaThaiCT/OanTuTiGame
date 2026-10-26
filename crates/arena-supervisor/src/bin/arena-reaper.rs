@@ -18,7 +18,7 @@ fn main() -> io::Result<()> {
         let mut failure = if cgroup.try_exists()? { control.kill_and_wait(Duration::from_secs(2)).err() } else { None };
         if state.join(id).try_exists()? {
             let mut delete = Command::new(&runsc).arg("--root").arg(&state)
-                .args(["--network=none", "--overlay2=none", "--platform=systrap", "--gofer-network-namespace=new",
+                .args(["--rootless", "--network=none", "--overlay2=none", "--platform=systrap", "--gofer-network-namespace=new",
                     "--host-settings=check", "--host-uds=none", "--host-fifo=none", "--sidecar-usage-policy=STRICT",
                     "--sidecar-release-enforcement-policy=ALWAYS", "delete", "--force", id])
                 .env_clear().env("PATH", "/usr/sbin:/usr/bin:/sbin:/bin").env("LANG", "C").current_dir("/")

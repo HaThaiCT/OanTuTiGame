@@ -221,7 +221,7 @@ describe('native gateway runs a private test without touching an official table'
   async function assertGrant(grant: Grant, attemptDirectory: string): Promise<Buffer> {
     expect(grant.path.startsWith(`${attemptDirectory}/`)).toBe(true);
     const info = await stat(grant.path);
-    expect(info.mode & 0o777).toBe(0o600);
+    expect(info.mode & 0o777).toBe(0o640);
     expect(info.size).toBe(grant.sizeBytes);
     const bytes = await readFile(grant.path);
     expect(sha256(bytes)).toBe(grant.digest);
@@ -292,6 +292,7 @@ describe('native gateway runs a private test without touching an official table'
       socketPath: '/does-not-exist/broker.sock',
       workerUid,
       socketGid: process.getgid?.() ?? 0,
+      grantGid: process.getgid?.() ?? 0,
       deploymentGeneration: 741,
       runtimeProfileDigest: capacity.runtimeProfileDigest,
       maxBuildSlots: 2,
@@ -313,6 +314,7 @@ describe('native gateway runs a private test without touching an official table'
       spoolRoot: policy.spoolRoot,
       toolchains,
       compiledArtifacts: new CompiledArtifactStore(policy.compiledArtifactsDir),
+      grantGid: policy.grantGid,
     });
     transport = new LocalJobBrokerTransport(db, broker, policy, assignments);
     await assignments.start();

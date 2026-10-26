@@ -1,0 +1,18 @@
+2026-10-26 resumed commissioning worker
+Dedicated command: sudo -n true
+exit=1
+stderr: sudo: a password is required
+
+Dedicated command: sudo -n -v
+exit=1
+stderr: sudo: a password is required
+
+Read-only version command: sudo -n chroot <installed-compiler-rootfs> /usr/bin/python3 --version
+exit=1
+stderr: sudo: a password is required
+
+No password supplied or captured. No privileged installer invocation. No cache refresh loop.
+The earlier combined status command was not valid proof of general cached authorization and is superseded by these dedicated probes.
+Unprivileged installer refusal: bash deploy/linux/operator-commission-worker.sh
+exit=1
+stderr: Root authorization required; no changes made.

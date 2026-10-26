@@ -22,7 +22,8 @@ fn mode(path: &Path) -> u32 {
 }
 
 fn bundle(path: &Path) -> Value {
-    serde_json::from_slice(&fs::read(path).expect("bundle")).expect("bundle is JSON")
+    assert!(path.is_dir(), "runsc --bundle receives a directory, not a config file");
+    serde_json::from_slice(&fs::read(path.join("config.json")).expect("OCI config.json")).expect("bundle is JSON")
 }
 
 fn prepare() -> (TempDir, TempDir, TempDir) {
@@ -68,7 +69,16 @@ fn writes_a_private_attempt_and_the_run_bundle() {
         assert_eq!(config["process"]["cwd"], "/workspace");
         assert_eq!(config["process"]["args"][0], "/usr/bin/python3");
         assert_eq!(config["process"]["args"][1], "/workspace/main.py");
-        assert_eq!(config["process"]["user"]["uid"], 65534);
+        assert_eq!(config["process"]["user"]["uid"], 0);
+        assert_eq!(config["process"]["user"]["gid"], 0);
+        assert_eq!(config["linux"]["uidMappings"], serde_json::json!([{"containerID": 0, "hostID": unsafe { libc::geteuid() }, "size": 1}]));
+        assert_eq!(config["linux"]["gidMappings"], serde_json::json!([{"containerID": 0, "hostID": unsafe { libc::getegid() }, "size": 1}]));
+        assert!(config["linux"]["namespaces"].as_array().unwrap().iter().any(|ns| ns["type"] == "user"));
+        assert_eq!(config["linux"]["resources"]["memory"]["limit"], 268435456);
+        assert_eq!(config["linux"]["resources"]["memory"]["swap"], 268435456);
+        assert_eq!(config["linux"]["resources"]["pids"]["limit"], 32);
+        assert_eq!(config["linux"]["resources"]["cpu"]["quota"], 100000);
+        assert_eq!(config["linux"]["resources"]["cpu"]["period"], 100000);
         assert_eq!(config["process"]["noNewPrivileges"], true);
         assert_eq!(config["process"]["capabilities"]["bounding"].as_array().map(Vec::len), Some(0));
         assert_eq!(config["linux"]["cgroupsPath"], layout.cgroup.to_string_lossy().as_ref());
@@ -114,7 +124,7 @@ fn a_compile_side_materializes_the_granted_artifact_instead_of_compiling() {
     assert_eq!(output_mount["source"], output.to_string_lossy().as_ref());
     let options = output_mount["options"].as_array().expect("options");
     assert!(options.contains(&Value::String("ro".to_owned())));
-    assert!(options.contains(&Value::String("noexec".to_owned())));
+    assert!(!options.contains(&Value::String("noexec".to_owned())), "pinned C++ artifact must execute");
 }
 
 #[test]
@@ -288,8 +298,8 @@ fn a_cpp_build_writes_a_writable_output_directory_and_operator_commands() {
     assert_eq!(mode(&root), 0o700);
     assert_eq!(mode(&attempt.build.workspace), 0o700);
     assert_eq!(mode(&attempt.build.workspace.join("main.cpp")), 0o600);
-    // The sandbox runs as an unprivileged uid and must be able to create the artifact there.
-    assert_eq!(mode(&attempt.build.output), 0o733);
+    // Single-ID rootless mapping needs no access for unrelated host identities.
+    assert_eq!(mode(&attempt.build.output), 0o700);
     assert!(
         attempt.build.output.starts_with(output_root.path()),
         "the output lives inside the operator's artifact output root"
@@ -319,6 +329,13 @@ fn a_cpp_build_writes_a_writable_output_directory_and_operator_commands() {
 
     let compile_bundle = attempt.build.compile_bundle.clone().expect("a compile language has a compile step");
     let compile = bundle(&compile_bundle);
+    assert_eq!(compile["linux"]["resources"]["memory"]["limit"], 1073741824);
+    assert_eq!(compile["linux"]["resources"]["memory"]["swap"], 1073741824);
+    assert_eq!(compile["linux"]["resources"]["pids"]["limit"], 64);
+    let cpu_limit = compile["process"]["rlimits"].as_array().unwrap().iter()
+        .find(|limit| limit["type"] == "RLIMIT_CPU").unwrap();
+    assert_eq!(cpu_limit["hard"], 10);
+    assert_eq!(cpu_limit["soft"], 10);
     assert_eq!(
         compile["process"]["args"],
         serde_json::json!(["/usr/bin/g++", "-O2", "-std=c++20", "-I", "/workspace", "/workspace/main.cpp", "-o", "/out/bot"])
@@ -348,7 +365,7 @@ fn a_cpp_build_writes_a_writable_output_directory_and_operator_commands() {
         .expect("output mount");
     let run_options = run_output["options"].as_array().expect("options");
     assert!(run_options.contains(&Value::String("ro".to_owned())));
-    assert!(run_options.contains(&Value::String("noexec".to_owned())));
+    assert!(!run_options.contains(&Value::String("noexec".to_owned())));
     assert_eq!(run["linux"]["cgroupsPath"], attempt.build.cgroup.to_string_lossy().as_ref());
 
     // The artifact directory lives in the operator's root, so it must be removed with the attempt.

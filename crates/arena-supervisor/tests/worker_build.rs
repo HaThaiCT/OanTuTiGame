@@ -249,9 +249,9 @@ fn the_init_smoke_uses_the_assignment_limits_and_the_engine_session() {
     // limit.
     let calls = runner_state.lock().expect("state").calls.clone();
     assert_eq!(calls.len(), 2, "a probe and one compile step");
-    assert!(calls[0].0.ends_with("toolchain.json"), "{:?}", calls[0].0);
+    assert!(calls[0].0.ends_with("toolchain"), "{:?}", calls[0].0);
     assert_eq!(calls[0].1, Duration::from_secs(5).as_millis());
-    assert!(calls[1].0.ends_with("compile.json"), "{:?}", calls[1].0);
+    assert!(calls[1].0.ends_with("compile"), "{:?}", calls[1].0);
     assert_eq!(calls[1].1, 30_000);
 }
 
@@ -494,10 +494,9 @@ fn the_production_command_runner_provisions_the_cgroup_and_fails_closed() {
     let message = error.to_string();
     assert!(!message.is_empty());
     assert!(
-        layout.cgroup.is_dir(),
-        "the runner provisions the child cgroup before a runtime is placed in it"
+        !layout.cgroup.exists(),
+        "missing delegated controllers must fail before creating workload leaves"
     );
-    // A second call in the same attempt reuses the provisioned cgroup instead of failing.
     assert!(runner.run(&layout.toolchain_bundle, &layout, Duration::from_secs(5)).is_err());
 }
 

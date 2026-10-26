@@ -55,11 +55,19 @@ export function nativeGatewayConfig(env: NodeJS.ProcessEnv = process.env): Local
       || !Array.isArray(toolchain.flags) || !toolchain.flags.every((flag: unknown) => typeof flag === 'string')) throw new Error('Invalid native toolchain identity');
     return { language, imageDigest: toolchain.imageDigest, version: toolchain.version, flags: toolchain.flags };
   });
+  const grantGid = integer('grantGid', 0);
+  const apiGid = process.getgid?.();
+  const apiGroups = process.getgroups?.() ?? [];
+  const inGroup = (apiGid !== undefined && apiGid === grantGid) || apiGroups.includes(grantGid);
+  if (!inGroup) {
+    throw new Error(`API process is not a member of grantGid ${grantGid}`);
+  }
   return {
     executable: absolute('executable'), socketPath: absolute('socketPath'), workerUid: integer('workerUid', 1),
-    socketGid: integer('socketGid', 0), deploymentGeneration: integer('deploymentGeneration', 1),
+    socketGid: integer('socketGid', 0), grantGid, deploymentGeneration: integer('deploymentGeneration', 1),
     runtimeProfileDigest: digest, maxBuildSlots: integer('maxBuildSlots', 1), maxGameSlots: integer('maxGameSlots', 1),
     spoolRoot: absolute('spoolRoot'), compiledArtifactsDir: absolute('compiledArtifactsDir'),
-    ...(input.completionRoot === undefined ? {} : { completionRoot: absolute('completionRoot') }), toolchains,
+    ...(input.completionRoot === undefined ? {} : { completionRoot: absolute('completionRoot') }),
+    toolchains,
   };
 }

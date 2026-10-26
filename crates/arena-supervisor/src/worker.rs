@@ -581,14 +581,44 @@ impl RunscWorkloadFactory {
     }
 }
 
+fn prepare_workload_leaf(path: &Path) -> io::Result<()> {
+    use std::os::unix::fs::MetadataExt;
+    use std::os::unix::fs::OpenOptionsExt;
+    match fs::create_dir(path) {
+        Ok(()) => return Ok(()),
+        Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+        Err(error) => return Err(error),
+    }
+    let metadata = fs::symlink_metadata(path)?;
+    if !metadata.is_dir() || metadata.uid() != unsafe { libc::geteuid() }
+        || metadata.mode() & 0o022 != 0 {
+        return Err(io::Error::other("unsafe existing workload cgroup"));
+    }
+    let events_path = path.join("cgroup.events");
+    let mut events = std::fs::OpenOptions::new().read(true)
+        .custom_flags(libc::O_NOFOLLOW).open(events_path)?;
+    let mut contents = String::new();
+    std::io::Read::read_to_string(&mut std::io::Read::take(&mut events, 4096), &mut contents)?;
+    if contents.lines().filter(|line| *line == "populated 0").count() != 1
+        || contents.lines().filter(|line| line.starts_with("populated ")).count() != 1
+        || contents.lines().filter(|line| *line == "frozen 1").count() != 1
+        || contents.lines().filter(|line| line.starts_with("frozen ")).count() != 1 {
+        return Err(io::Error::other("existing workload cgroup must be empty and frozen"));
+    }
+    Ok(())
+}
+
 impl WorkloadFactory for RunscWorkloadFactory {
     fn launch(&self, layout: &BotLayout, attempt_id: &str, budgets: Budgets) -> io::Result<Box<dyn Workload>> {
         // The delegated cgroup subtree exists (the operator owns the root); the per-attempt child
         // cgroup does not, and must exist before the runtime can be placed in it.
         if let Some(parent) = layout.cgroup.parent() {
+            let root = parent.parent().ok_or_else(|| io::Error::other("missing delegated root"))?;
+            crate::control::enable_workload_controllers(root)?;
             fs::create_dir_all(parent)?;
+            crate::control::enable_workload_controllers(parent)?;
         }
-        fs::create_dir(&layout.cgroup)?;
+        prepare_workload_leaf(&layout.cgroup)?;
         let id = format!("{attempt_id}-{}", layout.side);
         Ok(Box::new(Sandbox::launch(&self.runsc, &layout.bundle, &layout.state, &id, &layout.cgroup, budgets)?))
     }
@@ -634,13 +664,12 @@ impl SandboxRunner for RunscSandboxRunner {
         // cgroup does not, and must exist before the runtime can be placed in it. A second command
         // in the same attempt finds it already there.
         if let Some(parent) = layout.cgroup.parent() {
+            let root = parent.parent().ok_or_else(|| io::Error::other("missing delegated root"))?;
+            crate::control::enable_workload_controllers(root)?;
             fs::create_dir_all(parent)?;
+            crate::control::enable_workload_controllers(parent)?;
         }
-        match fs::create_dir(&layout.cgroup) {
-            Ok(()) => {}
-            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
-            Err(error) => return Err(error),
-        }
+        prepare_workload_leaf(&layout.cgroup)?;
         let sequence = self.sequence.fetch_add(1, Ordering::Relaxed);
         let id = format!("{}-{sequence}", layout.target_id);
         Sandbox::run_command(&self.runsc, bundle, &layout.state, &id, &layout.cgroup, wall)
@@ -2042,7 +2071,7 @@ impl<F: WorkloadFactory, R: SandboxRunner> Worker<F, R> {
                         diagnostic: format!("COMPILE_FAILED: the compiler exited with status {status}: {}", sanitize_diagnostic(&diagnostic)),
                     })
                 }
-                CommandOutcome::WallExpired { diagnostic, .. } => {
+                CommandOutcome::WallExpired { diagnostic, .. } | CommandOutcome::CpuExpired { diagnostic, .. } => {
                     return Ok(BuildVerdict::Rejected {
                         stage: "COMPILE",
                         diagnostic: format!("COMPILE_TIMEOUT: {}", command_diagnostic(&diagnostic)),
@@ -2090,8 +2119,8 @@ impl<F: WorkloadFactory, R: SandboxRunner> Worker<F, R> {
                 "TOOLCHAIN_PROBE_FAILED",
                 format!("the toolchain probe exited with status {status}"),
             )),
-            CommandOutcome::WallExpired { .. } => {
-                Err(WorkerError::new("TOOLCHAIN_PROBE_FAILED", "the toolchain probe exceeded its wall bound"))
+            CommandOutcome::WallExpired { .. } | CommandOutcome::CpuExpired { .. } => {
+                Err(WorkerError::new("TOOLCHAIN_PROBE_FAILED", "the toolchain probe exceeded its CPU or wall bound"))
             }
             CommandOutcome::OutputLimit { .. } => Err(WorkerError::new(
                 "TOOLCHAIN_PROBE_FAILED",
@@ -2281,6 +2310,34 @@ fn read_artifact(path: &Path) -> Result<(Vec<u8>, [u8; 32]), WorkerError> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn command_leaf_can_be_reused_for_init_only_when_private_and_empty() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let root = std::env::temp_dir().join(format!("arena-leaf-{}", std::process::id()));
+        fs::create_dir(&root).unwrap();
+        let leaf = root.join("1");
+        // A command can leave an empty frozen leaf behind before INIT uses the same path.
+        prepare_workload_leaf(&leaf).unwrap();
+        fs::write(leaf.join("cgroup.events"), "populated 0\nfrozen 1\n").unwrap();
+        assert!(prepare_workload_leaf(&leaf).is_ok());
+        fs::write(leaf.join("cgroup.events"), "populated 1\nfrozen 1\n").unwrap();
+        assert!(prepare_workload_leaf(&leaf).is_err());
+        fs::write(leaf.join("cgroup.events"), "populated 0\nfrozen 0\n").unwrap();
+        assert!(prepare_workload_leaf(&leaf).is_err());
+        fs::write(leaf.join("cgroup.events"), "populated 0\nfrozen 1\n").unwrap();
+        fs::set_permissions(&leaf, fs::Permissions::from_mode(0o777)).unwrap();
+        assert!(prepare_workload_leaf(&leaf).is_err());
+        fs::set_permissions(&leaf, fs::Permissions::from_mode(0o700)).unwrap();
+        let link = root.join("link");
+        symlink(&leaf, &link).unwrap();
+        assert!(prepare_workload_leaf(&link).is_err());
+        if unsafe { libc::geteuid() } == 0 {
+            let path = std::ffi::CString::new(leaf.as_os_str().as_encoded_bytes()).unwrap();
+            assert_eq!(unsafe { libc::chown(path.as_ptr(), 12345, 12345) }, 0);
+            assert!(prepare_workload_leaf(&leaf).is_err());
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
     use super::*;
     use arena_runner::manifest::parse_manifest;
 

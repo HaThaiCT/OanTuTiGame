@@ -301,6 +301,7 @@ export async function createApp(options?: ServerOptions): Promise<AppContext> {
           compiledArtifacts: new CompiledArtifactStore(options.localJobBroker.compiledArtifactsDir),
           liveProjector: new NativeLiveProjector(options.pgDb, liveMatchHub),
           completionRoot: completionCapsuleRoot,
+          grantGid: options.localJobBroker.grantGid,
         }
       );
       localJobBroker = new LocalJobBrokerTransport(options.pgDb, jobBroker, options.localJobBroker, assignments);

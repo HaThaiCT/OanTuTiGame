@@ -1,3 +1,7 @@
+## Active rerun baseline — 2026-10-26
+
+The current rerun starts at commit `5855f2fc740f34f7413054b9d7ee0c6996f81bb9`, branch `develop/online-v2-2`, observed directly with git. Prior deployment/process claims below are historical: neither port 15611 nor 15612 was listening at this rerun's first `ss -ltn` observation. New isolated services reserve API 15621, web 15622, and HTTPS browser origin 15623; no shared preview or demo service is restarted. Launching identity is `ha-thai` UID/GID 1000. Native commissioning is separately under review; no dev executor or fake READY/result transition is authorized.
+
 # Isolated Stack & Lifecycle Acceptance Checkpoint
 
 **Date:** 2026-10-26  

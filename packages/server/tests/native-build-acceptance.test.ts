@@ -238,6 +238,7 @@ describe('native gateway accepts a build only from verified, durably stored outp
       socketPath: '/does-not-exist/broker.sock',
       workerUid,
       socketGid: process.getgid?.() ?? 0,
+      grantGid: process.getgid?.() ?? 0,
       deploymentGeneration: 733,
       runtimeProfileDigest: capacity.runtimeProfileDigest,
       maxBuildSlots: 4,
@@ -259,6 +260,7 @@ describe('native gateway accepts a build only from verified, durably stored outp
       spoolRoot: policy.spoolRoot,
       toolchains,
       compiledArtifacts,
+      grantGid: policy.grantGid,
     });
     transport = new LocalJobBrokerTransport(db, broker, policy, assignments);
 
@@ -329,6 +331,7 @@ describe('native gateway accepts a build only from verified, durably stored outp
   });
 
   it('prunes attempt directories left by a previous process but keeps foreign files', async () => {
+    await mkdir(policy.spoolRoot, { mode: 0o710 });
     const stale = join(policy.spoolRoot, randomUUID());
     const foreign = join(policy.spoolRoot, 'not-an-attempt');
     await mkdir(stale, { recursive: true });
@@ -360,7 +363,7 @@ describe('native gateway accepts a build only from verified, durably stored outp
     const source = payload.source as { path: string; digest: string; sizeBytes: number };
     expect(source.path.startsWith(`${attemptDirectory}/`)).toBe(true);
     const sourceInfo = await stat(source.path);
-    expect(sourceInfo.mode & 0o777).toBe(0o600);
+    expect(sourceInfo.mode & 0o777).toBe(0o640);
     const storedSource = await artifacts.getSource(payload.manifestDigest as string);
     expect(storedSource!.zipBuffer.equals(await readFile(source.path))).toBe(true);
     expect(source.sizeBytes).toBe(storedSource!.zipBuffer.length);
@@ -621,7 +624,7 @@ describe('native gateway accepts a build only from verified, durably stored outp
     const artifact = bots[1].artifact!;
     expect(artifact.path.startsWith(`${attemptDirectory}/`)).toBe(true);
     const artifactBytes = await readFile(artifact.path);
-    expect((await stat(artifact.path)).mode & 0o777).toBe(0o600);
+    expect((await stat(artifact.path)).mode & 0o777).toBe(0o640);
     expect(artifactBytes.equals(CPP_ARTIFACT)).toBe(true);
     expect(sha256(artifactBytes)).toBe(artifact.digest);
     // The resolved artifact is the one the durable store kept, not the build attempt's spool.

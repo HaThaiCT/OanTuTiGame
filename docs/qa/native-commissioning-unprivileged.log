@@ -1,0 +1,29 @@
+## permission-regressions
+$ npx vitest run packages/server/tests/native-grant-permissions.test.ts
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.12 [39m[90m/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2[39m
+
+ [32m✓[39m packages/server/tests/native-grant-permissions.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 11:04:01
+[2m   Duration [22m 771ms[2m (transform 451ms, setup 110ms, import 492ms, tests 25ms, environment 0ms)[22m
+
+[90mstderr[2m | packages/server/tests/native-grant-permissions.test.ts
+[22m[39m[singleton-admin] skipped: arena_development is not an isolated arena_*test* database
+
+
+exit=0
+## server-typecheck
+$ npx tsc --noEmit -p packages/server/tsconfig.json
+
+exit=0
+## installer-syntax
+$ bash -n deploy/linux/operator-commission-worker.sh
+
+exit=0
+
+## AppArmor extracted policy syntax (no kernel load)
+
+exit=0

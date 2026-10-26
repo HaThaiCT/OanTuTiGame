@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
-import { lstat, mkdir, open, readFile, readdir, rename, rm } from 'node:fs/promises';
+import { chmod, chown, lstat, mkdir, open, readFile, readdir, rename, rm } from 'node:fs/promises';
 import * as path from 'node:path';
 import type { MapDescriptor } from '@oantuti/engine';
 import type {
@@ -150,6 +150,8 @@ export interface NativeAssignmentOptions {
   readonly baselineBotPath?: string;
   readonly liveProjector?: NativeLiveProjector;
   readonly completionRoot?: string;
+  /** Operator-declared grant GID for group-accessible spool attempts (required). */
+  readonly grantGid: number;
 }
 
 /**
@@ -351,15 +353,43 @@ function syncDirectory(directory: string): Promise<void> {
   });
 }
 
+function assertGrantGroup(grantGid: number): void {
+  if (!Number.isSafeInteger(grantGid) || grantGid < 0
+    || (process.getgid?.() !== grantGid && !(process.getgroups?.() ?? []).includes(grantGid))) {
+    throw new Error('API process must be a member of the native grant group');
+  }
+}
+
+async function prepareSpoolRoot(spoolRoot: string, grantGid: number): Promise<void> {
+  assertGrantGroup(grantGid);
+  try {
+    const existing = await lstat(spoolRoot);
+    if (!existing.isDirectory() || existing.uid !== process.getuid?.() || (existing.mode & 0o022) !== 0) {
+      throw new Error('Native spool must be an API-owned directory without group/world write');
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    await mkdir(spoolRoot, { recursive: true, mode: 0o710 });
+  }
+  await chown(spoolRoot, process.getuid?.() ?? -1, grantGid);
+  await chmod(spoolRoot, 0o710);
+  const info = await lstat(spoolRoot);
+  if (!info.isDirectory() || info.uid !== process.getuid?.() || info.gid !== grantGid || (info.mode & 0o777) !== 0o710) {
+    throw new Error('Native spool ownership or permissions do not match the grant contract');
+  }
+}
+
 /**
  * Creates the per-attempt spool directory. It must not exist: an attempt that reused a previous
  * attempt's directory could be handed bytes it did not pin, so reuse is an error, not a merge.
  */
-async function createAttemptDirectory(spoolRoot: string, attemptId: string): Promise<string> {
+export async function createAttemptDirectory(spoolRoot: string, attemptId: string, grantGid: number): Promise<string> {
   const directory = path.join(spoolRoot, attemptId);
   try {
-    await mkdir(spoolRoot, { recursive: true, mode: 0o700 });
-    await mkdir(directory, { mode: 0o700 });
+    await prepareSpoolRoot(spoolRoot, grantGid);
+    await mkdir(directory, { mode: 0o750 });
+    await chown(directory, process.getuid?.() ?? -1, grantGid);
+    await chmod(directory, 0o750);
   } catch (error: unknown) {
     throw new JobBrokerError('SPOOL_UNAVAILABLE', `Cannot create attempt spool: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -367,7 +397,8 @@ async function createAttemptDirectory(spoolRoot: string, attemptId: string): Pro
 }
 
 /** Writes one pinned file into an attempt spool, atomically and durably, and describes it. */
-async function writeGrant(directory: string, name: string, bytes: Buffer): Promise<GrantedArtifact> {
+export async function writeGrant(directory: string, name: string, bytes: Buffer, grantGid?: number): Promise<GrantedArtifact> {
+  if (grantGid !== undefined) assertGrantGroup(grantGid);
   const target = path.join(directory, name);
   const temporary = `${target}.tmp-${randomUUID()}`;
   try {
@@ -377,6 +408,10 @@ async function writeGrant(directory: string, name: string, bytes: Buffer): Promi
       await handle.sync();
     } finally {
       await handle.close();
+    }
+    if (grantGid !== undefined) {
+      await chown(temporary, process.getuid?.() ?? -1, grantGid);
+      await chmod(temporary, 0o640);
     }
     await rename(temporary, target);
     await syncDirectory(directory);
@@ -483,6 +518,7 @@ export class NativeAssignmentService {
     private readonly privateTests: PrivateTestResultService,
     private readonly options: NativeAssignmentOptions
   ) {
+    assertGrantGroup(options.grantGid);
     this.baselineBotPath = options.baselineBotPath ?? path.resolve(process.cwd(), DEFAULT_BASELINE_BOT);
     this.broker.registerCompletionConsumer((evidence, lease, client) => this.consume(evidence, lease, client));
     this.results.setAcceptanceFence((client) => this.broker.assertAcceptanceFence(client));
@@ -511,9 +547,7 @@ export class NativeAssignmentService {
    * directory that is still there belongs to an attempt that can never be accepted or abandoned.
    */
   async start(): Promise<void> {
-    await mkdir(this.options.spoolRoot, { recursive: true, mode: 0o700 });
-    const info = await lstat(this.options.spoolRoot);
-    if (!info.isDirectory() || (info.mode & 0o002) !== 0) throw new Error('Native spool root must be a directory that is not world-writable');
+    await prepareSpoolRoot(this.options.spoolRoot, this.options.grantGid);
     for (const entry of await readdir(this.options.spoolRoot)) {
       if (!UUID_PATTERN.test(entry)) continue;
       await rm(path.join(this.options.spoolRoot, entry), { recursive: true, force: true });
@@ -919,7 +953,7 @@ export class NativeAssignmentService {
        WHERE g.id = $1 AND g.status IN ('PENDING','RUNNING') AND t.state = 'RUNNING'`, [lease.targetId]);
     const game = result.rows[0];
     if (!game) throw new JobBrokerError('GAME_NOT_RUNNABLE', 'Game is not runnable');
-    const attemptDirectory = await createAttemptDirectory(this.options.spoolRoot, lease.identity.attemptId);
+    const attemptDirectory = await createAttemptDirectory(this.options.spoolRoot, lease.identity.attemptId, this.options.grantGid);
     try {
       const bots: GameBotAssignment[] = [];
       for (const [side, team] of [[1, game.white_team_id], [2, game.black_team_id]] as const) {
@@ -966,7 +1000,7 @@ export class NativeAssignmentService {
     if (!compiled || !ARTIFACT_ENTRYPOINT.test(compiled.record.entrypoint)) {
       throw new JobBrokerError('BUILD_ARTIFACT_UNAVAILABLE', `No verified compiled artifact for the frozen ${language} source`);
     }
-    const grant = await writeGrant(attemptDirectory, `bot-${side}-artifact.bin`, compiled.bytes);
+    const grant = await writeGrant(attemptDirectory, `bot-${side}-artifact.bin`, compiled.bytes, this.options.grantGid);
     return { ...grant, entrypoint: compiled.record.entrypoint };
   }
 
@@ -987,7 +1021,7 @@ export class NativeAssignmentService {
     const extracted = parseAndValidateZip(stored.zipBuffer, source.language, source.entrypoint);
     const canonical = computeCanonicalManifest(extracted.files, source.language, source.entrypoint, extracted.expandedBytes);
     if (canonical.digest !== source.source_digest) throw new JobBrokerError('ARTIFACT_DIGEST_MISMATCH', 'Source digest mismatch');
-    const sourceGrant = await writeGrant(attemptDirectory, `bot-${side}.zip`, stored.zipBuffer);
+    const sourceGrant = await writeGrant(attemptDirectory, `bot-${side}.zip`, stored.zipBuffer, this.options.grantGid);
     // A compile language runs the artifact its build produced — no compiler runs at match time — and
     // a side whose artifact is missing or fails its digest check is refused, never played from source.
     const artifact = COMPILE_LANGUAGES.includes(source.language)
@@ -1027,7 +1061,7 @@ export class NativeAssignmentService {
     } catch (error: unknown) {
       throw new JobBrokerError('BASELINE_BOT_INVALID', `The baseline bot does not package as a valid ${BASELINE_BOT_LANGUAGE} source: ${error instanceof Error ? error.message : String(error)}`);
     }
-    const source = await writeGrant(attemptDirectory, `bot-${side}.zip`, zip);
+    const source = await writeGrant(attemptDirectory, `bot-${side}.zip`, zip, this.options.grantGid);
     return { side, sourceDigest, language: BASELINE_BOT_LANGUAGE, entrypoint, source };
   }
 
@@ -1078,7 +1112,7 @@ export class NativeAssignmentService {
 
     let attemptDirectory: string | undefined;
     try {
-      attemptDirectory = await createAttemptDirectory(this.options.spoolRoot, lease.identity.attemptId);
+      attemptDirectory = await createAttemptDirectory(this.options.spoolRoot, lease.identity.attemptId, this.options.grantGid);
       const map = await resolvePrivateTestMap(this.db, snapshot.tournament_id);
       const bots: GameBotAssignment[] = [await this.grantStoredBot(attemptDirectory, 1, snapshot)];
       const candidate = await loadLatestReadySubmission(this.db, snapshot.tournament_id, snapshot.team_id);
@@ -1134,9 +1168,9 @@ export class NativeAssignmentService {
     const extracted = parseAndValidateZip(stored.zipBuffer, row.language, row.entrypoint);
     const canonical = computeCanonicalManifest(extracted.files, row.language, row.entrypoint, extracted.expandedBytes);
     if (canonical.digest !== row.source_digest) throw new JobBrokerError('ARTIFACT_DIGEST_MISMATCH', 'Build source digest mismatch');
-    const attemptDirectory = await createAttemptDirectory(this.options.spoolRoot, lease.identity.attemptId);
+    const attemptDirectory = await createAttemptDirectory(this.options.spoolRoot, lease.identity.attemptId, this.options.grantGid);
     try {
-      const source = await writeGrant(attemptDirectory, 'source.zip', stored.zipBuffer);
+      const source = await writeGrant(attemptDirectory, 'source.zip', stored.zipBuffer, this.options.grantGid);
       const assignment: BuildAssignment = {
         version: 1,
         jobType: kind,

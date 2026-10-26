@@ -1,0 +1,35 @@
+fresh database arena_isolated_20261026_lifecycle_test: applying every migration from 001
+applied 001-control-plane.sql
+applied 002-submissions.sql
+applied 003-jobs.sql
+applied 004-results.sql
+applied 005-maps-and-stages.sql
+applied 006-tournament-rounds.sql
+applied 007-disputes-and-corrections.sql
+applied 008-private-tests.sql
+applied 009-build-evidence.sql
+applied 010-map-versions.sql
+applied 011-private-test-results.sql
+applied 012-appeal-window.sql
+applied 013-entry-codes.sql
+applied 014-encounter-bye-status.sql
+applied 015-round-grace.sql
+applied 016-session-reauth.sql
+applied 017-walkover-encounters.sql
+applied 018-round-slot-count.sql
+applied 019-test-create-attempts.sql
+applied 020-map-pool-version.sql
+applied 021-command-receipts.sql
+applied 022-lan-identity.sql
+applied 023-map-version-reveal.sql
+applied 024-durable-completion.sql
+applied 025-lan-temporary-credentials.sql
+applied 026-backup-integrity.sql
+applied 027-global-team-ratings.sql
+applied 028-online-identity-mail.sql
+applied 029-online-team-lifecycle.sql
+applied 030-tournament-registrations.sql
+applied 031-tournament-centered-content.sql
+applied 032-starter-bot-seed-author.sql
+schema_migrations max = 32
+Migration apply complete.

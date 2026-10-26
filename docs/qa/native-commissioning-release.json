@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-26",
+  "workspace": "/home/ha-thai/orca/workspaces/OanTuTi/develop-online-v2-2",
+  "build": "cargo build --release -p arena-supervisor --bin arena-job-broker --bin arena-worker --bin arena-reaper",
+  "compilerImage": "rust:1.99.1-slim-bookworm",
+  "buildExit": 0,
+  "rawBuildOutput": "Delivered bash job bg_10 transcript (not a repository log)",
+  "binaries": {
+    "arena-job-broker": "4e22abba40b1df9bf65a974e2dc34d82e021e8c6f89c5a88c4fe35edd23f0ac8",
+    "arena-worker": "62b9ee89ce4ba65f0def849442dabfc67c06e769607ec9b919c3e0083d965977",
+    "arena-reaper": "942d2ff976cfd26c76ad167bede5878de0158c3ec7d924f51d798f1ae0de3384"
+  },
+  "installerSha256": "a64e2e939ce883ef0eef4841f9c3709c513e042a9d9cba48c32592d1f455938d",
+  "installed": false,
+  "runtimeCertified": false
+}
