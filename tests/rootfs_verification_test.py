@@ -6,6 +6,7 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+import subprocess
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('rootfs_verifier', Path(__file__).parents[1] / 'deploy/linux/verify-rootfs.py')
@@ -14,6 +15,64 @@ spec.loader.exec_module(verifier)
 promotion_spec = importlib.util.spec_from_file_location('toolchain_promoter', Path(__file__).parents[1] / 'deploy/linux/promote-toolchain-rootfs.py')
 promoter = importlib.util.module_from_spec(promotion_spec)
 promotion_spec.loader.exec_module(promoter)
+
+
+class NativeInstallerInputsTest(unittest.TestCase):
+    def test_prepare_runs_cargo_when_iidfile_has_no_newline(self):
+        wrapper = Path(__file__).parents[1] / 'deploy/linux/prepare-native-worker.sh'
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            scripts = repo / 'deploy/linux'
+            scripts.mkdir(parents=True)
+            script = scripts / wrapper.name
+            script.write_text(wrapper.read_text())
+            (scripts / 'operator-commission-worker.sh').write_text('exit 0\n')
+            binaries = repo / 'bin'
+            binaries.mkdir()
+            docker = binaries / 'docker'
+            docker.write_text('#!/bin/bash\nif [[ $1 = build ]]; then printf sha256:fixture > "$3"; else printf "%s\\n" "$*" > "$BUILD_RECORD"; fi\n')
+            docker.chmod(0o755)
+            record = repo / 'record'
+            result = subprocess.run(['bash', str(script)], capture_output=True, text=True, env={**os.environ, 'PATH': str(binaries) + ':' + os.environ['PATH'], 'BUILD_RECORD': str(record)})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('sha256:fixture cargo build --release --locked', record.read_text())
+
+    def test_missing_release_inputs_fail_before_privilege_checks(self):
+        installer = Path(__file__).parents[1] / 'deploy/linux/operator-commission-worker.sh'
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            script = repo / 'deploy/linux/operator-commission-worker.sh'
+            script.parent.mkdir(parents=True)
+            script.write_text(installer.read_text())
+            result = subprocess.run(['bash', str(script), '--check-inputs'], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Missing native release input:', result.stderr)
+            self.assertIn('prepare-native-worker.sh', result.stderr)
+            self.assertNotIn('Root authorization required', result.stderr)
+
+    def test_preflight_hashes_all_three_release_inputs(self):
+        installer = Path(__file__).parents[1] / 'deploy/linux/operator-commission-worker.sh'
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            script = repo / 'deploy/linux/operator-commission-worker.sh'
+            script.parent.mkdir(parents=True)
+            content = installer.read_text()
+            output = repo / 'target/release'
+            output.mkdir(parents=True)
+            for name in ('arena-job-broker', 'arena-worker', 'arena-reaper'):
+                data = name.encode()
+                (output / name).write_bytes(data)
+                import re
+                content = re.sub(r'[0-9a-f]{64}(  ' + name + r'\n)', hashlib.sha256(data).hexdigest() + r'\1', content)
+            script.write_text(content)
+            result = subprocess.run(['bash', str(script), '--check-inputs'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for name in ('arena-job-broker', 'arena-worker', 'arena-reaper'):
+                self.assertIn(name + ': OK', result.stdout)
+            (output / 'arena-worker').write_bytes(b'changed')
+            result = subprocess.run(['bash', str(script), '--check-inputs'], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Native release input checksum mismatch', result.stderr)
 
 
 class NativeWorkerRootSeparationTest(unittest.TestCase):

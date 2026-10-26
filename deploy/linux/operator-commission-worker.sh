@@ -2,8 +2,19 @@
 # Isolated QA commissioning only. Independent review is required before execution.
 set -euo pipefail
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
-[[ $EUID = 0 ]] || { echo 'Root authorization required; no changes made.' >&2; exit 1; }
 repo=$(realpath -- "$(dirname -- "$0")/../..")
+for name in arena-job-broker arena-worker arena-reaper; do
+ [[ -f $repo/target/release/$name && ! -L $repo/target/release/$name ]] || { echo "Missing native release input: $repo/target/release/$name; run bash $repo/deploy/linux/prepare-native-worker.sh as your normal user before sudo installation." >&2; exit 1; }
+done
+(cd "$repo/target/release" && sha256sum --check <<'NATIVE_HASHES'
+4e22abba40b1df9bf65a974e2dc34d82e021e8c6f89c5a88c4fe35edd23f0ac8  arena-job-broker
+62b9ee89ce4ba65f0def849442dabfc67c06e769607ec9b919c3e0083d965977  arena-worker
+942d2ff976cfd26c76ad167bede5878de0158c3ec7d924f51d798f1ae0de3384  arena-reaper
+NATIVE_HASHES
+) || { echo 'Native release input checksum mismatch; do not install or repin without independent review.' >&2; exit 1; }
+if [[ ${1-} = --check-inputs && $# = 1 ]]; then exit 0; fi
+[[ $# = 0 ]] || { echo 'Usage: operator-commission-worker.sh [--check-inputs]' >&2; exit 1; }
+[[ $EUID = 0 ]] || { echo 'Root authorization required; no changes made.' >&2; exit 1; }
 prefix=/usr/local/libexec/oantuti/qa-native-20261026
 state=/var/lib/oantuti-qa-native
 config=/etc/oantuti-qa-native
@@ -63,7 +74,7 @@ trap rollback EXIT
 python3 -I - "$repo" "$stage" "$toolchain_archive" <<'PY'
 import os, stat, sys
 repo,stage,toolchain_archive=sys.argv[1:]
-sources={name:'/tmp/oantuti-native-bin/'+name for name in ('arena-worker','arena-reaper','arena-job-broker')}
+sources={name:repo+'/target/release/'+name for name in ('arena-worker','arena-reaper','arena-job-broker')}
 sources.update({'runsc':'/usr/local/libexec/oantuti/gvisor-20261005.0/runsc','runtime-profile.json':repo+'/deploy/linux/runtime-profile.json','verify-rootfs.py':repo+'/deploy/linux/verify-rootfs.py','promote-toolchain-rootfs.py':repo+'/deploy/linux/promote-toolchain-rootfs.py','toolchain-rootfs.tar':toolchain_archive})
 for name,source in sources.items():
  fd=os.open(source,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)

@@ -5,12 +5,26 @@
   "compilerImage": "rust:1.99.1-slim-bookworm",
   "buildExit": 0,
   "rawBuildOutput": "Delivered bash job bg_10 transcript (not a repository log)",
+  "historicalEvidenceCaveat": "The preceding build fields and binaries below are historical claims/pins, not a verified reproduction. Prior raw build log is not available in this repository. See native-staging-build-provenance.json for the observed new build.",
+  "userReportedInstallerFailure": "FileNotFoundError in embedded Python at line6 opening /tmp/oantuti-native-bin/arena-worker (reported by user; full raw traceback not supplied)",
+  "failureRootCause": "Installer opened external transient binary inputs without any preceding build/population step; rollback only cleaned its separate root-private stage.",
   "binaries": {
     "arena-job-broker": "4e22abba40b1df9bf65a974e2dc34d82e021e8c6f89c5a88c4fe35edd23f0ac8",
     "arena-worker": "62b9ee89ce4ba65f0def849442dabfc67c06e769607ec9b919c3e0083d965977",
     "arena-reaper": "942d2ff976cfd26c76ad167bede5878de0158c3ec7d924f51d798f1ae0de3384"
   },
-  "installerSha256": "a64e2e939ce883ef0eef4841f9c3709c513e042a9d9cba48c32592d1f455938d",
+  "installerSha256": "23e2fd626f728cc009a5190ad51225c7885317acbe6f919fb6958566552b4ada",
+  "preparationSha256": "c97a3f49cb9118ca5baecd4f3224d55bc3f7cbf6163882b91cb00b6b2ae74bf7",
+  "rustBaseImage": "rust:1.99.1-slim-bookworm@sha256:f48da6dc0c99631cb89cc86b041e3ba8bc17dfab112e9ce85176d02cf220d660",
+  "stagingFix": "Installer no longer consumes absent transient /tmp inputs. User-context preparation builds target/release with protobuf-compiler available; installer preflight and root-private snapshots both enforce existing binary pins.",
+  "stagingRegressionChecks": "22 focused tests passed; bash -n both scripts and Python compilation passed; missing-input and image-ID EOF regressions observed RED before fixes",
+  "preparationResult": "Cargo release compilation succeeded (9.78s); wrapper exited 1 because all three rebuilt hashes differ from historical pins. No install or automatic repin.",
+  "builtImageId": "sha256:3987d347ae5f8ea3100381d07fe552e2131c78d8a869923c244f53e2ae3dd8ad",
+  "rebuiltArtifactsPendingReview": {
+    "arena-job-broker": "923ede433cea27e7b85491d469c5805704b9c430e61ecdaf7d30798b40e43cf6",
+    "arena-worker": "95c56d5a0e501c1aeede5bb619329f09512f9ac6129b4ce194b95e5319385464",
+    "arena-reaper": "0b4cf3a2e1af689b0848ddc7a4439f19f0779880f5916f29054810fc4ff18bec"
+  },
   "installed": false,
   "runtimeCertified": false
 }

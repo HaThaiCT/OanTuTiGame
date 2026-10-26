@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "2604fa9f1f4abb7a34abe176f59dedf8ed6f81d3",
+  "sourceChangesDuringBuild": "Only commissioning scripts, Dockerfile, tests and QA evidence; no Rust/Cargo source edits",
+  "cargoLockSha256": "851a2f8ea8becba5a45203db41555f447938c320991fce218472bc2ebee295f3",
+  "rustToolchainTomlSha256": "690e8b2d01e4b515848ba8c0cfcb69e54605754c53f29f95eacb61ea7b4fb3b6",
+  "dockerfileSha256": "9d3bbc481db38ec1a00022e15f4e5d155054de114d01a6b63a8f98926abc8adb",
+  "baseImage": "rust:1.99.1-slim-bookworm@sha256:f48da6dc0c99631cb89cc86b041e3ba8bc17dfab112e9ce85176d02cf220d660",
+  "buildImageId": "sha256:3987d347ae5f8ea3100381d07fe552e2131c78d8a869923c244f53e2ae3dd8ad",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+  "protoc": "libprotoc 3.21.12",
+  "containerUser": "1000:1000",
+  "command": "cargo build --release --locked -p arena-supervisor --bin arena-job-broker --bin arena-worker --bin arena-reaper",
+  "buildOutput": "Finished `release` profile [optimized] target(s) in 9.78s",
+  "buildSucceeded": true,
+  "wrapperExit": 1,
+  "reason": "All three artifact hashes differ from historical pins; preflight rejected them. Root cause of historical-vs-rebuilt byte difference is not proven.",
+  "artifactOwner": "ha-thai:ha-thai",
+  "artifacts": {
+    "arena-job-broker": "923ede433cea27e7b85491d469c5805704b9c430e61ecdaf7d30798b40e43cf6",
+    "arena-worker": "95c56d5a0e501c1aeede5bb619329f09512f9ac6129b4ce194b95e5319385464",
+    "arena-reaper": "0b4cf3a2e1af689b0848ddc7a4439f19f0779880f5916f29054810fc4ff18bec"
+  },
+  "installationApproved": false,
+  "runtimeCertified": false
+}
